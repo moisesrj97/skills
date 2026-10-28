@@ -17,8 +17,8 @@ npx skills update                                  # pull new versions
 | engineering | `comment-cleanup` | Prunes the comments a change added down to the non-obvious "why". |
 | engineering | `debug-trace` | Temporary tagged debug points dumped to an isolated trace file, then removed. |
 | engineering | `github-pr` | PR with a Conventional Commits title and a "why"-first description. |
-| engineering | `implement-spec-in-stack` | Implements a spec's tickets as a stack of PRs with `gh stack`. Manual only. |
 | engineering | `megamoind` | Takes a ticket end to end: TDD, reviews, real-app check, PR, pair-review, CI loop. |
+| engineering | `megamoind-spec` | Takes a spec's tickets to PRs, one megamoind agent per ticket, stacked by dependency. |
 | engineering | `pair-review` | Review → fix → re-review loop with a dedicated reviewer agent. |
 | engineering | `review-comment` | Evaluates a PR review comment, fixes it and replies with the commit. Manual only. |
 | productivity | `gomander` | Starts and stops [Gomander](https://github.com/lazylabz/gomander-app) commands through its local API. |
@@ -29,7 +29,7 @@ npx skills update                                  # pull new versions
 Nothing personal or company-specific is hardcoded. Skills that need it read it from outside the repo:
 
 - **Per user** (URLs, keys): `~/.config/moisesrj97-skills/<skill>.json`. The skill asks on first run and writes it. Secrets are written by you, never pasted into the chat.
-- **Per project** (ticket tracker, branch format): a `## Ticket tracker` section in the project's `CLAUDE.local.md` or `CLAUDE.md`. Without it, `github-pr` and `implement-spec-in-stack` work with no tracker. Example:
+- **Per project** (ticket tracker, branch format): a `## Ticket tracker` section in the project's `CLAUDE.local.md` or `CLAUDE.md`. Without it, `github-pr` and the `megamoind` skills work with no tracker. Example:
 
   ```markdown
   ## Ticket tracker
