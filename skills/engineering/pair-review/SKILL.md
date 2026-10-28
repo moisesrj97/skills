@@ -49,7 +49,9 @@ Round 1 prompt contains:
 - The exact diff to review (for stacks: `<parent>...<branch>`).
 - Hard rules: do not edit files, commit, push, or post anything on GitHub (no `--fix`, no `--comment`). The reviewer reports; you change code.
 - The already-decided list from round 0, phrased as "do not reopen unless you find new evidence that changes its severity".
-- Where to write: `<scratch>/review-round-1.md` — verified findings most severe first, each with `file:line`, summary, concrete failure scenario, severity; or the literal `NO FINDINGS`.
+- Where to write: `<scratch>/review-round-1.md` — findings most severe first, each with `file:line`, summary, concrete failure scenario, severity; or the literal `NO FINDINGS`.
+- **Verification**: before writing a finding, re-open the cited lines in the checked-out code and quote them under the finding. A finding it cannot back with a quote is dropped, not softened. Severities follow the failure scenario, not a guess.
+- **Append, then seal**: write one finding per append (`cat >> <file>`), never the whole file in one write, and end with the line `END OF ROUND`. An interrupted write then loses only its tail, and the seal shows the file is complete.
 
 Round N+1 prompt contains:
 - What changed since its last review: commit hashes (say if amended or unpushed — the reviewer reads the local branch), and which of its findings each change resolves.
@@ -59,7 +61,7 @@ Round N+1 prompt contains:
 
 ### Triage each finding
 
-Read the round file and put every finding into one bucket:
+Read the round file. No `END OF ROUND` or `NO FINDINGS` line means the write was cut: ask the reviewer to append the rest before triaging. A finding without a quote from the code goes back to the reviewer for one. Then put every finding into one bucket:
 
 - **Fix**: a real defect or cheap, clearly-right improvement inside the scope of the change. Includes defects in the tests you wrote in an earlier round — those are common and the reviewer is good at catching them.
 - **Already decided**: matches a user decision. Don't fix, don't ask again; tell the reviewer it's settled.
@@ -74,7 +76,7 @@ Report each round to the user briefly: counts per bucket, what you fixed, what y
 - Write or adjust tests with each fix. When a fix is a test, **prove it can fail**: break the code it guards (remove the middleware, corrupt the input) in a temporary copy, run it, see red, restore. A test that stays green under the mutation the reviewer described is the bug. Restore from a backup copy, and confirm with `git diff` that nothing leaked.
 - Run type-check, lint and the relevant tests; the full suite before handing back.
 - Commit locally. Amending your own unpushed commits from this loop is fine; never rewrite pushed history.
-- **Never push or post to GitHub during the loop** without asking the user — the loop's approval doesn't extend to outward actions.
+- Push once the loop ends **Done**, only to the change's own branch (`--force-with-lease` after amends), and only with type-check, lint and tests green. Posting to GitHub (comments, reviews, ready-for-review) still waits for the user.
 
 ## Stop conditions
 
