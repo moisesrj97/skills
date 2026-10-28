@@ -1,7 +1,7 @@
 ---
 name: megamoind
 description: "Delegate a ticket end to end, unattended: TDD implementation, quick review, real-app verification, draft PR, pair-review, ready for review and a CI loop until green. Use when the user hands over a ticket (a GitHub issue or a tracker ID such as a ClickUp task) to take all the way to a PR, e.g. \"megamoind PD-123\", \"llévate el #42 hasta la PR\", or when another skill delegates one ticket's implementation."
-argument-hint: "<ticket ID: GitHub issue or tracker ID>"
+argument-hint: "<ticket ID> [base=<branch>] [brief=<file>] [stop-at=draft]"
 ---
 
 # Megamoind
@@ -9,6 +9,13 @@ argument-hint: "<ticket ID: GitHub issue or tracker ID>"
 The user is delegating a whole ticket and walking away. The value is in coming back to a PR that is implemented, reviewed, verified in the real app and green in CI, plus a report that says exactly what was done and what wasn't. Every stop costs the user a context switch, so ask everything up front, then run on your own and stop only for **HITL**: a decision that is the user's (scope, product behaviour, a design trade-off, reversing something they decided) or a loop that isn't converging.
 
 Invoking this skill is the user's approval to commit, push to the ticket's own branch, open the draft PR and mark it ready for review, each once the gates are green. Adding reviewers still waits for their explicit yes.
+
+## Arguments
+
+- `<ticket>`: a GitHub issue or an ID from the tracker the project's `## Ticket tracker` section names (e.g. ClickUp).
+- `base=<branch>`: the branch to build on, e.g. the ticket below in a stack. Default: the default branch (`git symbolic-ref --short refs/remotes/origin/HEAD`). Every `<base>` below means this.
+- `brief=<file>`: step 0 already answered by whoever delegated the ticket. Read it instead of asking; only what it leaves open is HITL.
+- `stop-at=draft`: the caller owns ready-for-review and reviewers. Step 8 waits for the draft PR's CI instead, and step 10 is skipped.
 
 ## When a skill is not available
 
@@ -22,7 +29,7 @@ The checks that must be green before any push: type-check, lint and tests for **
 
 ### 0. Brief and HITL check
 
-Fetch the ticket: a GitHub issue with `gh issue view`, any other ID from the tracker the project's `## Ticket tracker` section names (e.g. ClickUp). No ticket ID, or a tracker you can't reach: ask for it. Read the ticket and the code it touches. Then ask everything in **one** round, with your proposal for each:
+Fetch the ticket (`gh issue view` for a GitHub issue, the tracker's tools otherwise); a tracker you can't reach is HITL. Read the ticket and the code it touches. With `brief=`, read it and go to step 1. Otherwise ask everything in **one** round, with your proposal for each:
 
 - **Plan**: the approach in a few lines, the seams where tests go, and anything ambiguous in the ticket.
 - **Branch name**: the format in the project's `## Ticket tracker` section, else `<ticket-id>-<short-kebab-description>`, never a `/`.
@@ -33,7 +40,11 @@ Done when the user has confirmed the plan and you have everything needed to reac
 
 ### 1. Branch
 
-Update the default branch (`git symbolic-ref --short refs/remotes/origin/HEAD`). If the repo uses GitButler (`but status` works), create the branch with `but branch new <name>` and do every commit and push with `but`; otherwise `git switch -c <name>`. Other agents may be working in the same repo: touch only this ticket's changes.
+If the repo uses GitButler (`but status` works), create the branch with `but branch new <name>`, or `but branch new <name> --above <base>` when `base=` is a branch in the workspace, and do every commit and push with `but`. Otherwise update `<base>` and `git switch -c <name> <base>`. Update from the target only when no other agent's branch is applied in the workspace: moving their branches is their call.
+
+### Sharing the workspace
+
+Under GitButler, other agents' branches may be applied in the same working directory, so their unfinished changes show up in your type-check, tests and dev server. Commit only your own hunks (`but commit -b <branch> <ids>`, ids from `but diff`) and edit only files your ticket needs. A red gate in code your change doesn't touch belongs to another agent: wait a few minutes and re-run; if it is still red, that's HITL. Fixing it yourself would mix two tickets in one branch.
 
 ### 2. Implement
 
@@ -43,16 +54,16 @@ Done when every point of the ticket is implemented and the gates are green.
 
 ### 3. Quick review
 
-Spawn two background subagents in the same turn, one per review, so they run in parallel:
+Run two reviewers in parallel, each in its own agent: inside Herdr (`HERDR_ENV=1`), a pane split from yours (right if your pane is wide, down if tall) started with `herdr agent start <name> --kind claude --pane <id> -- --name <name>`, closed when its file is read; outside Herdr, two background subagents spawned in the same turn.
 
-- `code-review` at level `low` over `<default-branch>...HEAD`;
+- `code-review` at level `low` over `<base>...HEAD`;
 - `mattpocock-skills:code-review` over the same range, pointed at the ticket as the spec.
 
 Each writes its findings to its own file in the scratchpad, and **quotes** the cited lines under every finding. Neither edits code, posts anything, or uses `--fix` / `--comment`. Read both files: a finding is confirmed when the quote is there and you can trace its failure scenario in it; discard the rest with a one-line reason for the report. Fix the confirmed ones, with tests, and re-run the gates.
 
 ### 4. Verify in the real app
 
-Start what the app needs as background subshells (`run_in_background`) with the commands from step 0, and stop every one you started when done.
+Start what the app needs as background subshells (`run_in_background`) with the commands from step 0, and stop every one you started when done. When the brief says the servers are already running, use them: a second copy fights for the same ports.
 
 - **Frontend or fullstack**: call the Skill tool with `claude-in-chrome`. Walk every flow the ticket touches on the dev server, and check each touched screen at 375, 900 and 1440 px for overlaps, clipped or mixed-language copy, and anything the ticket didn't ask for.
 - **Backend**: call the Skill tool with `debug-trace` and drive the changed paths through the running service, reading the trace to confirm the values the ticket expects.
@@ -63,7 +74,7 @@ Done when every flow from step 0 has been exercised and behaves as the ticket as
 
 ### 5. Draft PR
 
-Push the branch, then call the Skill tool with `github-pr` to open it as a **draft**. The approval it asks for is already given: print the title and description and create the PR without waiting for `approve`. Mention anything left unverified from step 4.
+Call the Skill tool with `github-pr` to write the title and description and open the PR as a **draft**. The approval it asks for is already given: print them and go on without waiting for `approve`. Under GitButler, create the PR with `but pr new <branch> --draft -F <file>` (first line title, rest description) instead of `gh`: it pushes the branch and its ancestors and sets the right base in a stack. Mention anything left unverified from step 4.
 
 ### 6. Pair review
 
@@ -71,17 +82,17 @@ Call the Skill tool with `pair-review` with args `<PR number> high`. Collect the
 
 ### 7. Comment cleanup
 
-Call the Skill tool with `comment-cleanup` over the whole branch diff (`<default-branch>...HEAD`). Commit, run the gates, push.
+Call the Skill tool with `comment-cleanup` over the whole branch diff (`<base>...HEAD`). Commit, run the gates, push.
 
 ### 8. Ready and CI loop
 
-Mark the PR ready (`gh pr ready <number>`): some checks only run on ready PRs, so this is what launches the full CI. Then loop until every check is green:
+Mark the PR ready (`gh pr ready <number>`): some checks only run on ready PRs, so this is what launches the full CI. With `stop-at=draft`, leave it in draft and loop on the checks that run there. Loop until every check is green:
 
 1. Wait for the checks to finish with `Monitor` or an until-loop on `gh pr checks <number>`, not a tight poll.
 2. On a red check, diagnose with the tools at hand: a CI skill the project or the user has installed, `gh pr checks`, the job logs. Classify it:
    - **caused by this change**: fix it, run the gates, push;
    - **flaky or infrastructure**: re-run it once; red again is HITL;
-   - **also red on the default branch**: HITL, leave it alone.
+   - **also red on `<base>`**: HITL, leave it alone.
 3. Back to 1.
 
 Stop with HITL after 3 fix pushes that haven't turned CI green: the loop isn't converging.
@@ -94,6 +105,6 @@ Stop with HITL after 3 fix pushes that haven't turned CI green: the loop isn't c
 - CI failures met and how each was resolved.
 - Open HITL questions.
 
-### 10. Reviewers (optional)
+### 10. Reviewers (optional, skipped with `stop-at=draft`)
 
 Ask whether to add reviewers, proposing names from CODEOWNERS or the recent history of the touched files. Run `gh pr edit <number> --add-reviewer …` only after the user's explicit yes.
