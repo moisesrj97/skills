@@ -1,7 +1,6 @@
 ---
 name: pair-review
 description: "Iterative review loop with a dedicated reviewer agent (a Herdr pane, or a subagent outside Herdr): it runs /code-review at the given effort over the given scope, you fix what it finds, it re-reviews, until nothing notable is left or a human decision is needed; then recap. Arguments: scope (PR number, ref range, or 'diff') and effort (low|medium|high|xhigh|max; default high)."
-disable-model-invocation: true
 argument-hint: "[scope] [effort]"
 ---
 
