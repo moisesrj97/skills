@@ -1,6 +1,6 @@
 ---
 name: implement-spec-in-stack
-description: "Implement the result of /to-spec and /to-tickets in code as a stack of PRs (one branch and PR per ticket) managed with gh stack. Each layer gets /comment-cleanup and /code-review high before its PR opens; nothing is merged."
+description: "Implement the result of /to-spec and /to-tickets in code as a stack of PRs (one branch and PR per ticket) managed with gh stack. Each layer gets /comment-cleanup, a UI check when it renders something, and a /code-review high loop until clean before its draft PR opens; nothing is merged."
 disable-model-invocation: true
 ---
 
@@ -50,11 +50,16 @@ If the repo's `CLAUDE.local.md` or `CLAUDE.md` has a `## Ticket tracker` section
 
       Keep its agent ID: it is the one that fixes the review findings.
 
-   c. **Review.** Call the Skill tool with `code-review` at level `high`, scoped to this layer only (`<parent-branch>...<branch>`). The lower layers have already been reviewed, so reviewing against the default branch would only produce noise. Do not pass `--comment`: no PR exists yet, and comments are never posted without the user's approval.
+   c. **Check the UI.** Only for a layer that changes what a screen renders. Render every touched screen at 375, 900 and 1440 px, through the screenshot harness the repo's `CLAUDE.md` names or, failing that, `claude-in-chrome` on the dev server. Hand the screenshots and the ticket to a **design-review subagent** that reports overlaps, clipped or mixed-language copy and anything the ticket didn't ask for, each with a P0–P3 severity. P0 and P1 go to the implementer (SendMessage); re-render after each fix. Done when no P0 or P1 is open. If the app can't be run, say so in the PR description instead.
 
-   d. **Vet and fix.** Check every finding against the actual code and discard the false positives. Send the confirmed ones to the same implementer (SendMessage) to fix on this branch, then run `comment-cleanup` on the fix commits. Keep the discarded ones with a one-line reason each, for the final report.
+   d. **Review loop.** Repeat until a round leaves no confirmed finding:
+      1. Call the Skill tool with `code-review` at level `high`, scoped to this layer only (`<parent-branch>...<branch>`), over the whole layer every round. The lower layers have already been reviewed, so reviewing against the default branch would only produce noise. Do not pass `--comment`: no PR exists yet, and comments are never posted without the user's approval.
+      2. Vet each finding: re-open the cited lines and quote them. **Confirmed** needs the quote and a failure scenario you can trace in it; everything else is discarded with a one-line reason, kept for the final report.
+      3. Send the confirmed ones to the same implementer (SendMessage) to fix on this branch, then run `comment-cleanup` on the fix commits.
 
-   e. **Open the PR.** `gh stack push` to push the layer, then call the Skill tool with `github-pr` to open its PR as a stacked PR (`--base <parent-branch>`). The user has authorised opening PRs without asking inside this skill, so that authorisation is the approval `github-pr` asks for: generate the title and description, print them, and create the PR without waiting for `approve`. Then `gh stack submit --auto` to register the new PR in the stack on GitHub. Every branch already has a PR at that point, so it creates nothing new.
+      Stop and ask the user instead of looping when a finding is their call (scope, a design trade-off, reversing a decision they made), or when round 4 still has confirmed findings: the loop isn't converging.
+
+   e. **Open the PR.** `gh stack push` to push the layer, then call the Skill tool with `github-pr` to open its PR as a stacked **draft** PR (`--base <parent-branch>`). The user has authorised opening PRs without asking inside this skill, so that authorisation is the approval `github-pr` asks for: generate the title and description, print them, and create the PR without waiting for `approve`. Then `gh stack submit --auto` to register the new PR in the stack on GitHub. Every branch already has a PR at that point, so it creates nothing new.
 
 5. Do not run `gh stack sync` or `gh stack rebase` during the run, even if the user merges lower PRs in the meantime. Both rewrite branches that are already pushed. Restacking after merges is the user's call.
 
