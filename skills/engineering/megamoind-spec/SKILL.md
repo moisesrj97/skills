@@ -23,9 +23,10 @@ This skill delegates to `megamoind`, which delegates further. If the Skill tool 
 Each ticket runs in its own agent, prompted with `/megamoind <ticket> base=<branch> brief=<file> stop-at=draft` plus one line asking it to write its step 9 report to `<scratch>/<ticket>-report.md` and end the file with `END OF REPORT`.
 
 - **Inside Herdr** (`HERDR_ENV=1`): one pane per agent in a **column to the right** of your pane. The first splits your pane right (`herdr pane split --current --direction right --cwd "$PWD" --no-focus`); each next one splits the bottom pane of that column down. Start it with `herdr agent start <ticket> --kind claude --pane <id> -- --name <ticket>` and prompt it with `herdr agent prompt <ticket> "<prompt>" --wait --timeout 7200000`, run in the background. The agent's own reviewers open their panes inside the column, next to it. An agent asking a question in its pane is HITL: tell the user which pane needs them; they answer there.
-- **Outside Herdr**: a background subagent per ticket (Agent tool). It stops and reports a HITL question instead of asking; ask the user and resume the same agent with SendMessage.
+- **Inside T3 Code** (`mcp__t3-code__delegate_task` available): one child per ticket with `delegate_task`, async, `isolation: "shared"` so it works in this same checkout. Each child is a thread the user can open; a child asking a question is HITL: tell the user which thread needs them (its link); they answer there. T3 notifies you when a child finishes or asks; wait for that instead of polling. Later work for a child (step 3's lower-layer changes, step 4's red checks) goes to its thread with `t3_thread_send`, which keeps its history.
+- **Otherwise**: a background subagent per ticket (Agent tool). It stops and reports a HITL question instead of asking; ask the user and resume the same agent with SendMessage.
 
-Keep each agent alive until step 4 ends: CI failures after ready go back to the agent that wrote the code. Then close every pane you opened (`herdr pane close <id>`).
+Keep each agent alive until step 4 ends: CI failures after ready go back to the agent that wrote the code. Then close every pane you opened (`herdr pane close <id>`) and cancel any T3 child still running (`task_cancel`).
 
 ## Sharing the workspace
 
@@ -75,7 +76,7 @@ Stop with HITL after 3 fix rounds that haven't turned CI green.
 
 ### 5. Wrap up
 
-Close every pane you opened and stop the dev servers you started. Then report:
+Close every pane you opened, cancel any T3 child still running, and stop the dev servers you started. Then report:
 
 | Chain | Ticket | Branch | PR | CI |
 |---|---|---|---|---|

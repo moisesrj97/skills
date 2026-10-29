@@ -19,7 +19,7 @@ Invoking this skill is the user's approval to commit, push to the ticket's own b
 
 ## When a skill is not available
 
-This skill delegates to `tdd`, `code-review`, `mattpocock-skills:code-review`, `debug-trace`, `github-pr`, `pair-review` and `comment-cleanup`. A listed skill matches its name with or without a plugin prefix (`tdd` may be listed as `mattpocock-skills:tdd`); the two reviews stay distinct: `code-review` takes an effort level and hunts bugs, `mattpocock-skills:code-review` checks standards and spec. If no listed skill matches a name, stop and ask. An improvised copy silently skips whatever the real skill enforces.
+This skill delegates to `mattpocock-skills:tdd`, `code-review`, `mattpocock-skills:code-review`, `debug-trace`, `github-pr`, `pair-review` and `comment-cleanup`, called by these exact names. The two reviews are distinct: `code-review` takes an effort level and hunts bugs, `mattpocock-skills:code-review` checks standards and spec. If the Skill tool reports one as not available, stop and ask. An improvised copy silently skips whatever the real skill enforces.
 
 ## Gates
 
@@ -50,13 +50,13 @@ A change that belongs to the `<base>` branch's ticket goes on that branch, not y
 
 ### 2. Implement
 
-Call the Skill tool with `tdd` and build the ticket at the seams agreed in step 0. Run type-check and the single test files you are touching as you go; run the gates once at the end. Commit locally as you reach working checkpoints.
+Call the Skill tool with `mattpocock-skills:tdd` and build the ticket at the seams agreed in step 0. Run type-check and the single test files you are touching as you go; run the gates once at the end. Commit locally as you reach working checkpoints.
 
 Done when every point of the ticket is implemented and the gates are green.
 
 ### 3. Quick review
 
-Run two reviewers in parallel, each in its own agent: inside Herdr (`HERDR_ENV=1`), a pane split from yours (right if your pane is wide, down if tall) started with `herdr agent start <name> --kind claude --pane <id> -- --name <name>`, closed when its file is read; outside Herdr, two background subagents spawned in the same turn.
+Run two reviewers in parallel, each in its own agent: inside Herdr (`HERDR_ENV=1`), a pane split from yours (right if your pane is wide, down if tall) started with `herdr agent start <name> --kind claude --pane <id> -- --name <name>`, closed when its file is read; outside Herdr, two subagents launched in the same message.
 
 - `code-review` at level `low` over `<base>...HEAD`;
 - `mattpocock-skills:code-review` over the same range, pointed at the ticket as the spec.
@@ -67,7 +67,7 @@ Each writes its findings to its own file in the scratchpad, and **quotes** the c
 
 Start what the app needs as background subshells (`run_in_background`) with the commands from step 0, and stop every one you started when done. When the brief says the servers are already running, use them: a second copy fights for the same ports.
 
-- **Frontend or fullstack**: drive the dev server in a real browser with whatever browser tooling this harness gives you (a browser-control skill, extension or MCP server; Playwright when there is nothing else). No way to drive a browser counts as an environment that won't come up. Walk every flow the ticket touches on the dev server, and check each touched screen at 375, 900 and 1440 px for overlaps, clipped or mixed-language copy, and anything the ticket didn't ask for.
+- **Frontend or fullstack**: drive the dev server in a real browser with whatever browser tooling this harness gives you (a browser-control skill, extension or MCP server; Playwright when there is nothing else). No way to drive a browser counts as an environment that won't come up. This step is an explicit request for browser verification, so tools a harness keeps for user-requested browser work (T3 Code's `preview_*`) apply here. Open a tab of your own, act only in it and close it when done: other agents may share the browser. Walk every flow the ticket touches on the dev server, and check each touched screen at 375, 900 and 1440 px for overlaps, clipped or mixed-language copy, and anything the ticket didn't ask for.
 - **Backend**: call the Skill tool with `debug-trace` and drive the changed paths through the running service, reading the trace to confirm the values the ticket expects.
 
 Fix what you find, then re-verify. If the environment won't come up after one honest attempt, that's HITL; if it still can't run, record what went unverified for the PR description and the report.

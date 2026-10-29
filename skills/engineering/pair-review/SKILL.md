@@ -35,7 +35,7 @@ Why: a fresh reviewer will rediscover every accepted trade-off and report it aga
 
 ### Subagent mode (outside Herdr)
 
-Same loop, different transport. Spawn one background subagent (Agent tool, `general-purpose`, named `reviewer`) whose prompt is the round 1 prompt below, telling it to invoke the `code-review` skill via the Skill tool with `<effort> <scope>`. You're notified when it finishes; read the round file. For each later round, continue **the same** agent with SendMessage rather than spawning a new one, so it keeps its earlier findings and your explanations. There's no pane to close: just stop messaging it.
+Same loop, different transport. Spawn one subagent (Agent tool, `general-purpose`, named `reviewer`) whose prompt is the round 1 prompt below, telling it to invoke the `code-review` skill via the Skill tool with `<effort> <scope>`. When it returns, read the round file. For each later round, continue **the same** agent with SendMessage rather than spawning a new one, so it keeps its earlier findings and your explanations. There's no pane to close: just stop messaging it.
 
 ## Each round
 
