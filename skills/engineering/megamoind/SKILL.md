@@ -1,6 +1,6 @@
 ---
 name: megamoind
-description: "Delegate a ticket end to end, unattended: TDD implementation, quick review, real-app verification, draft PR, pair-review, ready for review and a CI loop until green. Use when the user hands over a ticket (a GitHub issue or a tracker ID such as a ClickUp task) to take all the way to a PR, e.g. \"megamoind PD-123\", \"llévate el #42 hasta la PR\", or when another skill delegates one ticket's implementation."
+description: "Delegate a ticket end to end, unattended: TDD implementation, quick review, pair-review, real-app verification, a PR ready for review and a CI loop until green. Use when the user hands over a ticket (a GitHub issue or a tracker ID such as a ClickUp task) to take all the way to a PR, e.g. \"megamoind PD-123\", \"llévate el #42 hasta la PR\", or when another skill delegates one ticket's implementation."
 argument-hint: "<ticket ID> [base=<branch>] [brief=<file>] [stop-at=draft]"
 ---
 
@@ -8,14 +8,14 @@ argument-hint: "<ticket ID> [base=<branch>] [brief=<file>] [stop-at=draft]"
 
 The user is delegating a whole ticket and walking away. The value is in coming back to a PR that is implemented, reviewed, verified in the real app and green in CI, plus a report that says exactly what was done and what wasn't. Every stop costs the user a context switch, so ask everything up front, then run on your own and stop only for **HITL**: a decision that is the user's (scope, product behaviour, a design trade-off, reversing something they decided) or a loop that isn't converging.
 
-Invoking this skill is the user's approval to commit, push to the ticket's own branch, open the draft PR and mark it ready for review, each once the gates are green. Adding reviewers still waits for their explicit yes.
+Invoking this skill is the user's approval to commit, push to the ticket's own branch and open the PR ready for review, each once the gates are green. Adding reviewers still waits for their explicit yes.
 
 ## Arguments
 
 - `<ticket>`: a GitHub issue or an ID from the tracker the project's `## Ticket tracker` section names (e.g. ClickUp).
 - `base=<branch>`: the branch to build on, e.g. the ticket below in a stack. Default: the default branch (`git symbolic-ref --short refs/remotes/origin/HEAD`). Every `<base>` below means this.
 - `brief=<file>`: step 0 already answered by whoever delegated the ticket. Read it instead of asking; only what it leaves open is HITL.
-- `stop-at=draft`: the caller owns ready-for-review and reviewers. Step 8 waits for the draft PR's CI instead, and step 10 is skipped.
+- `stop-at=draft`: the caller owns ready-for-review and reviewers. Step 7 opens the PR as a draft, step 8 loops on the checks that run on drafts, and step 10 is skipped.
 
 ## When a skill is not available
 
@@ -35,7 +35,7 @@ Fetch the ticket (`gh issue view` for a GitHub issue, the tracker's tools otherw
 - **Branch name**: the format in the project's `## Ticket tracker` section, else `<ticket-id>-<short-kebab-description>`, never a `/`.
 - **Base** (GitButler): run `but pull --check`. When the workspace is behind and updating would move other branches, ask: "the workspace is N commits behind; updating would move X and Y. Update?". A no leaves the base stale: guard against a **borrowed green** (see "Sharing the workspace").
 - **Verification**: how to run the app or service (the dev commands, required env, data or login, ports), and which flows prove the change works.
-- **CODEOWNERS**: if the repo has one, marking the PR ready requests those reviewers automatically. Say so, since it defeats waiting to add reviewers.
+- **CODEOWNERS**: if the repo has one, opening the PR ready for review requests those reviewers automatically. Say so, since it defeats waiting to add reviewers.
 
 Done when the user has confirmed the plan and you have everything needed to reach step 8 without asking again.
 
@@ -63,7 +63,11 @@ Run `mattpocock-skills:code-review` over `<base>...HEAD`, pointed at the ticket 
 
 It writes its findings to a file in the scratchpad, and **quotes** the cited lines under every finding. It only reads and reports: code edits and posting stay with you. Read the file: a finding is confirmed when the quote is there and you can trace its failure scenario in it; discard the rest with a one-line reason for the report. Fix the confirmed ones, with tests, and re-run the gates.
 
-### 4. Verify in the real app
+### 4. Pair review
+
+Call the Skill tool with `pair-review` with args `<base>...HEAD high`. Collect the user's decisions from step 0 and any HITL answers as its already-decided list. It fixes and re-reviews until done; its HITL stops are this skill's HITL stops.
+
+### 5. Verify in the real app
 
 Start what the app needs as background subshells (`run_in_background`) with the commands from step 0, and stop every one you started when done. When the brief says the servers are already running, use them: a second copy fights for the same ports.
 
@@ -74,21 +78,17 @@ Fix what you find, then re-verify. If the environment won't come up after one ho
 
 Done when every flow from step 0 has been exercised and behaves as the ticket asks.
 
-### 5. Draft PR
+### 6. Comment cleanup
 
-Call the Skill tool with `github-pr` to write the title and description and open the PR as a **draft**. The approval it asks for is already given: print them and go on without waiting for `approve`. Under GitButler, create the PR with `but pr new <branch> --draft -F <file>` (first line title, rest description) instead of `gh`: it pushes the branch and its ancestors and sets the right base in a stack. Mention anything left unverified from step 4.
+Call the Skill tool with `comment-cleanup` over the whole branch diff (`<base>...HEAD`). Commit and run the gates.
 
-### 6. Pair review
+### 7. PR
 
-Call the Skill tool with `pair-review` with args `<PR number> high`. Collect the user's decisions from step 0 and any HITL answers as its already-decided list. It fixes, re-reviews and pushes the branch when done; its HITL stops are this skill's HITL stops.
+Call the Skill tool with `github-pr` to write the title and description and open the PR **ready for review**, so the full CI runs (some checks skip drafts); with `stop-at=draft`, open it as a draft. The approval it asks for is already given: print them and go on without waiting for `approve`. Under GitButler, create the PR with `but pr new <branch> -F <file>` (first line title, rest description; add `--draft` with `stop-at=draft`) instead of `gh`: it pushes the branch and its ancestors and sets the right base in a stack. Mention anything left unverified from step 5.
 
-### 7. Comment cleanup
+### 8. CI loop
 
-Call the Skill tool with `comment-cleanup` over the whole branch diff (`<base>...HEAD`). Commit, run the gates, push.
-
-### 8. Ready and CI loop
-
-Mark the PR ready (`gh pr ready <number>`): some checks only run on ready PRs, so this is what launches the full CI. With `stop-at=draft`, leave it in draft and loop on the checks that run there. Loop until every check is green:
+Loop until every check is green:
 
 1. Wait for the checks to finish with `Monitor` or an until-loop on `gh pr checks <number>`, not a tight poll.
 2. On a red check, diagnose with the tools at hand: a CI skill the project or the user has installed, `gh pr checks`, the job logs. Classify it:
