@@ -27,3 +27,5 @@ Before committing, grep the diff for URLs, IDs and absolute home paths.
 4. A **new** skill also needs a `"moisesrj97/skills <name> <name>"` line in `THIRD_PARTY_SKILLS` of `~/dot-files/claude/install.sh`, plus `npx skills add moisesrj97/skills -g -y -a claude-code -s <name>`.
 
 Add the skill to the table in `README.md` in the same commit.
+
+A change to a step of `megamoind` or `megamoind-spec` updates the diagrams in `docs/megamoind.md` in the same commit.
