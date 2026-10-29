@@ -51,7 +51,7 @@ Turn the tickets' blocking relationships into **chains**:
 - tickets likely to share files join one chain (see above);
 - each chain becomes one GitButler stack off the default branch; chains with one ticket are a plain branch.
 
-For every ticket, prepare the brief `megamoind` step 0 would ask for: plan and test seams, branch name, and how to verify it. Work out once how to run the app (dev commands, env, data or login) and which servers to share. If the repo has CODEOWNERS, say that marking the PRs ready requests those reviewers automatically.
+For every ticket, prepare the brief `megamoind` step 0 would ask for: plan and test seams (with the visual reference when the ticket reproduces something already in the product), branch name, and how to verify it. Work out once how to run the app (dev commands, env, data or login) and which servers to share. If the repo has CODEOWNERS, say that marking the PRs ready requests those reviewers automatically.
 
 Show it all in **one** round: the chains bottom → top with branch names, which chains run in parallel, and each ticket's brief. Done when the user has confirmed it; then write each brief to `<scratch>/<ticket>-brief.md`, adding their answers.
 
