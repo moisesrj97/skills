@@ -23,7 +23,7 @@ This skill delegates to `mattpocock-skills:tdd`, `code-review`, `mattpocock-skil
 
 ## Gates
 
-The checks that must be green before any push: type-check, lint and tests for **every project the change touches**. In a monorepo that means each touched package's own `ci` (or equivalent) script, not just the root. Read the commands from the project's `CLAUDE.md` / `CLAUDE.local.md`, else from each `package.json`; the package manager comes from the lockfile. Fix a red gate before pushing; never push past one, unless the red is **foreign** (see below).
+The checks that must be green before any push: type-check, lint and tests for **every project the change touches**. In a monorepo that means each touched package's own `ci` (or equivalent) script, not just the root. Read the commands from the project's `CLAUDE.md` / `CLAUDE.local.md`, else from each `package.json`; the package manager comes from the lockfile. Launch a long suite (several minutes) in the background from the start, so the foreground timeout can't kill it. Fix a red gate before pushing; never push past one, unless the red is **foreign** (see below).
 
 ## Steps
 
@@ -31,8 +31,9 @@ The checks that must be green before any push: type-check, lint and tests for **
 
 Fetch the ticket (`gh issue view` for a GitHub issue, the tracker's tools otherwise); a tracker you can't reach is HITL. Read the ticket and the code it touches. With `brief=`, read it and go to step 1. Otherwise ask everything in **one** round, with your proposal for each:
 
-- **Plan**: the approach in a few lines, the seams where tests go, and anything ambiguous in the ticket.
+- **Plan**: the approach in a few lines, the seams where tests go, and anything ambiguous in the ticket. When the ticket replaces or reproduces something already visible in the product, the plan keeps its current look and cites the **visual reference** (the screenshot, the live screen), and checks that the shape of the data (copy keys, props) can carry that look, e.g. one copy key can't style half its text.
 - **Branch name**: the format in the project's `## Ticket tracker` section, else `<ticket-id>-<short-kebab-description>`, never a `/`.
+- **Base** (GitButler): run `but pull --check`. When the workspace is behind and updating would move other branches, ask: "the workspace is N commits behind; updating would move X and Y. Update?". A no leaves the base stale: guard against a **borrowed green** (see "Sharing the workspace").
 - **Verification**: how to run the app or service (the dev commands, required env, data or login, ports), and which flows prove the change works.
 - **CODEOWNERS**: if the repo has one, marking the PR ready requests those reviewers automatically. Say so, since it defeats waiting to add reviewers.
 
@@ -40,11 +41,13 @@ Done when the user has confirmed the plan and you have everything needed to reac
 
 ### 1. Branch
 
-If the repo uses GitButler (`but status` works), create the branch with `but branch new <name>`, or `but branch new <name> --above <base>` when `base=` is a branch in the workspace, and do every commit and push with `but`. Otherwise update `<base>` and `git switch -c <name> <base>`. Update from the target only when no other agent's branch is applied in the workspace: moving their branches is their call.
+If the repo uses GitButler (`but status` works), create the branch with `but branch new <name>`, or `but branch new <name> --above <base>` when `base=` is a branch in the workspace, and do every commit and push with `but`. Otherwise update `<base>` and `git switch -c <name> <base>`. Under GitButler, update from the target (`but pull`) when only your branches are applied or the user said yes in step 0: moving other branches is their call.
 
 ### Sharing the workspace
 
-Under GitButler, other agents' branches may be applied in the same working directory, so their unfinished changes show up in your type-check, tests and dev server. Commit only your own hunks (`but commit -b <branch> <ids>`, ids from `but diff`) and edit only files your ticket needs. A red gate is **foreign** when every failure sits in a file outside your branch's diff that `but status` shows changed by another branch or uncommitted outside yours. Leave a foreign red alone (fixing it would mix two tickets in one branch), list it for the report and count the gate as green. Your PR's CI builds your branch alone, so it settles the doubt: a foreign red that shows up there was yours, and step 8 handles it.
+Under GitButler, other agents' branches may be applied in the same working directory, so their unfinished changes show up in your type-check, tests and dev server. Commit only your own hunks (`but commit -b <branch> <ids>`, ids from `but diff`) and edit only files your ticket needs. A red gate is **foreign** when every failure sits in a file outside your branch's diff that `but status` shows changed by another branch or uncommitted outside yours. Leave a foreign red alone (fixing it would mix two tickets in one branch), list it for the report and count the gate as green.
+
+The inverse is a **borrowed green**: another applied branch supplies hunks yours lacks (an import, a type, a helper), so your gates pass locally and CI, which builds your branch alone, fails. Your code may depend only on `<base>` and your own commits. A branch still applied but marked `(merged upstream)` in `but status` means your base is stale: update before implementing. When you can't update, check each symbol you use from a file other branches touch exists in `<base>` (`git show <base>:<file>`). CI settles both doubts, but only after the push; this check comes before it.
 
 A change that belongs to the `<base>` branch's ticket goes on that branch, not yours: stop and ask for it, naming the change. When told the base moved, re-run the gates and go on.
 
@@ -67,7 +70,7 @@ Each writes its findings to its own file in the scratchpad, and **quotes** the c
 
 Start what the app needs as background subshells (`run_in_background`) with the commands from step 0, and stop every one you started when done. When the brief says the servers are already running, use them: a second copy fights for the same ports.
 
-- **Frontend or fullstack**: drive the dev server in a real browser with whatever browser tooling this harness gives you (a browser-control skill, extension or MCP server; Playwright when there is nothing else). No way to drive a browser counts as an environment that won't come up. This step is an explicit request for browser verification, so tools a harness keeps for user-requested browser work (T3 Code's `preview_*`) apply here. Open a tab of your own, act only in it and close it when done: other agents may share the browser. Walk every flow the ticket touches on the dev server, and check each touched screen at 375, 900 and 1440 px for overlaps, clipped or mixed-language copy, and anything the ticket didn't ask for.
+- **Frontend or fullstack**: drive the dev server in a real browser with whatever browser tooling this harness gives you (a browser-control skill, extension or MCP server; Playwright when there is nothing else). No way to drive a browser counts as an environment that won't come up. This step is an explicit request for browser verification, so tools a harness keeps for user-requested browser work (T3 Code's `preview_*`) apply here. Open a tab of your own, act only in it and close it when done: other agents may share the browser. Walk every flow the ticket touches on the dev server, and check each touched screen at 375, 900 and 1440 px for overlaps, clipped or mixed-language copy, and anything the ticket didn't ask for. Compare each screen against the visual reference from step 0, not just the ticket's text. To measure (bounding boxes, computed styles, visibility) or read text, evaluate a script in the page (`preview_evaluate`): a snapshot carries console, network and the accessibility tree, 10–20 KB each. Take a snapshot only for the final capture shown to the user (`save: true`).
 - **Backend**: call the Skill tool with `debug-trace` and drive the changed paths through the running service, reading the trace to confirm the values the ticket expects.
 
 Fix what you find, then re-verify. If the environment won't come up after one honest attempt, that's HITL; if it still can't run, record what went unverified for the PR description and the report.
