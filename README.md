@@ -24,6 +24,8 @@ npx skills update                                  # pull new versions
 | productivity | `gomander` | Starts and stops [Gomander](https://github.com/lazylabz/gomander-app) commands through its local API. |
 | productivity | `karakeep-inbox-triage` | Tags and files the bookmarks in a Karakeep "Inbox" list, after approval. |
 
+The `megamoind` flows are diagrammed in [`docs/megamoind.md`](docs/megamoind.md).
+
 ## Configuration
 
 Nothing personal or company-specific is hardcoded. Skills that need it read it from outside the repo:
