@@ -19,7 +19,7 @@ Invoking this skill is the user's approval to commit, push to the ticket's own b
 
 ## When a skill is not available
 
-This skill delegates to `mattpocock-skills:tdd`, `code-review`, `mattpocock-skills:code-review`, `debug-trace`, `github-pr`, `pair-review` and `comment-cleanup`, called by these exact names. The two reviews are distinct: `code-review` takes an effort level and hunts bugs, `mattpocock-skills:code-review` checks standards and spec. If the Skill tool reports one as not available, stop and ask. An improvised copy silently skips whatever the real skill enforces.
+This skill delegates to `mattpocock-skills:tdd`, `mattpocock-skills:code-review`, `debug-trace`, `github-pr`, `pair-review` and `comment-cleanup`, called by these exact names. If the Skill tool reports one as not available, stop and ask. An improvised copy silently skips whatever the real skill enforces.
 
 ## Gates
 
@@ -59,12 +59,9 @@ Done when every point of the ticket is implemented and the gates are green.
 
 ### 3. Quick review
 
-Run two reviewers in parallel, each in its own agent: inside Herdr (`HERDR_ENV=1`), a pane split from yours (right if your pane is wide, down if tall) started with `herdr agent start <name> --kind claude --pane <id> -- --name <name>`, closed when its file is read; outside Herdr, two subagents launched in the same message.
+Run `mattpocock-skills:code-review` over `<base>...HEAD`, pointed at the ticket as the spec, in its own agent: inside Herdr (`HERDR_ENV=1`), a pane split from yours (right if your pane is wide, down if tall) started with `herdr agent start <name> --kind claude --pane <id> -- --name <name>`, closed when its file is read; outside Herdr, a subagent.
 
-- `code-review` at level `low` over `<base>...HEAD`;
-- `mattpocock-skills:code-review` over the same range, pointed at the ticket as the spec.
-
-Each writes its findings to its own file in the scratchpad, and **quotes** the cited lines under every finding. Neither edits code, posts anything, or uses `--fix` / `--comment`. Read both files: a finding is confirmed when the quote is there and you can trace its failure scenario in it; discard the rest with a one-line reason for the report. Fix the confirmed ones, with tests, and re-run the gates.
+It writes its findings to a file in the scratchpad, and **quotes** the cited lines under every finding. It only reads and reports: code edits and posting stay with you. Read the file: a finding is confirmed when the quote is there and you can trace its failure scenario in it; discard the rest with a one-line reason for the report. Fix the confirmed ones, with tests, and re-run the gates.
 
 ### 4. Verify in the real app
 
