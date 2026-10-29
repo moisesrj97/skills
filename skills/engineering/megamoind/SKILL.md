@@ -19,11 +19,11 @@ Invoking this skill is the user's approval to commit, push to the ticket's own b
 
 ## When a skill is not available
 
-This skill delegates to `tdd`, `code-review`, `mattpocock-skills:code-review`, `claude-in-chrome`, `debug-trace`, `github-pr`, `pair-review` and `comment-cleanup`. If the Skill tool reports one as not available, stop and ask. An improvised copy silently skips whatever the real skill enforces.
+This skill delegates to `tdd`, `code-review`, `mattpocock-skills:code-review`, `debug-trace`, `github-pr`, `pair-review` and `comment-cleanup`. A listed skill matches its name with or without a plugin prefix (`tdd` may be listed as `mattpocock-skills:tdd`); the two reviews stay distinct: `code-review` takes an effort level and hunts bugs, `mattpocock-skills:code-review` checks standards and spec. If no listed skill matches a name, stop and ask. An improvised copy silently skips whatever the real skill enforces.
 
 ## Gates
 
-The checks that must be green before any push: type-check, lint and tests for **every project the change touches**. In a monorepo that means each touched package's own `ci` (or equivalent) script, not just the root. Read the commands from the project's `CLAUDE.md` / `CLAUDE.local.md`, else from each `package.json`; the package manager comes from the lockfile. Fix a red gate before pushing; never push past one.
+The checks that must be green before any push: type-check, lint and tests for **every project the change touches**. In a monorepo that means each touched package's own `ci` (or equivalent) script, not just the root. Read the commands from the project's `CLAUDE.md` / `CLAUDE.local.md`, else from each `package.json`; the package manager comes from the lockfile. Fix a red gate before pushing; never push past one, unless the red is **foreign** (see below).
 
 ## Steps
 
@@ -44,7 +44,9 @@ If the repo uses GitButler (`but status` works), create the branch with `but bra
 
 ### Sharing the workspace
 
-Under GitButler, other agents' branches may be applied in the same working directory, so their unfinished changes show up in your type-check, tests and dev server. Commit only your own hunks (`but commit -b <branch> <ids>`, ids from `but diff`) and edit only files your ticket needs. A red gate in code your change doesn't touch belongs to another agent: wait a few minutes and re-run; if it is still red, that's HITL. Fixing it yourself would mix two tickets in one branch.
+Under GitButler, other agents' branches may be applied in the same working directory, so their unfinished changes show up in your type-check, tests and dev server. Commit only your own hunks (`but commit -b <branch> <ids>`, ids from `but diff`) and edit only files your ticket needs. A red gate is **foreign** when every failure sits in a file outside your branch's diff that `but status` shows changed by another branch or uncommitted outside yours. Leave a foreign red alone (fixing it would mix two tickets in one branch), list it for the report and count the gate as green. Your PR's CI builds your branch alone, so it settles the doubt: a foreign red that shows up there was yours, and step 8 handles it.
+
+A change that belongs to the `<base>` branch's ticket goes on that branch, not yours: stop and ask for it, naming the change. When told the base moved, re-run the gates and go on.
 
 ### 2. Implement
 
@@ -65,7 +67,7 @@ Each writes its findings to its own file in the scratchpad, and **quotes** the c
 
 Start what the app needs as background subshells (`run_in_background`) with the commands from step 0, and stop every one you started when done. When the brief says the servers are already running, use them: a second copy fights for the same ports.
 
-- **Frontend or fullstack**: call the Skill tool with `claude-in-chrome`. Walk every flow the ticket touches on the dev server, and check each touched screen at 375, 900 and 1440 px for overlaps, clipped or mixed-language copy, and anything the ticket didn't ask for.
+- **Frontend or fullstack**: drive the dev server in a real browser with whatever browser tooling this harness gives you (a browser-control skill, extension or MCP server; Playwright when there is nothing else). No way to drive a browser counts as an environment that won't come up. Walk every flow the ticket touches on the dev server, and check each touched screen at 375, 900 and 1440 px for overlaps, clipped or mixed-language copy, and anything the ticket didn't ask for.
 - **Backend**: call the Skill tool with `debug-trace` and drive the changed paths through the running service, reading the trace to confirm the values the ticket expects.
 
 Fix what you find, then re-verify. If the environment won't come up after one honest attempt, that's HITL; if it still can't run, record what went unverified for the PR description and the report.

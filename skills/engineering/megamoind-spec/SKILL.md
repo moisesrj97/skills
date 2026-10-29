@@ -29,11 +29,11 @@ Keep each agent alive until step 4 ends: CI failures after ready go back to the 
 
 ## Sharing the workspace
 
-All agents write to the same working directory, so each one's type-check, tests and dev server see the others' unfinished changes. `megamoind` already commits only its own hunks and treats a red gate outside its change as someone else's. What you control is how much the agents collide:
+All agents write to the same working directory, so each one's type-check, tests and dev server see the others' unfinished changes. `megamoind` already commits only its own hunks and leaves a red gate in another branch's files to its PR's CI. What you control is how much the agents collide:
 
 - Tickets likely to touch the same files go in the **same chain**, never in parallel: two agents editing one file fight over its hunks.
-- Run at most **3 agents** at once; more chains wait their turn. One workspace, one dev server and one Chrome don't scale past that.
-- Leave the workspace alone while agents run: no `but pull`, no moving branches.
+- Run at most **3 agents** at once; more chains wait their turn. One workspace, one dev server and one browser don't scale past that.
+- Leave the workspace alone while agents run: no `but pull`, no moving branches. The one exception is a lower-layer change (step 3), made while the agent above is stopped.
 
 ## Steps
 
@@ -62,7 +62,7 @@ Update the workspace from the target once (`but pull`), before any agent starts.
 
 Start the bottom ticket of each chain, up to 3 agents, with `base=` the default branch. When an agent's report file is sealed with `END OF REPORT`, read it and start the next ticket of that chain with `base=` the branch just finished, or the next waiting chain if a slot is free. A report with an open HITL question stops that chain until the user answers.
 
-If a ticket turns out to need a change in a lower layer of its chain, the change belongs there: send it to that layer's agent, which commits it on its own branch. GitButler restacks the branches above; push the stack (`but push`). No one has reviewed the drafts yet, so rewriting them is fine.
+If a ticket turns out to need a change in a lower layer of its chain, the change belongs there. The ticket's agent stops and asks for it; leave it stopped until the change lands. Send the change to that layer's agent, which commits it on its own branch and runs its gates; GitButler restacks the branches above. Push the stack (`but push`), then tell the waiting agent its base moved. No one has reviewed the drafts yet, so rewriting them is fine.
 
 ### 4. All ready
 
