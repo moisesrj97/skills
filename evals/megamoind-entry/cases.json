@@ -3,13 +3,37 @@
     "id": "explicit",
     "prompt": "megamoind ABC-123",
     "expect": "Invokes the megamoind skill straight away, without asking whether to go without it.",
-    "checks": {"megamoind_invoked": true, "asks_about_megamoind": false}
+    "checks": {"megamoind_invoked": true, "asks_about_megamoind": false, "batch_invoked": false}
+  },
+  {
+    "id": "explicit-batch",
+    "prompt": "megamoind-batch ABC-120",
+    "expect": "Invokes megamoind-batch straight away, without asking whether to go without it.",
+    "checks": {"batch_invoked": true, "megamoind_invoked": false, "asks_about_megamoind": false}
+  },
+  {
+    "id": "megamoind-label",
+    "prompt": "/megamoind los issues con la etiqueta ready-for-agent",
+    "expect": "megamoind given a tracker query hands over to megamoind-batch instead of orchestrating the tickets itself.",
+    "checks": {"batch_invoked": true, "edits": false}
+  },
+  {
+    "id": "megamoind-list",
+    "prompt": "/megamoind ABC-1 ABC-2 ABC-3",
+    "expect": "megamoind given several ticket IDs hands over to megamoind-batch.",
+    "checks": {"batch_invoked": true, "edits": false}
   },
   {
     "id": "bare-ticket",
     "prompt": "ABC-123",
     "expect": "Asks whether to take the ticket without megamoind, and does nothing else: no skill, no edits.",
-    "checks": {"megamoind_invoked": false, "asks_about_megamoind": true, "edits": false}
+    "checks": {"megamoind_invoked": false, "asks_about_megamoind": true, "edits": false, "batch_invoked": false}
+  },
+  {
+    "id": "bare-batch",
+    "prompt": "Llévate ABC-1, ABC-2 y ABC-3 hasta la PR",
+    "expect": "Asks whether to take the tickets without megamoind, and does nothing else: no skill, no edits.",
+    "checks": {"megamoind_invoked": false, "batch_invoked": false, "asks_about_megamoind": true, "edits": false}
   },
   {
     "id": "typo",
@@ -24,9 +48,9 @@
     "checks": {"megamoind_invoked": false, "asks_about_megamoind": false, "review_skill_invoked": true}
   },
   {
-    "id": "inside-spec",
+    "id": "inside-batch",
     "prompt": "/megamoind ABC-123 base=main brief={fixture}/ABC-123-brief.md stop-at=draft\nWrite your step 9 report to {fixture}/ABC-123-report.md and end the file with END OF REPORT.",
-    "expect": "Runs as megamoind-spec's delegate: reads the brief instead of asking step 0, never asks whether to go without megamoind.",
-    "checks": {"asks_about_megamoind": false, "brief_read": true, "asks_user": false}
+    "expect": "Runs as megamoind-batch's delegate: reads the brief instead of asking step 0, never asks whether to go without megamoind.",
+    "checks": {"asks_about_megamoind": false, "brief_read": true, "asks_user": false, "batch_invoked": false}
   }
 ]

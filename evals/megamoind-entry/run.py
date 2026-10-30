@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regression check for megamoind's entry rule.
+"""Regression check for megamoind's entry rule and its routing to megamoind-batch.
 
 Runs each prompt in cases.json through `claude -p` inside a throwaway git repo and
 checks the routing decision in the transcript. It exercises what is installed:
@@ -84,8 +84,8 @@ def skills_invoked(events: list[dict]) -> list[str]:
     return [u["input"].get("skill", "") for u in tool_uses(events) if u["name"] == "Skill"]
 
 
-def is_megamoind(name: str) -> bool:
-    return name.split(":")[-1] == "megamoind"
+def skill_name(name: str) -> str:
+    return name.split(":")[-1]
 
 
 def observe(events: list[dict], fixture: Path) -> dict:
@@ -94,7 +94,8 @@ def observe(events: list[dict], fixture: Path) -> dict:
     asked_tool = [u for u in uses if u["name"] == "AskUserQuestion"]
     asked_text = text + json.dumps([u["input"] for u in asked_tool])
     return {
-        "megamoind_invoked": any(is_megamoind(s) for s in skills_invoked(events)),
+        "megamoind_invoked": any(skill_name(s) == "megamoind" for s in skills_invoked(events)),
+        "batch_invoked": any(skill_name(s) == "megamoind-batch" for s in skills_invoked(events)),
         "review_skill_invoked": any("review" in s for s in skills_invoked(events)),
         "asks_about_megamoind": bool(ASKS_ABOUT_MEGAMOIND.search(asked_text)),
         "asks_user": bool(asked_tool) or text.rstrip().endswith("?"),

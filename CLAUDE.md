@@ -28,6 +28,6 @@ Before committing, grep the diff for URLs, IDs and absolute home paths.
 
 Add the skill to the table in `README.md` in the same commit.
 
-A change to `megamoind`'s description or body, or to the megamoind rule in `~/.claude/CLAUDE.md`, reruns `python3 evals/megamoind-entry/run.py` after installing it (`npx skills add . -g -y -a claude-code -s megamoind`): the eval runs the installed copy. One run per case is noisy; confirm a failure with `RUNS=3`.
+A change to the description or body of `megamoind` or `megamoind-batch`, or to the megamoind rule in `~/.claude/CLAUDE.md`, reruns `python3 evals/megamoind-entry/run.py` after installing them (`npx skills add . -g -y -a claude-code -s megamoind -s megamoind-batch`): the eval runs the installed copy. One run per case is noisy; confirm a failure with `RUNS=3`.
 
-A change to a step of `megamoind` or `megamoind-spec` updates the diagrams in `docs/megamoind.md` in the same commit.
+A change to a step of `megamoind` or `megamoind-batch` updates the diagrams in `docs/megamoind.md` in the same commit.

@@ -1,6 +1,6 @@
 # Megamoind flows
 
-Reference diagrams for [`megamoind`](../skills/engineering/megamoind/SKILL.md) and [`megamoind-spec`](../skills/engineering/megamoind-spec/SKILL.md). The `SKILL.md` files are the source of truth; update these diagrams when a step changes.
+Reference diagrams for [`megamoind`](../skills/engineering/megamoind/SKILL.md) and [`megamoind-batch`](../skills/engineering/megamoind-batch/SKILL.md). The `SKILL.md` files are the source of truth; update these diagrams when a step changes.
 
 ## megamoind: one ticket
 
@@ -33,20 +33,20 @@ flowchart TD
     s8 -.-> hitl
 ```
 
-## megamoind-spec: a whole spec
+## megamoind-batch: several tickets
 
 ```mermaid
 flowchart TD
-    start(["/megamoind-spec &lt;spec&gt;"]) --> s0["0. Read the spec<br/>tickets, GitButler workspace clean"]
+    start(["/megamoind-batch &lt;spec | tickets | query&gt;"]) --> s0["0. Read the tickets<br/>resolve the batch, comments for blockers,<br/>GitButler workspace clean"]
     s0 --> s1["1. Plan<br/>chains from blocking relations,<br/>shared files in one chain,<br/>one brief per ticket, one round of questions"]
     s1 --> s2["2. Prepare<br/>but pull once, start shared dev servers"]
     s2 --> s3
 
     subgraph s3["3. Run the chains (max 3 agents at once)"]
         direction TD
-        pick["Start bottom ticket of each chain<br/>base = default branch"] --> agent["megamoind &lt;ticket&gt; base=… brief=… stop-at=draft<br/>(Herdr pane / T3 child / subagent)"]
+        pick["Start bottom ticket of each chain<br/>base = default branch"] --> agent["megamoind &lt;ticket&gt; base=… brief=… stop-at=draft<br/>async: Herdr pane / T3 child / background subagent"]
         agent --> report{"report sealed<br/>END OF REPORT?"}
-        report -- "open HITL" --> ask["Ask the user,<br/>chain waits"]
+        report -- "open HITL" --> ask["Ask the user at once,<br/>chain waits, others keep running"]
         ask --> agent
         report -- ok --> next{"next ticket<br/>in chain?"}
         next -- yes --> stack["Start it with<br/>base = branch just finished"]

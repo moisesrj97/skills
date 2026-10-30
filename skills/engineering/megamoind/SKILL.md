@@ -1,6 +1,6 @@
 ---
 name: megamoind
-description: "Delegate a ticket end to end, unattended: TDD implementation, quick review, pair-review, real-app verification, a PR ready for review and a CI loop until green. Use when the user hands over a ticket (a GitHub issue or a tracker ID such as a ClickUp task) to take all the way to a PR, e.g. \"megamoind PD-123\", \"llévate el #42 hasta la PR\", or when another skill delegates one ticket's implementation."
+description: "Delegate a ticket end to end, unattended: TDD implementation, quick review, pair-review, real-app verification, a PR ready for review and a CI loop until green. Use when the user hands over one ticket (a GitHub issue or a tracker ID such as a ClickUp task) to take all the way to a PR, e.g. \"megamoind PD-123\", \"llévate el #42 hasta la PR\", or when another skill delegates one ticket's implementation. Several tickets go to megamoind-batch."
 argument-hint: "<ticket ID> [base=<branch>] [brief=<file>] [stop-at=draft]"
 ---
 
@@ -9,6 +9,8 @@ argument-hint: "<ticket ID> [base=<branch>] [brief=<file>] [stop-at=draft]"
 The user is delegating a whole ticket and walking away. The value is in coming back to a PR that is implemented, reviewed, verified in the real app and green in CI, plus a report that says exactly what was done and what wasn't. Every stop costs the user a context switch, so ask everything up front, then run on your own and stop only for **HITL**: a decision that is the user's (scope, product behaviour, a design trade-off, reversing something they decided) or a loop that isn't converging.
 
 Invoking this skill is the user's approval to commit, push to the ticket's own branch and open the PR ready for review, each once the gates are green. Adding reviewers still waits for their explicit yes.
+
+**One ticket per run.** More than one (a list, a label or other tracker query, a spec) is a **batch**: call the Skill tool with `megamoind-batch`, passing the user's request, and follow it instead of this skill. If it is not available, stop and ask.
 
 ## Arguments
 

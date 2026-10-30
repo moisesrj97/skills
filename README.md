@@ -18,7 +18,7 @@ npx skills update                                  # pull new versions
 | engineering | `debug-trace` | Temporary tagged debug points dumped to an isolated trace file, then removed. |
 | engineering | `github-pr` | PR with a Conventional Commits title and a "why"-first description. |
 | engineering | `megamoind` | Takes a ticket end to end: TDD, reviews, real-app check, PR, CI loop. |
-| engineering | `megamoind-spec` | Takes a spec's tickets to PRs, one megamoind agent per ticket, stacked by dependency. |
+| engineering | `megamoind-batch` | Takes a batch of tickets (a spec, a list, a label) to PRs, one async megamoind agent per ticket, stacked by dependency. |
 | engineering | `pair-review` | Review → fix → re-review loop with a dedicated reviewer agent. |
 | engineering | `review-comment` | Evaluates a PR review comment, fixes it and replies with the commit. Manual only. |
 | productivity | `gomander` | Starts and stops [Gomander](https://github.com/lazylabz/gomander-app) commands through its local API. |
