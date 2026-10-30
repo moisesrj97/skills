@@ -1,6 +1,6 @@
 ---
 name: review-comment
-description: "Handle GitHub PR review comments: given a PR comment URL, reads the comment and evaluates whether the suggested change is needed. If it is, makes the change, commits it, and replies to the comment with the commit hash. If it isn't, explains why so the user can respond. Use this skill whenever the user pastes a GitHub PR comment link and wants help handling, addressing, or responding to a code review comment — even if they just say 'handle this', 'address this comment', 'fix this review comment', or 'do I need to change this?'"
+description: "Evaluates a GitHub PR review comment from its URL: makes the fix, commits, pushes and replies with the commit, or explains why no change is needed. Use when the user hands over a review comment link to address."
 disable-model-invocation: true
 ---
 
@@ -48,23 +48,13 @@ Be honest. Don't default to "yes, fix it" just because a reviewer asked. Don't d
 ## Step 4a: If the change IS needed — make it
 
 1. Make the change. Be surgical: only touch what the comment is about.
-2. Run `yarn lint:fix` if available (this project uses Biome), then verify with `yarn ci:lint`.
-3. **Show the diff to the human and wait for explicit approval before proceeding.** Present the changes clearly and ask "Does this look good?" — do not commit until they confirm.
-4. Draft a commit message and **show it to the human for approval before committing.** Wait for their confirmation or corrections.
-5. Once both the diff and message are approved, commit and push:
-   ```bash
-   git add <file>
-   git commit -m "<approved message>"
-   git push
-   ```
-   Get the commit hash after pushing: `git rev-parse --short HEAD`
-6. Reply to the comment in **the same language the reviewer used**, opening with the byline from the `agent-byline` skill:
-   ```
-   Fixed in <hash>
-   ```
-   Write the body to a file and use the appropriate `gh api` command — **NEVER use `gh pr comment`**, always reply to the original comment:
+2. Run the project's lint, type-check and the tests covering the change, with the commands from its `CLAUDE.md` / `CLAUDE.local.md` or `package.json`. Fix anything red before going on.
+3. **Show the human the diff, the commit message and the reply you will post, and wait for one explicit approval** before committing. The commit message follows the project's convention, subject line only.
+4. Commit and push to the PR's head branch. Under GitButler (`but status` works): `but commit -b <branch> -m "<message>" <ids>` with the ids from `but diff`, then `but push`. Otherwise `git add`, `git commit`, `git push`. Take the full hash of the pushed commit: the reply cites a commit the reviewer can open.
+5. Reply in **the reviewer's language**, opening with the byline from the `agent-byline` skill, then `Fixed in <full hash>` (`Arreglado en <full hash>` in Spanish) and no reasoning.
+   Write the body to a file and reply to the original comment with `gh api`:
     - For review (inline) comments: `gh api repos/owner/repo/pulls/PR_NUMBER/comments/COMMENT_ID/replies -F body=@<file>` — note the PR number is required; `repos/owner/repo/pulls/comments/ID/replies` (without the PR number) returns 404.
-    - For general PR comments (issuecomment): GitHub does not support threaded replies on issue comments, so post a new comment on the PR that quotes the original: `gh api repos/owner/repo/issues/PR_NUMBER/comments -F body=@<file>`, with the quoted excerpt between the byline and `Fixed in <whole commit hash>`
+    - For general PR comments (issuecomment): GitHub does not support threaded replies on issue comments, so post a new comment on the PR that quotes the original: `gh api repos/owner/repo/issues/PR_NUMBER/comments -F body=@<file>`, with the quoted excerpt between the byline and `Fixed in <full hash>`.
 
 ## Step 4b: If the change is NOT needed — brief the developer
 
@@ -86,10 +76,7 @@ Keep the explanation direct. The developer will take it from here.
 
 ## Key behaviors
 
-- **Language matching**: Always detect the language of the reviewer's comment and match it in any reply you post or draft.
-- **Don't over-fix**: Only change what the comment is about. No cleanup, no refactoring beyond scope.
-- **Don't under-fix**: If the change is clearly right, don't hedge — just make it.
-- **Commit message quality**: Follow the project's commit style. In this project, prefix with `fix:`, `refactor:`, etc. No body, just subject line.
-- **Verify before committing**: If there's a linter or type-checker, run it. Don't commit broken code.
-- **Always push before replying**: Never reply with a commit hash that hasn't been pushed — run `git push` right after the commit.
-- **Always reply to the original comment**: Never use `gh pr comment` to post a new comment. Always use `gh api` to reply within the original comment thread.
+- **Language matching**: match the reviewer's language in any reply you post or draft.
+- **Scope**: change only what the comment is about; when the change is clearly right, make it without hedging.
+- **Push before replying**: the hash in the reply must already be on the remote.
+- **Reply in the thread**: an inline comment gets a threaded reply through `gh api`, never a new comment from `gh pr comment`.
