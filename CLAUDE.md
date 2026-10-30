@@ -22,9 +22,10 @@ Before committing, grep the diff for URLs, IDs and absolute home paths.
 ## Shipping a change
 
 1. `npx skills add . --list` lists every skill with its description: the discovery check.
-2. Commit (subject line only) and push. Ask before pushing.
-3. `npx skills update` installs it. Edits are invisible to the agent until then.
-4. A **new** skill also needs a `"moisesrj97/skills <name> <name>"` line in `THIRD_PARTY_SKILLS` of `~/dot-files/claude/install.sh`, plus `npx skills add moisesrj97/skills -g -y -a claude-code -s <name>`.
+2. Work on a GitButler branch: `but branch new <short-kebab-description>`. This repo has no tickets, so the name carries no `PD-` prefix, and never a `/`. Commit with `but` (subject line only).
+3. Open a draft PR with `but pr new <branch> -F <file> --draft`. Ask before marking it ready or merging.
+4. Once merged, `npx skills update` installs it. Edits are invisible to the agent until then.
+5. A **new** skill also needs a `"moisesrj97/skills <name> <name>"` line in `THIRD_PARTY_SKILLS` of `~/dot-files/claude/install.sh`, plus `npx skills add moisesrj97/skills -g -y -a claude-code -s <name>`.
 
 Add the skill to the table in `README.md` in the same commit.
 
