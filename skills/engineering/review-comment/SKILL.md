@@ -58,13 +58,13 @@ Be honest. Don't default to "yes, fix it" just because a reviewer asked. Don't d
    git push
    ```
    Get the commit hash after pushing: `git rev-parse --short HEAD`
-6. Reply to the comment in **the same language the reviewer used**:
+6. Reply to the comment in **the same language the reviewer used**, opening with the byline from the `agent-byline` skill:
    ```
    Fixed in <hash>
    ```
-   Use the appropriate `gh api` command — **NEVER use `gh pr comment`**, always reply to the original comment:
-    - For review (inline) comments: `gh api repos/owner/repo/pulls/PR_NUMBER/comments/COMMENT_ID/replies -f body="Fixed in <whole commit hash>"` — note the PR number is required; `repos/owner/repo/pulls/comments/ID/replies` (without the PR number) returns 404.
-    - For general PR comments (issuecomment): GitHub does not support threaded replies on issue comments, so post a new comment on the PR that quotes the original: `gh api repos/owner/repo/issues/PR_NUMBER/comments -f body="> <quoted excerpt>\n\nFixed in <whole commit hash>"`
+   Write the body to a file and use the appropriate `gh api` command — **NEVER use `gh pr comment`**, always reply to the original comment:
+    - For review (inline) comments: `gh api repos/owner/repo/pulls/PR_NUMBER/comments/COMMENT_ID/replies -F body=@<file>` — note the PR number is required; `repos/owner/repo/pulls/comments/ID/replies` (without the PR number) returns 404.
+    - For general PR comments (issuecomment): GitHub does not support threaded replies on issue comments, so post a new comment on the PR that quotes the original: `gh api repos/owner/repo/issues/PR_NUMBER/comments -F body=@<file>`, with the quoted excerpt between the byline and `Fixed in <whole commit hash>`
 
 ## Step 4b: If the change is NOT needed — brief the developer
 

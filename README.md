@@ -14,6 +14,7 @@ npx skills update                                  # pull new versions
 
 | Category | Skill | What it does |
 |---|---|---|
+| engineering | `agent-byline` | Marks the PR comments, reviews and replies an agent posts on your behalf. |
 | engineering | `comment-cleanup` | Prunes the comments a change added down to the non-obvious "why". |
 | engineering | `debug-trace` | Temporary tagged debug points dumped to an isolated trace file, then removed. |
 | engineering | `github-pr` | PR with a Conventional Commits title and a "why"-first description. |
