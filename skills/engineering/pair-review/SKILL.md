@@ -1,12 +1,12 @@
 ---
 name: pair-review
-description: "Iterative review loop with a dedicated reviewer agent (a Herdr pane, or a subagent outside Herdr): it runs /code-review at the given effort over the given scope, you fix what it finds, it re-reviews, until nothing notable is left or a human decision is needed; then recap. Arguments: scope (PR number, ref range, or 'diff') and effort (low|medium|high|xhigh|max; default high)."
+description: "Iterative review loop with a dedicated reviewer subagent: it runs /code-review at the given effort over the given scope, you fix what it finds, it re-reviews, until nothing notable is left or a human decision is needed; then recap. Arguments: scope (PR number, ref range, or 'diff') and effort (low|medium|high|xhigh|max; default high)."
 argument-hint: "[scope] [effort]"
 ---
 
 # Pair review
 
-You are the **author**. A second Claude, the **reviewer**, lives in a sibling Herdr pane and reviews your change with `/code-review`. You triage what it finds, fix what deserves fixing, tell it what changed, and it reviews again. The point of a separate agent is an independent read: it has none of your context, so it doesn't share your blind spots. Your job is to keep that independence useful — fix real problems, don't relitigate settled ones, and stop when the reviews stop paying off.
+You are the **author**. A second Claude, the **reviewer**, runs as a subagent and reviews your change with `/code-review`. You triage what it finds, fix what deserves fixing, tell it what changed, and it reviews again. The point of a separate agent is an independent read: it has none of your context, so it doesn't share your blind spots. Your job is to keep that independence useful — fix real problems, don't relitigate settled ones, and stop when the reviews stop paying off.
 
 ## Arguments
 
@@ -17,8 +17,7 @@ State the resolved scope and effort in one line before starting.
 
 ## Preconditions
 
-- Check for Herdr: `test "${HERDR_ENV:-}" = 1`. Inside Herdr, run `herdr --skill` once if you haven't got its CLI conventions in context. Outside Herdr, use subagent mode (below) — never drive a Herdr session from outside it.
-- Pick a scratchpad directory for the round files (the session scratchpad if the system prompt lists one, else a fresh `mktemp -d`). Findings travel through files, not through reading the reviewer's terminal: terminal scrollback is noisy, truncated and expensive to read.
+Pick a scratchpad directory for the round files (the session scratchpad if the system prompt lists one, else a fresh `mktemp -d`). Findings travel through files, not through the reviewer's reply: a long reply gets summarised or truncated, and a file can be re-read and checked for completeness.
 
 ## Round 0 — collect what is already decided
 
@@ -28,20 +27,11 @@ Why: a fresh reviewer will rediscover every accepted trade-off and report it aga
 
 ## Spawn the reviewer
 
-1. Inspect the layout: `herdr pane layout --pane "$HERDR_PANE_ID"`. Split right if the pane is wide, down if tall.
-   `herdr pane split --current --direction <right|down> --cwd "$PWD" --no-focus` → read `.result.pane.pane_id`.
-2. Start it with matching Herdr and session names (use `reviewer`, or `reviewer-2` etc. if the name is taken in `herdr agent list`):
-   `herdr agent start reviewer --kind claude --pane <pane-id> -- --name reviewer`
-
-### Subagent mode (outside Herdr)
-
-Same loop, different transport. Spawn one subagent (Agent tool, `general-purpose`, named `reviewer`) whose prompt is the round 1 prompt below, telling it to invoke the `code-review` skill via the Skill tool with `<effort> <scope>`. When it returns, read the round file. For each later round, continue **the same** agent with SendMessage rather than spawning a new one, so it keeps its earlier findings and your explanations. There's no pane to close: just stop messaging it.
+Spawn one subagent (Agent tool, `general-purpose`, named `reviewer`) whose prompt is the round 1 prompt below, telling it to invoke the `code-review` skill via the Skill tool with `<effort> <scope>`. When it returns, read the round file. For each later round, continue **the same** agent with SendMessage rather than spawning a new one, so it keeps its earlier findings and your explanations.
 
 ## Each round
 
 ### Prompt the reviewer
-
-In Herdr, send with `herdr agent prompt reviewer "<prompt>" --wait --timeout 1500000`, run in the **background** (reviews take minutes; you'll be notified), then read the round file. In subagent mode, use the Agent tool / SendMessage as above.
 
 Round 1 prompt contains:
 - `/code-review <effort> <scope>` as the first line, so the skill actually runs.
@@ -79,11 +69,9 @@ Report each round to the user briefly: counts per bucket, what you fixed, what y
 
 ## Stop conditions
 
-- **Done**: the reviewer writes `NO FINDINGS`, or what remains is only nits you'd decline anyway. Close the pane: `herdr pane close <pane-id>`.
-- **HITL**: stop and ask (see triage). Keep the pane alive while you wait.
+- **Done**: the reviewer writes `NO FINDINGS`, or what remains is only nits you'd decline anyway.
+- **HITL**: stop and ask (see triage). Keep the reviewer to message again when you resume.
 - **Not converging**: after ~5 rounds, or when two consecutive rounds only produce findings about your previous round's fixes without the count falling, stop and tell the user — something structural is off, and more rounds won't fix it.
-
-In Herdr, if the reviewer errors out, stalls (`agent_prompt_stalled`), or sits `blocked` on an approval dialog, inspect it with `herdr agent read reviewer` and tell the user instead of answering dialogs for it.
 
 ## Recap
 
@@ -93,6 +81,6 @@ Finish with:
 |---|---|---|
 | 1 | n | fixed X (what), skipped Y (decided / why) |
 | … | | |
-| last | 0 | pane closed |
+| last | 0 | done |
 
 Then: commits created or amended (hashes, pushed or not), verification run (type-check, lint, tests, mutation checks), anything left pending (push, HITL questions), and one or two lines on how the loop itself went — what the reviewer caught that a single pass wouldn't, and anything to brief better next time.
