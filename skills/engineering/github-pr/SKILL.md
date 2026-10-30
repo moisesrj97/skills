@@ -43,9 +43,9 @@ Show the title and description and wait for explicit approval. An edit changes t
 
 ## 4. Open
 
-Write the title on the first line of a file and the description below it; a shell-quoted body mangles backticks and newlines.
+Pass the description through a file; a shell-quoted body mangles backticks and newlines.
 
-- GitButler repo (`but status` works): `but pr new <branch> -F <file> --draft`. It pushes the branch and its ancestors and sets the right base in a stack. Then `gh pr edit <number> --add-assignee @me`.
-- Otherwise: push the branch, then `gh pr create --draft --assignee @me --base <base> --title "<title>" --body-file <description file>`.
+- GitButler repo (`but status` works): `but pr new <branch> -F <file> --draft`, with the title on the file's first line and the description below it. It pushes the branch and its ancestors and sets the right base in a stack. Then `gh pr edit <number> --add-assignee @me`.
+- Otherwise: push the branch, then `gh pr create --draft --assignee @me --base <base> --title "<title>" --body-file <file>`, with the description alone in the file.
 
 Drop `--draft` only when the user says the PR is ready for review. Print the PR URL.

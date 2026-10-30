@@ -47,10 +47,10 @@ Be honest. Don't default to "yes, fix it" just because a reviewer asked. Don't d
 
 ## Step 4a: If the change IS needed — make it
 
-1. Make the change. Be surgical: only touch what the comment is about.
+1. Make the change on the PR's head branch: under GitButler it must be applied (`but status`), otherwise check it out first (`gh pr checkout <number>`). Be surgical: only touch what the comment is about.
 2. Run the project's lint, type-check and the tests covering the change, with the commands from its `CLAUDE.md` / `CLAUDE.local.md` or `package.json`. Fix anything red before going on.
 3. **Show the human the diff, the commit message and the reply you will post, and wait for one explicit approval** before committing. The commit message follows the project's convention, subject line only.
-4. Commit and push to the PR's head branch. Under GitButler (`but status` works): `but commit -b <branch> -m "<message>" <ids>` with the ids from `but diff`, then `but push <branch>`: without a branch it pushes every branch with unpushed commits, other agents' included. Otherwise `git add`, `git commit`, `git push`. Take the full hash of the pushed commit: the reply cites a commit the reviewer can open.
+4. Commit and push to the PR's head branch. Under GitButler (`but status` works): `but commit -b <branch> -m "<message>" <ids>` with the ids from `but diff`, then `but push <branch>`: without a branch it pushes every branch with unpushed commits, other agents' included. Otherwise `git add`, `git commit`, `git push`. Take the full hash of the pushed commit with `git rev-parse <branch>`; under GitButler `HEAD` is the workspace commit, which the reviewer can't open.
 5. Reply in **the reviewer's language**, opening with the byline from the `agent-byline` skill, then `Fixed in <full hash>` (`Arreglado en <full hash>` in Spanish) and no reasoning.
    Write the body to a file and reply to the original comment with `gh api`:
     - For review (inline) comments: `gh api repos/owner/repo/pulls/PR_NUMBER/comments/COMMENT_ID/replies -F body=@<file>` — note the PR number is required; `repos/owner/repo/pulls/comments/ID/replies` (without the PR number) returns 404.
