@@ -1,61 +1,40 @@
 ---
 name: pair-review
-description: "Iterative review loop with a dedicated reviewer subagent: it runs /code-review at the given effort over the given scope, you fix what it finds, it re-reviews, until nothing notable is left or a human decision is needed; then recap. Arguments: scope (PR number, ref range, or 'diff') and effort (low|medium|high|xhigh|max; default high)."
-argument-hint: "[scope] [effort]"
+description: "Iterative review loop: a reviewer from another model family reviews the change through diff-review, you fix what it finds, and it re-reviews until nothing notable is left or a human decision is needed; then recap. Arguments: scope (PR number, ref range, or 'diff') and reviewer (default gpt-6.1-sol:medium)."
+argument-hint: "[scope] [reviewer=<model>[:<effort>]]"
 ---
 
 # Pair review
 
-You are the **author**. A second Claude, the **reviewer**, runs as a subagent and reviews your change with `/code-review`. You triage what it finds, fix what deserves fixing, tell it what changed, and it reviews again. The point of a separate agent is an independent read: it has none of your context, so it doesn't share your blind spots. Your job is to keep that independence useful — fix real problems, don't relitigate settled ones, and stop when the reviews stop paying off.
+You are the **author**. A **reviewer**, by default from another model family, reviews your change through the `diff-review` skill. You triage what it finds, fix what deserves fixing, tell it what changed, and it reviews again. The point of a separate agent is an independent read: it has none of your context, so it doesn't share your blind spots. Your job is to keep that independence useful — fix real problems, don't relitigate settled ones, and stop when the reviews stop paying off.
 
 ## Arguments
 
-- **scope**: what to review. A PR number (`34847`), a ref range (`base...head`), or `diff` (uncommitted work). If omitted, use the current branch's open PR (`gh pr view --json number`), else the diff against its base. For a stacked PR the meaningful diff is `<parent-branch>...<branch>`, not `master...` — say so in the prompt.
-- **effort**: passed straight to `/code-review` (`low|medium|high|xhigh|max`). Default `high`.
+- **scope**: what to review. A PR number (`34847`), a ref range (`base...head`), or `diff` (uncommitted work). If omitted, use the current branch's open PR (`gh pr view --json number`), else the diff against its base. For a stacked PR the meaningful diff is `<parent-branch>...<branch>`, not `master...`.
+- **reviewer**: `<model id>[:<effort>]`, passed to `diff-review`. Default `gpt-6.1-sol:medium`.
 
-State the resolved scope and effort in one line before starting.
-
-## Preconditions
-
-Pick a scratchpad directory for the round files (the session scratchpad if the system prompt lists one, else a fresh `mktemp -d`). Findings travel through files, not through the reviewer's reply: a long reply gets summarised or truncated, and a file can be re-read and checked for completeness.
+State the resolved scope and reviewer in one line before starting.
 
 ## Round 0 — collect what is already decided
 
-Before the first prompt, gather decisions the user has already made about this change in the conversation: findings they declined, trade-offs they accepted, things explicitly out of scope ("no cap for now", "one FF shared", "fallback not needed"). Put them in the first prompt.
+Before round 1, gather decisions the user has already made about this change in the conversation: findings they declined, trade-offs they accepted, things explicitly out of scope ("no cap for now", "one FF shared", "fallback not needed").
 
 Why: a fresh reviewer will rediscover every accepted trade-off and report it again. Without this list, round 1 is mostly noise and you spend it explaining yourself.
 
-## Spawn the reviewer
-
-Spawn one subagent (Agent tool, `general-purpose`, named `reviewer`) whose prompt is the round 1 prompt below, telling it to invoke the `code-review` skill via the Skill tool with `<effort> <scope>`. When it returns, read the round file. For each later round, continue **the same** agent with SendMessage rather than spawning a new one, so it keeps its earlier findings and your explanations.
-
 ## Each round
 
-### Prompt the reviewer
+### Run the round
 
-Round 1 prompt contains:
-- `/code-review <effort> <scope>` as the first line, so the skill actually runs.
-- The exact diff to review (for stacks: `<parent>...<branch>`).
-- Hard rules: do not edit files, commit, push, or post anything on GitHub (no `--fix`, no `--comment`). The reviewer reports; you change code.
-- The already-decided list from round 0, phrased as "do not reopen unless you find new evidence that changes its severity".
-- Where to write: `<scratch>/review-round-1.md` — findings most severe first, each with `file:line`, summary, concrete failure scenario, severity; or the literal `NO FINDINGS`.
-- **Verification**: before writing a finding, re-open the cited lines in the checked-out code and quote them under the finding. A finding it cannot back with a quote is dropped, not softened. Severities follow the failure scenario, not a guess.
-- **Append, then seal**: write one finding per append (`cat >> <file>`), never the whole file in one write, and end with the line `END OF ROUND`. An interrupted write then loses only its tail, and the seal shows the file is complete.
-
-Round N+1 prompt contains:
-- What changed since its last review: commit hashes (say if amended or unpushed — the reviewer reads the local branch), and which of its findings each change resolves.
-- Findings you did **not** act on, each with the reason (decided by the user / out of scope / disagree because …).
-- Ask for a fresh `/code-review <effort>` over the **whole** scope, not just the new commits — fixes can break things elsewhere.
-- New output file `<scratch>/review-round-<N+1>.md`.
+Call the Skill tool with `diff-review`, passing the scope, the reviewer, the round number and the already-decided list. From round 2 on, also pass the previous round file, the commits since (amended or unpushed included) with the findings each resolves, and the findings you did **not** act on, each with its reason (decided by the user / out of scope / disagree because …). Each round is a fresh reviewer that sees earlier rounds only through what you pass.
 
 ### Triage each finding
 
-Read the round file. No `END OF ROUND` or `NO FINDINGS` line means the write was cut: ask the reviewer to append the rest before triaging. A finding without a quote from the code goes back to the reviewer for one. Then put every finding into one bucket:
+Read the round file `diff-review` returns, with the findings it discarded. Then put every finding into one bucket:
 
 - **Fix**: a real defect or cheap, clearly-right improvement inside the scope of the change. Includes defects in the tests you wrote in an earlier round — those are common and the reviewer is good at catching them.
-- **Already decided**: matches a user decision. Don't fix, don't ask again; tell the reviewer it's settled.
+- **Already decided**: matches a user decision. Don't fix, don't ask again; add it to the already-decided list for the next round.
 - **Needs the human (HITL)**: anything that is the user's call — reverses a decision they made, changes scope (a second concern in the PR), is a design alternative with real trade-offs, needs product/ops input, or new evidence makes a declined finding more severe. Stop the loop and ask, with your recommendation. Resume after they answer.
-- **Disagree**: you believe it's wrong. Verify before dismissing (read the code, run it). If it still looks wrong, say why in the next prompt; if the reviewer insists with a concrete scenario, treat it as HITL.
+- **Disagree**: you believe it's wrong. Verify before dismissing (read the code, run it). If it still looks wrong, say why in the next round's not-acted-on list; if the next reviewer reports it again with a concrete scenario, treat it as HITL.
 
 Report each round to the user briefly: counts per bucket, what you fixed, what you skipped and why.
 

@@ -67,7 +67,7 @@ It writes its findings to a file in the scratchpad, and **quotes** the cited lin
 
 ### 4. Pair review
 
-Call the Skill tool with `pair-review` with args `<base>...HEAD high`. Collect the user's decisions from step 0 and any HITL answers as its already-decided list. It fixes and re-reviews until done; its HITL stops are this skill's HITL stops.
+Call the Skill tool with `pair-review` with args `<base>...HEAD`. Collect the user's decisions from step 0 and any HITL answers as its already-decided list. It fixes and re-reviews until done; its HITL stops are this skill's HITL stops.
 
 ### 5. Verify in the real app
 

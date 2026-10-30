@@ -12,7 +12,7 @@ flowchart TD
     s0 --> s1["1. Branch<br/>GitButler or git"]
     s1 --> s2["2. Implement<br/>mattpocock-skills:tdd, gates green"]
     s2 --> s3["3. Quick review<br/>mattpocock-skills:code-review<br/>standards + spec, base...HEAD"]
-    s3 --> s4["4. Pair review<br/>pair-review base...HEAD high<br/>fix, re-review until done"]
+    s3 --> s4["4. Pair review<br/>pair-review base...HEAD<br/>GPT reviewer via diff-review, fix, re-review until done"]
     s4 --> s5["5. Verify in the real app<br/>browser (frontend) or debug-trace (backend)"]
     s5 --> s6["6. Comment cleanup<br/>commit, gates"]
     s6 --> draft{"stop-at=draft?"}
