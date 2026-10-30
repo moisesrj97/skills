@@ -1,0 +1,32 @@
+[
+  {
+    "id": "explicit",
+    "prompt": "megamoind ABC-123",
+    "expect": "Invokes the megamoind skill straight away, without asking whether to go without it.",
+    "checks": {"megamoind_invoked": true, "asks_about_megamoind": false}
+  },
+  {
+    "id": "bare-ticket",
+    "prompt": "ABC-123",
+    "expect": "Asks whether to take the ticket without megamoind, and does nothing else: no skill, no edits.",
+    "checks": {"megamoind_invoked": false, "asks_about_megamoind": true, "edits": false}
+  },
+  {
+    "id": "typo",
+    "prompt": "Fix the typo in README.md",
+    "expect": "Fixes the typo directly. No megamoind, no question about it.",
+    "checks": {"megamoind_invoked": false, "asks_about_megamoind": false, "readme_fixed": true}
+  },
+  {
+    "id": "review",
+    "prompt": "Review PR #42 before I merge it",
+    "expect": "Routes to a review skill. No megamoind, no question about it.",
+    "checks": {"megamoind_invoked": false, "asks_about_megamoind": false, "review_skill_invoked": true}
+  },
+  {
+    "id": "inside-spec",
+    "prompt": "/megamoind ABC-123 base=main brief={fixture}/ABC-123-brief.md stop-at=draft\nWrite your step 9 report to {fixture}/ABC-123-report.md and end the file with END OF REPORT.",
+    "expect": "Runs as megamoind-spec's delegate: reads the brief instead of asking step 0, never asks whether to go without megamoind.",
+    "checks": {"asks_about_megamoind": false, "brief_read": true, "asks_user": false}
+  }
+]
