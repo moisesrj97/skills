@@ -7,7 +7,8 @@ description: Writes a GitHub PR's Conventional Commits title and why-first descr
 
 ## 1. Gather
 
-- **Base**: the default branch (`git symbolic-ref --short refs/remotes/origin/HEAD`, minus `origin/`), or the branch below this one in a stack. Read commits and diff from `git merge-base <base> HEAD`, skipping merge commits.
+- **Base**: the default branch (`git symbolic-ref --short refs/remotes/origin/HEAD`, minus `origin/`), or the branch below this one in a stack. That name is `<base>` for `--base`. Compare the default branch through `origin/<base>` after `git fetch origin`: a local copy can be stale or missing.
+- **Branch**: the PR's branch. Under GitButler `HEAD` merges every applied branch, so take the branch name from `but status` and use it, not `HEAD`. Read commits and diff from `git merge-base <base ref> <branch>` to `<branch>`, skipping merge commits; `<base ref>` is `origin/<base>`, or the lower branch itself in a stack.
 - **Ticket link**: only from a `## Ticket tracker` section in the repo's `CLAUDE.local.md` or `CLAUDE.md`, which says how a branch carries a ticket ID and how to build its URL. No section, or the branch doesn't match it, means no link: never guess a tracker.
 - **Why**: issue references in the commits (`Closes #123`) and what the conversation says about why the change was made.
 
@@ -44,7 +45,7 @@ Show the title and description and wait for explicit approval. An edit changes t
 
 Write the title on the first line of a file and the description below it; a shell-quoted body mangles backticks and newlines.
 
-- GitButler repo (`but status` works): `but pr new <branch> -F <file> --draft`, with `<branch>` from `but status`. It pushes the branch and its ancestors and sets the right base in a stack. Then `gh pr edit <number> --add-assignee @me`.
+- GitButler repo (`but status` works): `but pr new <branch> -F <file> --draft`. It pushes the branch and its ancestors and sets the right base in a stack. Then `gh pr edit <number> --add-assignee @me`.
 - Otherwise: push the branch, then `gh pr create --draft --assignee @me --base <base> --title "<title>" --body-file <description file>`.
 
 Drop `--draft` only when the user says the PR is ready for review. Print the PR URL.
