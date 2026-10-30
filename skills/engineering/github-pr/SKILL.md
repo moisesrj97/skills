@@ -1,185 +1,50 @@
 ---
 name: github-pr
-description: "Create high-quality GitHub Pull Requests with Conventional Commits titles and structured descriptions."
+description: Writes a GitHub PR's Conventional Commits title and why-first description, then opens it as a draft. Use when the user asks to open, create or describe the PR for the current branch.
 ---
 
-# GitHub PR Creator
+# GitHub PR
 
-Act as a senior Release Engineer, Git historian, and GitHub CLI power user. Create high-quality Pull Requests with Conventional Commits-style titles and concise, high-signal descriptions focused on the "why" behind changes.
+## 1. Gather
 
-## Core Principles
+- **Base**: the default branch (`git symbolic-ref --short refs/remotes/origin/HEAD`, minus `origin/`), or the branch below this one in a stack. Read commits and diff from `git merge-base <base> HEAD`, skipping merge commits.
+- **Ticket link**: only from a `## Ticket tracker` section in the repo's `CLAUDE.local.md` or `CLAUDE.md`, which says how a branch carries a ticket ID and how to build its URL. No section, or the branch doesn't match it, means no link: never guess a tracker.
+- **Why**: issue references in the commits (`Closes #123`) and what the conversation says about why the change was made.
 
-- **English only**: All PR content in English
-- **Concise**: Focus on "why" not "what" - avoid restating trivialities
-- **No yapping**: Direct and to the point
-- **Approval required**: Always present preview for approval before creating PR
-- **No raw diffs**: Summarize changes, don't dump diffs
-- **Markdown formatting**: Use ## and below (no # headers)
+No commits ahead of the base: stop and ask which base or commits the PR covers.
 
-## Workflow
+## 2. Write
 
-### 1. Data Gathering
+Title: `type(scope): summary`. The type is the dominant commit type (feat > fix > perf > refactor > others), the scope the most specific unit most of the change sits in (the package, app or module), not a container folder like `packages/`.
 
-Run these commands programmatically to collect context:
+Description, in English, with `##` headings and below:
 
-**Repository & Branch:**
-```bash
-# Verify git repo
-git rev-parse --is-inside-work-tree
-
-# Get current branch
-git rev-parse --abbrev-ref HEAD
-
-# Detect default base branch
-git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@'
-# Fallback order: main, then master
-```
-
-**Merge Base (true branching point):**
-```bash
-# Fetch origin first if needed
-git fetch origin
-
-# Find merge base
-MB=$(git merge-base origin/$BASE HEAD)
-```
-
-**Changed Files & Categorization:**
-```bash
-# List changed files
-git diff --name-only $MB..HEAD
-
-# Group by top-level folder: api/, web/, mobile/, infra/, docs/, tests/
-# For monorepos: infer package names from packages/<name>/...
-```
-
-**Commit Analysis:**
-```bash
-# Get commits since merge base (ignore merge commits)
-git log $MB..HEAD --no-merges --pretty=format:"%s"
-
-# Parse for types: feat, fix, perf, refactor, docs, chore, test, build, ci
-# Parse for scopes: (top-level folder or dominant package)
-# Dominant type priority: feat > fix > perf > refactor > others
-```
-
-**Related Work Detection:**
-- Extract issue/PR references: `Closes #123`, `Refs #456`
-- **Ticket link**: only from a `## Ticket tracker` section in the repo's `CLAUDE.local.md` or `CLAUDE.md`, which says how a branch carries a ticket ID and how to build its URL. No section, or the branch doesn't match → no ticket link; never guess a tracker
-- **Stacked PR detection**: Branch naming patterns (e.g., `feature/stack-*`), parent PR references
-
-**User Context:**
-- Extract relevant info from $ARGUMENTS
-- Extract context from current chat if changes were made together
-
-### 2. Generate PR Content
-
-**Title Format** (Conventional Commits):
-```
-type(scope): concise, user-facing summary
-```
-
-Examples:
-- `feat(api): add rate-limited search endpoint`
-- `fix(web): resolve 500 on profile save`
-
-**Description Structure:**
 ```markdown
 ## Problem
 
-[Ticket URL, only if the Ticket tracker section yields one: This PR resolves <ticket URL>]
+This PR resolves <ticket URL>
 
-[Infer the business problem from commits and changes. Be creative and clear about the business need or technical requirement that motivated these changes.]
+<the need that motivated the change>
 
 ## Solution
 
-[Explain changes useful for reviewer without redundant technical details visible in PR diff.]
-
-- **[Category of changes]**
-    - [Specific implementation detail]
-    - [Another relevant detail]
-
-- **[Another category]**
-    - [Implementation details]
-    - [Architecture or design decisions]
-
-### Technical Implementation (if not covered above)
-- 3–6 crisp bullets on key design/architecture decisions, tradeoffs, or important constraints
-
-### Testing
-- ✅ What was tested (unit, integration, e2e)
-- ✅ Relevant QA steps or manual verification
-- ❌ What was not tested, if applicable
-- ❌ Known limitations or risks
-
-### Next Steps (only if applicable)
-- Short bullets for follow-ups or stacked PRs
-
-### Related (ONLY include if there are PR/issue references or stacked PR links)
-- PR/issue references (e.g., #123, #456)
-- Links to dependent/parent PRs if stacked
-- DO NOT repeat the ticket URL or current branch name here
+<what a reviewer needs and the diff doesn't show: decisions, trade-offs, constraints, grouped by area in short bullets>
 ```
 
-### 3. Present Preview
+- The ticket line appears only with a ticket link.
+- Add `## Next steps` for follow-ups or stacked PRs, and `## Related` for issue or PR references other than the ticket.
+- The reviewer has the diff, so the description carries the *why*: no restated diff, file lists or code blocks.
+- A testing section only when the user asks for one. Anything left unverified is one line in Solution.
 
-Show the generated Title and Description to the user:
+## 3. Preview
 
-```
-Review the PR draft below. Reply `approve` to proceed or `edit:` with your changes.
+Show the title and description and wait for explicit approval. An edit changes the text only: apply it and show it again, without re-reading git.
 
-**Title:** [generated title]
+## 4. Open
 
-**Description:**
-[generated description]
-```
+Write the title on the first line of a file and the description below it; a shell-quoted body mangles backticks and newlines.
 
-Wait for explicit user approval.
+- GitButler repo (`but status` works): `but pr new <branch> -F <file> --draft`, with `<branch>` from `but status`. It pushes the branch and its ancestors and sets the right base in a stack. Then `gh pr edit <number> --add-assignee @me`.
+- Otherwise: push the branch, then `gh pr create --draft --assignee @me --base <base> --title "<title>" --body-file <description file>`.
 
-### 4. Create PR (after approval)
-
-**Standard PR:**
-```bash
-gh pr create --assignee @me --title "<TITLE>" --body "<DESCRIPTION>"
-```
-
-**Stacked PR:**
-```bash
-gh pr create --assignee @me --base <previous-branch> --title "<TITLE>" --body "<DESCRIPTION>"
-```
-
-Print the created PR URL when done.
-
-### 5. Handle Edits
-
-If user requests edits:
-- Apply changes to Title/Description only
-- Do NOT re-run git analysis unless explicitly asked
-- Re-show preview and wait for `approve`
-
-## Quality Bar
-
-- Brief and concise with section headers
-- Focus on why changes matter to users/business
-- Ignore merge commits; use merge-base for accurate diff
-- Keep sections compact; avoid repeating title in summary
-- No code blocks in PR body
-- No filler text
-
-## Edge Cases
-
-**Zero qualifying commits:**
-- Stop and ask for guidance
-- Confirm base branch or whether to include non-authored commits
-
-**Not a git repo or gh not authenticated:**
-- Surface minimal actionable instruction (e.g., `gh auth login`)
-- Stop and wait for resolution
-
-**Missing information:**
-- State exactly what's missing
-- Request only the minimal info needed
-
-## Safety
-
-**Never create a PR without explicit user approval.**
+Drop `--draft` only when the user says the PR is ready for review. Print the PR URL.

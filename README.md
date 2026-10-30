@@ -17,7 +17,7 @@ npx skills update                                  # pull new versions
 | engineering | `agent-byline` | Marks the PR comments, reviews and replies an agent posts on your behalf. |
 | engineering | `comment-cleanup` | Prunes the comments a change added down to the non-obvious "why". |
 | engineering | `debug-trace` | Temporary tagged debug points dumped to an isolated trace file, then removed. |
-| engineering | `github-pr` | PR with a Conventional Commits title and a "why"-first description. |
+| engineering | `github-pr` | Draft PR with a Conventional Commits title and a "why"-first description. |
 | engineering | `megamoind` | Takes a ticket end to end: TDD, reviews, real-app check, PR, CI loop. |
 | engineering | `megamoind-batch` | Takes a batch of tickets (a spec, a list, a label) to PRs, one async megamoind agent per ticket, stacked by dependency. |
 | engineering | `pair-review` | Review → fix → re-review loop with a dedicated reviewer agent. |
