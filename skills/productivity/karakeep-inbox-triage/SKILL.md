@@ -7,8 +7,6 @@ description: Triage the user's Karakeep "Inbox" list — fetch the bookmarks sit
 
 Goal: empty the `Inbox` list of the user's self-hosted Karakeep by giving every bookmark good tags and moving it to its definitive list — without changing anything the user hasn't approved.
 
-The user speaks Spanish; talk to them and write the table in Spanish.
-
 ## Connection
 
 The bundled scripts handle auth: the API key is read from `~/.karakeep` (a file containing only the key) and the server URL from `~/.config/moisesrj97-skills/karakeep.json` (`{"server": "https://…"}`, overridable with `KARAKEEP_SERVER_ADDR`). Both live outside the skill folder so a reinstall doesn't wipe them. Never print or echo the key. For ad-hoc CLI calls, export the same values first:
