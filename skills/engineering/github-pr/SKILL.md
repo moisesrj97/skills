@@ -36,10 +36,11 @@ This PR resolves <ticket URL>
 - Add `## Next steps` for follow-ups or stacked PRs, and `## Related` for issue or PR references other than the ticket.
 - The reviewer has the diff, so the description carries the *why*: no restated diff, file lists or code blocks.
 - A testing section only when the user asks for one. Anything left unverified is one line in Solution.
+- `## Screenshots` goes last, only with screenshots the caller or the user provides: each image as `![<what it shows>](./<file>)` under its one-line source (local data, injected in the browser…).
 
 ## 3. Preview
 
-Show the title and description and wait for explicit approval. An edit changes the text only: apply it and show it again, without re-reading git.
+Show the title and description, plus the list of files to attach, and wait for explicit approval: uploading publishes them. An edit changes the text only: apply it and show it again, without re-reading git.
 
 ## 4. Open
 
@@ -47,5 +48,7 @@ Pass the description through a file; a shell-quoted body mangles backticks and n
 
 - GitButler repo (`but status` works): `but pr new <branch> -F <file> --draft`, with the title on the file's first line and the description below it. It pushes the branch and its ancestors and sets the right base in a stack. Then `gh pr edit <number> --add-assignee @me`.
 - Otherwise: push the branch, then `gh pr create --draft --assignee @me --base <base> --title "<title>" --body-file <file>`, with the description alone in the file.
+
+With screenshots, save the description file in the screenshots' folder and call the Skill tool with `gh-attach`. `gh pr create` takes the `--attach` flags directly. `but pr new` has no `--attach`: open the PR with the description minus `## Screenshots`, then `gh pr edit <number> --body-file <file> --attach …` with the full description alone in the file.
 
 Drop `--draft` only when the user says the PR is ready for review. Print the PR URL.

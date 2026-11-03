@@ -65,7 +65,7 @@ Show it all in **one** round: the tickets the batch resolved to, the chains bott
 
 ### 2. Prepare
 
-Update the workspace from the target once (`but pull`), before any agent starts. Start the shared dev servers as background subshells, and add to every brief that they are already running.
+Update the workspace from the target once (`but pull`), before any agent starts. When that changed a lockfile, reinstall dependencies with the project's package manager. Start the shared dev servers as background subshells, and add to every brief that they are already running.
 
 ### 3. Run the chains
 

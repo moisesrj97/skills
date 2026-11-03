@@ -7,18 +7,18 @@ Reference diagrams for [`megamoind`](../skills/engineering/megamoind/SKILL.md) a
 ```mermaid
 flowchart TD
     start(["/megamoind &lt;ticket&gt;"]) --> brief{"brief= given?"}
-    brief -- no --> s0["0. Brief and HITL check<br/>plan, branch, base, verification, CODEOWNERS<br/>one round of questions"]
+    brief -- no --> s0["0. Brief and HITL check<br/>plan, branch, base, verification, CODEOWNERS,<br/>required checks, gh for screenshots, brief to ticket?<br/>one round of questions, brief saved to a file"]
     brief -- yes --> s1
-    s0 --> s1["1. Branch<br/>GitButler or git"]
+    s0 --> s1["1. Branch<br/>GitButler or git<br/>reinstall deps if the lockfile moved"]
     s1 --> s2["2. Implement<br/>mattpocock-skills:tdd, gates green"]
     s2 --> s3["3. Quick review<br/>mattpocock-skills:code-review<br/>standards + spec, base...HEAD"]
     s3 --> s4["4. Pair review<br/>pair-review base...HEAD<br/>GPT reviewer via diff-review, fix, re-review until done"]
-    s4 --> s5["5. Verify in the real app<br/>browser (frontend) or debug-trace (backend)"]
+    s4 --> s5["5. Verify in the real app<br/>browser (frontend) or debug-trace (backend)<br/>injected states via fetch, screenshots for the PR"]
     s5 --> s6["6. Comment cleanup<br/>commit, gates"]
     s6 --> draft{"stop-at=draft?"}
-    draft -- no --> s7r["7. PR ready for review<br/>github-pr, full CI starts"]
+    draft -- no --> s7r["7. PR ready for review<br/>github-pr + gh-attach screenshots, full CI starts"]
     draft -- yes --> s7d["7. PR as draft"]
-    s7r --> s8["8. CI loop<br/>fix / re-run flaky / HITL if red on base<br/>HITL after 3 failed fix pushes"]
+    s7r --> s8["8. CI loop<br/>until every required check exists and is green<br/>fix / re-run flaky / HITL if red on base<br/>HITL after 3 failed fix pushes"]
     s7d --> s8
     s8 --> s9["9. Report"]
     s9 --> stopdraft{"stop-at=draft?"}
@@ -39,7 +39,7 @@ flowchart TD
 flowchart TD
     start(["/megamoind-batch &lt;spec | tickets | query&gt;"]) --> s0["0. Read the tickets<br/>resolve the batch, comments for blockers,<br/>GitButler workspace clean"]
     s0 --> s1["1. Plan<br/>chains from blocking relations,<br/>shared files in one chain,<br/>one brief per ticket, one round of questions"]
-    s1 --> s2["2. Prepare<br/>but pull once, start shared dev servers"]
+    s1 --> s2["2. Prepare<br/>but pull once, reinstall deps,<br/>start shared dev servers"]
     s2 --> s3
 
     subgraph s3["3. Run the chains (max 3 agents at once)"]
