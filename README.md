@@ -24,8 +24,6 @@ npx skills update                                  # pull new versions
 | engineering | `megamoind-batch` | Takes a batch of tickets (a spec, a list, a label) to PRs, one async megamoind agent per ticket, stacked by dependency. |
 | engineering | `pair-review` | Review → fix → re-review loop with a reviewer from another model family, through `diff-review`. |
 | engineering | `review-comment` | Evaluates a PR review comment, fixes it and replies with the commit. Manual only. |
-| productivity | `gomander` | Starts and stops [Gomander](https://github.com/lazylabz/gomander-app) commands through its local API. |
-| productivity | `karakeep-inbox-triage` | Tags and files the bookmarks in a Karakeep "Inbox" list, after approval. |
 
 The `megamoind` flows are diagrammed in [`docs/megamoind.md`](docs/megamoind.md).
 
