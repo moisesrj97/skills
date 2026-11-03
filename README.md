@@ -23,6 +23,8 @@ npx skills update                                  # pull new versions
 | engineering | `megamoind` | Takes a ticket end to end: TDD, reviews, real-app check, PR, CI loop. |
 | engineering | `megamoind-batch` | Takes a batch of tickets (a spec, a list, a label) to PRs, one async megamoind agent per ticket, stacked by dependency. |
 | engineering | `pair-review` | Review → fix → re-review loop with a reviewer from another model family, through `diff-review`. |
+| engineering | `retro-digest` | Groups the open retro findings across projects, applies the approved ones and records each outcome. |
+| engineering | `retro-with-docs` | Retro of an agent session: stoppers and environment fixes, written to `~/.skill-docs/retros/<project>/`. |
 | engineering | `review-comment` | Evaluates a PR review comment, fixes it and replies with the commit. Manual only. |
 
 The `megamoind` flows are diagrammed in [`docs/megamoind.md`](docs/megamoind.md).
