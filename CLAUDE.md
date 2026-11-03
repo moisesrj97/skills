@@ -5,7 +5,7 @@ Public repo of skills installed with `npx skills add moisesrj97/skills`. Load `w
 ## Layout
 
 - `skills/<category>/<name>/SKILL.md`. `npx skills` installs by name and ignores the category, so every name is unique across categories.
-- Categories: `engineering/`, `productivity/`. Open a new one only when at least two skills belong in it.
+- Categories: `engineering/`. Open a new one only when at least two skills belong in it.
 - Scripts live in the skill's `scripts/` and are referenced as `<skill-dir>/scripts/…`: installs land in different paths per agent.
 
 ## Public by default
