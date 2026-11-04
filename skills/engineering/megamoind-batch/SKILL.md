@@ -84,7 +84,7 @@ Stop with HITL after 3 fix rounds that haven't turned CI green.
 
 ### 5. Wrap up
 
-Close every pane you opened, cancel any T3 child still running, and stop the dev servers you started. Then report:
+Close every pane you opened, cancel any T3 child still running, and stop the dev servers you started. Call the Skill tool with `retro-with-docs` on this orchestrating session (each agent already ran its own); if it is not available, skip it and say so. Then report:
 
 | Chain | Ticket | Branch | PR | CI |
 |---|---|---|---|---|
