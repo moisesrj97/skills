@@ -25,20 +25,20 @@ This skill delegates to `mattpocock-skills:tdd`, `mattpocock-skills:code-review`
 
 ## Gates
 
-The checks that must be green before any push: type-check, lint and tests for **every project the change touches**. In a monorepo that means each touched package's own `ci` (or equivalent) script, not just the root. Read the commands from the project's `CLAUDE.md` / `CLAUDE.local.md`, else from each `package.json`; the package manager comes from the lockfile. Launch a long suite (several minutes) in the background from the start, so the foreground timeout can't kill it. Run checks as wide as the project's scripts do, but point every auto-fix (`--write`, `--fix`, a formatter) at the files of your branch's diff only: one aimed at a whole folder rewrites files outside the ticket, and a rewrite can break them, e.g. dropping a `@ts-expect-error`. Before each commit, check it holds only your ticket's files (`but diff` under GitButler, `git diff --stat` otherwise). Fix a red gate before pushing; never push past one, unless the red is **foreign** (see below).
+The checks that must be green before any push: type-check, lint and tests for **every project the change touches**. In a monorepo that means each touched package's own `ci` (or equivalent) script, not just the root. Read the commands from the project's `CLAUDE.md` / `CLAUDE.local.md`, else from each `package.json`; the package manager comes from the lockfile. Launch a long suite (several minutes) in the background from the start, so the foreground timeout can't kill it. If the project has `yarn dev:doctor`, run `yarn dev:doctor --flow <flow> --no-services` before the first type-check and after any pull that touches `packages/`: it rebuilds stale workspace builds, which otherwise read as a red gate. A heavy spec that times out under full-suite load is rerun in isolation before it counts as red. Run checks as wide as the project's scripts do, but point every auto-fix (`--write`, `--fix`, a formatter) at the files of your branch's diff only: one aimed at a whole folder rewrites files outside the ticket, and a rewrite can break them, e.g. dropping a `@ts-expect-error`. Before each commit, check it holds only your ticket's files (`but diff` under GitButler, `git diff --stat` otherwise). Fix a red gate before pushing; never push past one, unless the red is **foreign** (see below).
 
 ## Steps
 
 ### 0. Brief and HITL check
 
-Fetch the ticket (`gh issue view` for a GitHub issue, the tracker's tools otherwise); a tracker you can't reach is HITL. Read the ticket and the code it touches. With `brief=`, read it and go to step 1. Otherwise ask everything in **one** round, with your proposal for each:
+Fetch the ticket (`gh issue view` for a GitHub issue, the tracker's tools otherwise); a tracker you can't reach is HITL. Read the ticket and the code it touches. With `brief=`, read it and go to step 1. Otherwise ask everything in **one** round, with your proposal for each. Each option states only consequences checked in code or data this session: grep the consumer before claiming "with X, Y happens", and mark anything unchecked "unverified: …".
 
 - **Plan**: the approach in a few lines, the seams where tests go, and anything ambiguous in the ticket. When the ticket replaces or reproduces something already visible in the product, the plan keeps its current look and cites the **visual reference** (the screenshot, the live screen), and checks that the shape of the data (copy keys, props) can carry that look, e.g. one copy key can't style half its text.
 - **Branch name**: the format in the project's `## Ticket tracker` section, else `<ticket-id>-<short-kebab-description>`, never a `/`.
 - **Base** (GitButler): run `but pull --check`. When the workspace is behind and updating would move other branches, ask: "the workspace is N commits behind; updating would move X and Y. Update?". A no leaves the base stale: guard against a **borrowed green** (see "Sharing the workspace").
 - **Verification**: how to run the app or service (the dev commands, required env, data or login, ports), and which flows prove the change works.
 - **CODEOWNERS**: if the repo has one, opening the PR ready for review requests those reviewers automatically. Say so, since it defeats waiting to add reviewers.
-- **Required checks**: the names CI must turn green, from the project's `CLAUDE.md` / `CLAUDE.local.md`, else the base's rules (`gh api repos/{owner}/{repo}/rules/branches/<base>`, the `required_status_checks` entries). Neither gives them: ask. `gh pr checks --required` lists only the checks already reported, so it can't tell you one is missing.
+- **Required checks**: the names CI must turn green, from the project's `CLAUDE.md` / `CLAUDE.local.md`, else the base's rules (`gh api repos/{owner}/{repo}/rules/branches/<base>`, the `required_status_checks` entries). Neither gives them: ask. `gh pr checks --required` lists only the checks already reported, so it can't tell you one is missing. Split them into checks that run on drafts and ready-only ones (e.g. a Jenkins job that builds only non-draft PRs whose base is the default branch).
 - **Screenshots** (frontend changes): the PR gets them through `gh-attach`, which needs gh ≥ 2.99. Check `gh --version` now; when it is older, ask the user to upgrade.
 - **Ticket description**: ask whether to copy the brief's product decisions (what changes, UI choices, acceptance criteria) into the ticket's description. On a yes, write them into the description, keeping its existing content, never as a comment.
 
@@ -60,7 +60,9 @@ A change that belongs to the `<base>` branch's ticket goes on that branch, not y
 
 Call the Skill tool with `mattpocock-skills:tdd` and build the ticket at the seams agreed in step 0. Run type-check and the single test files you are touching as you go; run the gates once at the end. Commit locally as you reach working checkpoints.
 
-Done when every point of the ticket is implemented and the gates are green.
+When the brief rules out tests, write a **failure-path checklist** to the scratchpad before step 3: for every async call or batch, its partial failure, total failure and empty result, plus the id types that cross a `String()`/`Number()` conversion. Each item is handled in code or marked accepted.
+
+Done when every point of the ticket is implemented, every checklist item is handled or accepted, and the gates are green.
 
 ### 3. Quick review
 
@@ -83,7 +85,7 @@ Start what the app needs as background subshells (`run_in_background`) with the 
 
 Fix what you find, then re-verify. If the environment won't come up after one honest attempt, that's HITL; if it still can't run, record what went unverified for the PR description and the report.
 
-Done when every flow from step 0 has been exercised and behaves as the ticket asks.
+Done when every flow from step 0 and every item of the failure-path checklist has been exercised and behaves as the ticket asks.
 
 ### 6. Comment cleanup
 
@@ -97,16 +99,19 @@ Call the Skill tool with `github-pr` to write the title and description and open
 
 Loop until every check is green:
 
-1. Wait for the checks to finish with `Monitor` or an until-loop on `gh pr checks <number>`, not a tight poll. Some required checks appear minutes after the others: the wait ends only when every required check from step 0 exists and is green, so "all checks passed" with one missing is still pending.
+1. Wait for the checks to finish with `Monitor` or an until-loop on `gh pr checks <number>`, not a tight poll. Some required checks appear minutes after the others: the wait ends only when every required check from step 0 exists and is green, so "all checks passed" with one missing is still pending. With `stop-at=draft`, that means the draft checks only; the report lists the ready-only ones as pending for the caller. Delegated from T3 Code, wait inside the turn (`t3_background_wait` on the Monitor or loop task) instead of ending it to wait.
 2. On a red check, diagnose with the tools at hand: a CI skill the project or the user has installed, `gh pr checks`, the job logs. Classify it:
    - **caused by this change**: fix it, run the gates, push;
    - **flaky or infrastructure**: re-run it once; red again is HITL;
-   - **also red on `<base>`**: HITL, leave it alone.
+   - **also red on `<base>`**: HITL, leave it alone;
+   - **base staleness** (foreign): a scan that compares against a default branch newer than `<base>`, on a PR that touches no lockfile. Leave it and list it for the report; updating the base is the caller's.
 3. Back to 1.
 
 Stop with HITL after 3 fix pushes that haven't turned CI green: the loop isn't converging.
 
 ### 9. Report
+
+When a caller passed a report path, write the report there before ending any turn, even with checks still pending (list them as open). End a turn only once every action you announced has run.
 
 First call the Skill tool with `retro-with-docs` on this session; if it is not available, skip it and say so in the report.
 

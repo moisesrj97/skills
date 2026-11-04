@@ -7,10 +7,10 @@ Reference diagrams for [`megamoind`](../skills/engineering/megamoind/SKILL.md) a
 ```mermaid
 flowchart TD
     start(["/megamoind &lt;ticket&gt;"]) --> brief{"brief= given?"}
-    brief -- no --> s0["0. Brief and HITL check<br/>plan, branch, base, verification, CODEOWNERS,<br/>required checks, gh for screenshots, brief to ticket?<br/>one round of questions, brief saved to a file"]
+    brief -- no --> s0["0. Brief and HITL check<br/>plan, branch, base, verification, CODEOWNERS,<br/>required checks (draft / ready-only), gh for screenshots, brief to ticket?<br/>one round of questions, brief saved to a file"]
     brief -- yes --> s1
     s0 --> s1["1. Branch<br/>GitButler or git<br/>reinstall deps if the lockfile moved"]
-    s1 --> s2["2. Implement<br/>mattpocock-skills:tdd, gates green"]
+    s1 --> s2["2. Implement<br/>mattpocock-skills:tdd, gates green<br/>no tests in brief → failure-path checklist"]
     s2 --> s3["3. Quick review<br/>mattpocock-skills:code-review<br/>standards + spec, base...HEAD"]
     s3 --> s4["4. Pair review<br/>pair-review base...HEAD<br/>GPT reviewer via diff-review, fix, re-review until done"]
     s4 --> s5["5. Verify in the real app<br/>browser (frontend) or debug-trace (backend)<br/>injected states via fetch, screenshots for the PR"]
@@ -18,9 +18,9 @@ flowchart TD
     s6 --> draft{"stop-at=draft?"}
     draft -- no --> s7r["7. PR ready for review<br/>github-pr + gh-attach screenshots, full CI starts"]
     draft -- yes --> s7d["7. PR as draft"]
-    s7r --> s8["8. CI loop<br/>until every required check exists and is green<br/>fix / re-run flaky / HITL if red on base<br/>HITL after 3 failed fix pushes"]
+    s7r --> s8["8. CI loop<br/>until every required check exists and is green<br/>(draft checks only with stop-at=draft)<br/>fix / re-run flaky / HITL if red on base<br/>HITL after 3 failed fix pushes"]
     s7d --> s8
-    s8 --> s9["9. Report<br/>retro-with-docs first, then the report"]
+    s8 --> s9["9. Report<br/>retro-with-docs first, then the report<br/>report file written before any turn ends"]
     s9 --> stopdraft{"stop-at=draft?"}
     stopdraft -- no --> s10["10. Reviewers<br/>only after explicit yes"]
     stopdraft -- yes --> done([done])
@@ -56,8 +56,8 @@ flowchart TD
         lower -.-> agent
     end
 
-    s3 --> s4["4. All ready<br/>every draft green → gh pr ready,<br/>bottom of each chain first"]
-    s4 --> ci{"all checks green?"}
+    s3 --> s4["4. All ready<br/>every draft green → but pull, but push,<br/>ask once + PushNotification → gh pr ready,<br/>bottom of each chain first"]
+    s4 --> ci{"all checks green?<br/>(stacked layers: pending retarget)"}
     ci -- no --> fix["Red check → owning agent fixes,<br/>push the stack<br/>HITL after 3 rounds"]
     fix --> ci
     ci -- yes --> s5["5. Wrap up<br/>close panes / cancel children,<br/>stop servers, retro-with-docs, report table"]
