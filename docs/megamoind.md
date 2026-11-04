@@ -20,7 +20,7 @@ flowchart TD
     draft -- yes --> s7d["7. PR as draft"]
     s7r --> s8["8. CI loop<br/>until every required check exists and is green<br/>fix / re-run flaky / HITL if red on base<br/>HITL after 3 failed fix pushes"]
     s7d --> s8
-    s8 --> s9["9. Report"]
+    s8 --> s9["9. Report<br/>retro-with-docs first, then the report"]
     s9 --> stopdraft{"stop-at=draft?"}
     stopdraft -- no --> s10["10. Reviewers<br/>only after explicit yes"]
     stopdraft -- yes --> done([done])
@@ -60,7 +60,7 @@ flowchart TD
     s4 --> ci{"all checks green?"}
     ci -- no --> fix["Red check → owning agent fixes,<br/>push the stack<br/>HITL after 3 rounds"]
     fix --> ci
-    ci -- yes --> s5["5. Wrap up<br/>close panes / cancel children,<br/>stop servers, report table"]
+    ci -- yes --> s5["5. Wrap up<br/>close panes / cancel children,<br/>stop servers, retro-with-docs, report table"]
     s5 --> s6["6. Reviewers<br/>only after explicit yes"]
     s6 --> done([done, user merges by hand])
 ```

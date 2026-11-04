@@ -108,11 +108,14 @@ Stop with HITL after 3 fix pushes that haven't turned CI green: the loop isn't c
 
 ### 9. Report
 
+First call the Skill tool with `retro-with-docs` on this session; if it is not available, skip it and say so in the report.
+
 - PR URL, branch, final CI state.
 - Each review pass (quick review, pair-review rounds): findings, what was fixed, what was discarded and why.
 - What was verified in the real app and how; what wasn't, and why.
 - CI failures met and how each was resolved.
 - Open HITL questions.
+- The retro file and its blockers.
 
 ### 10. Reviewers (optional, skipped with `stop-at=draft`)
 
