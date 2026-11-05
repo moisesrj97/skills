@@ -3,7 +3,8 @@
 
 Runs each prompt in cases.json through `claude -p` inside a throwaway git repo and
 checks the routing decision in the transcript. It exercises what is installed:
-the skill under ~/.agents/skills and the rule in ~/.claude/CLAUDE.md.
+the skill under ~/.claude/skills (a symlink to this checkout) and the rule in
+~/.claude/CLAUDE.md.
 
 Usage: run.py [case-id ...]   env: RUNS (default 1), MODEL, MAX_TURNS (default 3)
 """
