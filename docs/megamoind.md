@@ -7,20 +7,21 @@ Reference diagrams for [`megamoind`](../skills/engineering/megamoind/SKILL.md) a
 ```mermaid
 flowchart TD
     start(["/megamoind &lt;ticket&gt;"]) --> brief{"brief= given?"}
-    brief -- no --> s0["0. Brief and HITL check<br/>plan, branch, base, verification, CODEOWNERS,<br/>required checks (draft / ready-only), gh for screenshots, brief to ticket?<br/>one round of questions, brief saved to a file"]
-    brief -- yes --> s1
-    s0 --> s1["1. Branch<br/>GitButler or git<br/>reinstall deps if the lockfile moved"]
-    s1 --> s2["2. Implement<br/>mattpocock-skills:tdd, gates green<br/>no tests in brief → failure-path checklist"]
-    s2 --> s3["3. Quick review<br/>mattpocock-skills:code-review<br/>standards + spec, base...HEAD"]
-    s3 --> s4["4. Pair review<br/>pair-review base...HEAD<br/>GPT reviewer via diff-review, fix, re-review until done"]
+    brief -- no --> s0["0. Brief and HITL check<br/>reuse search, craftsmanship, bug → diagnosing-bugs to phase 4<br/>plan (seams' Desiderata trade-offs, tidyings by area of impact),<br/>branch, base, verification, CODEOWNERS,<br/>required checks (draft / ready-only), gh for screenshots, brief to ticket?<br/>one round of questions, brief saved to a file"]
+    brief -- yes --> fill["0. Settle what the brief leaves open<br/>reuse, tidyings, a bug's cause"]
+    fill --> s1
+    s0 --> s1["1. Branch<br/>GitButler or git, tidy-first pre-PR below if planned<br/>reinstall deps if the lockfile moved"]
+    s1 --> s2["2. Implement<br/>tidy first (first commit or pre-PR)<br/>→ mattpocock-skills:tdd (bug: diagnosis loop is the first red, then its phase 6 cleanup)<br/>→ tidy after (commit or post-PR above; else Later list)<br/>gates green; no tests in brief → failure-path checklist"]
+    s2 --> s3["3. Quick review<br/>mattpocock-skills:code-review<br/>standards + spec, base...HEAD<br/>+ tidy-first.md, test-desiderata.md"]
+    s3 --> s4["4. Pair review<br/>pair-review base...HEAD standards=…<br/>GPT reviewer via diff-review, fix, re-review until done"]
     s4 --> s5["5. Verify in the real app<br/>browser (frontend) or debug-trace (backend)<br/>injected states via fetch, screenshots for the PR"]
     s5 --> s6["6. Comment cleanup<br/>commit, gates"]
     s6 --> draft{"stop-at=draft?"}
-    draft -- no --> s7r["7. PR ready for review<br/>github-pr + gh-attach screenshots, full CI starts"]
-    draft -- yes --> s7d["7. PR as draft"]
-    s7r --> s8["8. CI loop<br/>until every required check exists and is green<br/>(draft checks only with stop-at=draft)<br/>fix / re-run flaky / HITL if red on base<br/>HITL after 3 failed fix pushes"]
+    draft -- no --> s7r["7. One PR per layer, bottom first, ready for review<br/>github-pr + gh-attach screenshots, full CI starts"]
+    draft -- yes --> s7d["7. One PR per layer, as drafts"]
+    s7r --> s8["8. CI loop<br/>until every required check exists and is green<br/>(draft checks only with stop-at=draft;<br/>stacked layers: pending retarget)<br/>fix / re-run flaky / HITL if red on base<br/>HITL after 3 failed fix pushes"]
     s7d --> s8
-    s8 --> s9["9. Report<br/>retro-with-docs first, then the report<br/>report file written before any turn ends"]
+    s8 --> s9["9. Report<br/>retro-with-docs first, then the report<br/>layers bottom to top, Later tidyings<br/>report file written before any turn ends"]
     s9 --> stopdraft{"stop-at=draft?"}
     stopdraft -- no --> s10["10. Reviewers<br/>only after explicit yes"]
     stopdraft -- yes --> done([done])
@@ -49,7 +50,7 @@ flowchart TD
         report -- "open HITL" --> ask["Ask the user at once,<br/>chain waits, others keep running"]
         ask --> agent
         report -- ok --> next{"next ticket<br/>in chain?"}
-        next -- yes --> stack["Start it with<br/>base = branch just finished"]
+        next -- yes --> stack["Start it with<br/>base = top layer just finished"]
         stack --> agent
         next -- "no, slot free" --> pick
         agent -. "needs lower-layer change" .-> lower["Lower layer's agent commits it,<br/>GitButler restacks, but push,<br/>tell the agent its base moved"]

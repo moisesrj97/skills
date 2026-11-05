@@ -1,7 +1,7 @@
 ---
 name: pair-review
 description: "Iterative review loop: a reviewer from another model family reviews the change through diff-review, you fix what it finds, and it re-reviews until nothing notable is left or a human decision is needed; then recap. Arguments: scope (PR number, ref range, or 'diff') and reviewer (default gpt-6.1-sol:medium)."
-argument-hint: "[scope] [reviewer=<model>[:<effort>]]"
+argument-hint: "[scope] [reviewer=<model>[:<effort>]] [standards=<file>,…]"
 ---
 
 # Pair review
@@ -12,6 +12,7 @@ You are the **author**. A **reviewer**, by default from another model family, re
 
 - **scope**: what to review. A PR number (`34847`), a ref range (`base...head`), or `diff` (uncommitted work). If omitted, use the current branch's open PR (`gh pr view --json number`), else the diff against its base. For a stacked PR the meaningful diff is `<parent-branch>...<branch>`, not `master...`.
 - **reviewer**: `<model id>[:<effort>]`, passed to `diff-review`. Default `gpt-6.1-sol:medium`.
+- **standards**: files of rules the change is held to, passed to `diff-review` every round.
 
 State the resolved scope and reviewer in one line before starting.
 

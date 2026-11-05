@@ -21,7 +21,7 @@ Invoking this skill is the user's approval to commit, push to the ticket's own b
 
 ## When a skill is not available
 
-This skill delegates to `mattpocock-skills:tdd`, `mattpocock-skills:code-review`, `debug-trace`, `github-pr`, `pair-review` and `comment-cleanup`, called by these exact names. If the Skill tool reports one as not available, stop and ask. An improvised copy silently skips whatever the real skill enforces.
+This skill delegates to `craftsmanship`, `mattpocock-skills:diagnosing-bugs`, `mattpocock-skills:tdd`, `mattpocock-skills:code-review`, `debug-trace`, `github-pr`, `pair-review` and `comment-cleanup`, called by these exact names. If the Skill tool reports one as not available, stop and ask. An improvised copy silently skips whatever the real skill enforces.
 
 ## Gates
 
@@ -31,10 +31,12 @@ The checks that must be green before any push: type-check, lint and tests for **
 
 ### 0. Brief and HITL check
 
-Fetch the ticket (`gh issue view` for a GitHub issue, the tracker's tools otherwise); a tracker you can't reach is HITL. Read the ticket and the code it touches. With `brief=`, read it and go to step 1. Otherwise ask everything in **one** round, with your proposal for each. Each option states only consequences checked in code or data this session: grep the consumer before claiming "with X, Y happens", and mark anything unchecked "unverified: …".
+Fetch the ticket (`gh issue view` for a GitHub issue, the tracker's tools otherwise); a tracker you can't reach is HITL. Read the ticket and the code it touches, and look for what the change can **reuse**: helpers, a similar feature, how the neighbouring tests are written. Call the Skill tool with `craftsmanship`. For a bug, call the Skill tool with `mattpocock-skills:diagnosing-bugs` and take it through phase 4, so the plan names the confirmed cause; its fix waits for step 2.
 
-- **Plan**: the approach in a few lines, the seams where tests go, and anything ambiguous in the ticket. When the ticket replaces or reproduces something already visible in the product, the plan keeps its current look and cites the **visual reference** (the screenshot, the live screen), and checks that the shape of the data (copy keys, props) can carry that look, e.g. one copy key can't style half its text.
-- **Branch name**: the format in the project's `## Ticket tracker` section, else `<ticket-id>-<short-kebab-description>`, never a `/`.
+With `brief=`, read it, settle on your own what it leaves open of the plan below (only the user's decisions are HITL) and go to step 1. Otherwise ask everything in **one** round, with your proposal for each. Each option states only consequences checked in code or data this session: grep the consumer before claiming "with X, Y happens", and mark anything unchecked "unverified: …".
+
+- **Plan**: the approach in a few lines, what it reuses, the seams where tests go with what each buys and sells (Test Desiderata), the tidyings worth doing first or after and where each goes by area of impact (Tidy First), and anything ambiguous in the ticket. When the ticket replaces or reproduces something already visible in the product, the plan keeps its current look and cites the **visual reference** (the screenshot, the live screen), and checks that the shape of the data (copy keys, props) can carry that look, e.g. one copy key can't style half its text.
+- **Branch name**: the format in the project's `## Ticket tracker` section, else `<ticket-id>-<short-kebab-description>`, never a `/`. A pre-PR or post-PR from the plan adds `<name>-tidy-first` or `<name>-tidy-after`.
 - **Base** (GitButler): run `but pull --check`. When the workspace is behind and updating would move other branches, ask: "the workspace is N commits behind; updating would move X and Y. Update?". A no leaves the base stale: guard against a **borrowed green** (see "Sharing the workspace").
 - **Verification**: how to run the app or service (the dev commands, required env, data or login, ports), and which flows prove the change works.
 - **CODEOWNERS**: if the repo has one, opening the PR ready for review requests those reviewers automatically. Say so, since it defeats waiting to add reviewers.
@@ -48,6 +50,8 @@ Done when the user has confirmed the plan and you have everything needed to reac
 
 If the repo uses GitButler (`but status` works), create the branch with `but branch new <name>`, or `but branch new <name> --above <base>` when `base=` is a branch in the workspace, and do every commit and push with `but`. Otherwise update `<base>` and `git switch -c <name> <base>`. Under GitButler, update from the target (`but pull`) when only your branches are applied or the user said yes in step 0: moving other branches is their call. When updating the base changed a lockfile, reinstall dependencies with the project's package manager and restart any dev server already running, before anything else runs.
 
+With a pre-PR, create `<name>-tidy-first` on `<base>` as above. Under GitButler, create the ticket's branch on top of it now (`--above <name>-tidy-first`): commits to the lower branch restack it. With plain git, create it once the pre-PR's commits are in (`git switch -c <name> <name>-tidy-first`, end of step 2's first pass), since a branch created earlier stays on the old commit. These branches, plus a post-PR's, are the ticket's **layers**, bottom to top; `HEAD` in the ranges below is the top layer. With plain git, any later commit on a lower layer (a review fix, a CI fix) is followed by rebasing each layer above onto it, bottom up (`git rebase <lower> <upper>`), then switching back to the top layer; once pushed, push them with `--force-with-lease`.
+
 ### Sharing the workspace
 
 Under GitButler, other agents' branches may be applied in the same working directory, so their unfinished changes show up in your type-check, tests and dev server. Commit only your own hunks (`but commit -b <branch> <ids>`, ids from `but diff`) and edit only files your ticket needs. A red gate is **foreign** when every failure sits in a file outside your branch's diff that `but status` shows changed by another branch or uncommitted outside yours. A change you produced yourself, e.g. a formatter or codegen run, is never foreign, even uncommitted. Leave a foreign red alone (fixing it would mix two tickets in one branch), list it for the report and count the gate as green.
@@ -58,21 +62,27 @@ A change that belongs to the `<base>` branch's ticket goes on that branch, not y
 
 ### 2. Implement
 
-Call the Skill tool with `mattpocock-skills:tdd` and build the ticket at the seams agreed in step 0. Run type-check and the single test files you are touching as you go; run the gates once at the end. Commit locally as you reach working checkpoints.
+Three passes, structure and behaviour never in one commit:
+
+1. **Tidy first**: the plan's first tidyings, as the PR's first `refactor:` commit or on the pre-PR branch, following `craftsmanship`.
+2. **Behaviour**: call the Skill tool with `mattpocock-skills:tdd` and build the ticket at the seams agreed in step 0, reusing what step 0 found. For a bug, the diagnosis loop from step 0 is the first red test; once it is green, run `diagnosing-bugs` phase 6 (its instrumentation and throwaway harnesses removed, the original reproduction rerun) before committing.
+3. **Tidy after**: polish the change's new code, then the tidyings the change revealed, each placed by area of impact: a `refactor:` commit on the ticket's branch, or the post-PR branch `<name>-tidy-after` on top of it. One that is Later goes on a list for the report.
+
+Run type-check and the single test files you are touching as you go; run the gates once at the end. Commit locally as you reach working checkpoints.
 
 When the brief rules out tests, write a **failure-path checklist** to the scratchpad before step 3: for every async call or batch, its partial failure, total failure and empty result, plus the id types that cross a `String()`/`Number()` conversion. Each item is handled in code or marked accepted.
 
-Done when every point of the ticket is implemented, every checklist item is handled or accepted, and the gates are green.
+Done when every point of the ticket is implemented, every planned tidying has landed or moved to Later, every checklist item is handled or accepted, and the gates are green.
 
 ### 3. Quick review
 
-Run `mattpocock-skills:code-review` over `<base>...HEAD`, pointed at the ticket as the spec, in its own agent: inside Herdr (`HERDR_ENV=1`), a pane split from yours (right if your pane is wide, down if tall) started with `herdr agent start <name> --kind claude --pane <id> -- --name <name>`, closed when its file is read; outside Herdr, a subagent.
+Run `mattpocock-skills:code-review` over `<base>...HEAD`, pointed at the ticket as the spec and at `craftsmanship`'s `tidy-first.md` and `test-desiderata.md` (absolute paths, from the folder it loaded from) as extra standards sources, in its own agent: inside Herdr (`HERDR_ENV=1`), a pane split from yours (right if your pane is wide, down if tall) started with `herdr agent start <name> --kind claude --pane <id> -- --name <name>`, closed when its file is read; outside Herdr, a subagent.
 
 It writes its findings to a file in the scratchpad, and **quotes** the cited lines under every finding. It only reads and reports: code edits and posting stay with you. Read the file: a finding is confirmed when the quote is there and you can trace its failure scenario in it; discard the rest with a one-line reason for the report. Fix the confirmed ones, with tests, and re-run the gates.
 
 ### 4. Pair review
 
-Call the Skill tool with `pair-review` with args `<base>...HEAD`. Collect the user's decisions from step 0 and any HITL answers as its already-decided list. It fixes and re-reviews until done; its HITL stops are this skill's HITL stops.
+Call the Skill tool with `pair-review` with args `<base>...HEAD standards=<the same two files>`. A finding fixed by a tidying goes on the layer its area of impact picks. Collect the user's decisions from step 0 and any HITL answers as its already-decided list. It fixes and re-reviews until done; its HITL stops are this skill's HITL stops.
 
 ### 5. Verify in the real app
 
@@ -94,13 +104,13 @@ Call the Skill tool with `comment-cleanup` over the whole branch diff (`<base>..
 
 ### 7. PR
 
-Call the Skill tool with `github-pr` to write the title and description and open the PR **ready for review**, so the full CI runs (some checks skip drafts); with `stop-at=draft`, open it as a draft. The approval it asks for is already given: print them and go on without waiting for `approve`. Under GitButler, create the PR with `but pr new <branch> -F <file>` (first line title, rest description; add `--draft` with `stop-at=draft`) instead of `gh`: it pushes the branch and its ancestors and sets the right base in a stack. Mention anything left unverified from step 5. With screenshots from step 5, hand `github-pr` each file and its one-line source; a later fix that changes a captured screen (steps 6 and 8) means capturing it again and re-attaching it.
+Open one PR per layer, bottom first. For each, call the Skill tool with `github-pr` to write the title and description and open the PR **ready for review**, so the full CI runs (some checks skip drafts); with `stop-at=draft`, open it as a draft. A tidy PR's description says it changes structure only and names the ticket's PR it serves. The approval it asks for is already given: print them and go on without waiting for `approve`. Under GitButler, create the PR with `but pr new <branch> -F <file>` (first line title, rest description; add `--draft` with `stop-at=draft`) instead of `gh`: it pushes the branch and its ancestors and sets the right base in a stack. Mention anything left unverified from step 5. With screenshots from step 5, hand `github-pr` each file and its one-line source; a later fix that changes a captured screen (steps 6 and 8) means capturing it again and re-attaching it.
 
 ### 8. CI loop
 
 Loop until every check is green:
 
-1. Wait for the checks to finish with `Monitor` or an until-loop on `gh pr checks <number>`, not a tight poll. Some required checks appear minutes after the others: the wait ends only when every required check from step 0 exists and is green, so "all checks passed" with one missing is still pending. With `stop-at=draft`, that means the draft checks only; the report lists the ready-only ones as pending for the caller. Delegated from T3 Code, wait inside the turn (`t3_background_wait` on the Monitor or loop task) instead of ending it to wait.
+1. Wait for the checks to finish with `Monitor` or an until-loop on `gh pr checks <number>`, not a tight poll. Some required checks appear minutes after the others: the wait ends only when every required check from step 0 exists and is green, so "all checks passed" with one missing is still pending. With `stop-at=draft`, that means the draft checks only; the report lists the ready-only ones as pending for the caller. A layer stacked on another gets the checks that run only on PRs based on the default branch once the layer below merges: list those as "pending retarget" and leave them out of the wait. Delegated from T3 Code, wait inside the turn (`t3_background_wait` on the Monitor or loop task) instead of ending it to wait.
 2. On a red check, diagnose with the tools at hand: a CI skill the project or the user has installed, `gh pr checks`, the job logs. Classify it:
    - **caused by this change**: fix it, run the gates, push;
    - **flaky or infrastructure**: re-run it once; red again is HITL;
@@ -116,7 +126,8 @@ When a caller passed a report path, write the report there before ending any tur
 
 First call the Skill tool with `retro-with-docs` on this session; if it is not available, skip it and say so in the report.
 
-- PR URL, branch, final CI state.
+- Each layer bottom to top: PR URL, branch, final CI state.
+- The Later tidyings, each with its files and why it waits.
 - Each review pass (quick review, pair-review rounds): findings, what was fixed, what was discarded and why.
 - What was verified in the real app and how; what wasn't, and why.
 - CI failures met and how each was resolved.

@@ -1,7 +1,7 @@
 ---
 name: diff-review
 description: Runs one review round of a diff, without fixing, in a fresh reviewer agent of the chosen model (default Claude Opus 5.5) and returns findings backed by quoted code. Use when the user asks for a diff-review or a review by a named or different model, or another skill calls for one.
-argument-hint: "[scope] [reviewer=<model>[:<effort>]]"
+argument-hint: "[scope] [reviewer=<model>[:<effort>]] [standards=<file>,…]"
 ---
 
 # Diff review
@@ -12,6 +12,7 @@ A reviewer that shares the author's context shares its blind spots. Each round r
 
 - **scope**: a PR number, a ref range (`base...head`) or `diff` (uncommitted work). Omitted: the current branch's PR (`gh pr view --json number`), else the diff against its base. For a stacked PR the meaningful diff is `<parent-branch>...<branch>`.
 - **reviewer**: `<model id>[:<effort>]`, default `claude-opus-5-5:high`. A `claude-*` model runs on Claude, a `gpt-*` model on Codex, e.g. `gpt-6.1-sol:medium`.
+- **standards**: files of rules the change is held to, on top of the project's own.
 - From a calling skill: the round number, the already-decided list and, after round 1, the previous round's file, what changed since and the findings not acted on with their reasons.
 
 ## 1. Brief
@@ -22,6 +23,7 @@ The round file is `<scratch>/review-round-<N>.md`, in the session scratchpad whe
 - The scope and the exact command that shows the diff, with the range as given: `a..b` and `a...b` differ.
 - Which version of the code to read and quote: for a range, its head (`git show <head>:<file>`), since the checkout can hold other changes; for `diff`, the working tree.
 - Where the round goes: the round file, or, for a CLI reviewer (step 2), the final message and no file writes.
+- With `standards=`: their absolute paths, to read before reviewing; a breach is a finding that cites the rule.
 - The already-decided list, phrased as "do not reopen unless you find new evidence that changes its severity".
 - After round 1: the previous round file, the commits since (say if amended or unpushed: the reviewer reads the local branch), which findings each resolves, and the findings not acted on with their reasons. The reviewer reviews the **whole** scope again, since fixes can break things elsewhere.
 
