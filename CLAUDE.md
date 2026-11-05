@@ -24,11 +24,11 @@ Before committing, grep the diff for URLs, IDs and absolute home paths.
 1. `npx skills add . --list` lists every skill with its description: the discovery check.
 2. Work on a GitButler branch: `but branch new <short-kebab-description>`. This repo has no tickets, so the name carries no `PD-` prefix, and never a `/`. Commit with `but` (subject line only).
 3. Open a draft PR with `but pr new <branch> -F <file> --draft`. Ask before marking it ready or merging.
-4. Once merged, `npx skills update` installs it. Edits are invisible to the agent until then.
-5. A **new** skill also needs a `"moisesrj97/skills <name> <name>"` line in `THIRD_PARTY_SKILLS` of `~/dot-files/claude/install.sh`, plus `npx skills add moisesrj97/skills -g -y -a claude-code -s <name>`.
+
+`~/dot-files/claude/install.sh` symlinks every skill in this checkout into `~/.claude/skills`, so edits are live as soon as they are on disk, in every session, before any merge. Don't install these skills with `npx skills add`: a copy in its lock gets rewritten through the symlink by `npx skills update`. A **new** or renamed skill needs one run of `install.sh` to get its link.
 
 Add the skill to the table in `README.md` in the same commit.
 
-A change to the description or body of `megamoind` or `megamoind-batch`, or to the megamoind rule in `~/.claude/CLAUDE.md`, reruns `python3 evals/megamoind-entry/run.py` after installing them (`npx skills add . -g -y -a claude-code -s megamoind -s megamoind-batch`): the eval runs the installed copy. One run per case is noisy; confirm a failure with `RUNS=3`.
+A change to the description or body of `megamoind` or `megamoind-batch`, or to the megamoind rule in `~/.claude/CLAUDE.md`, reruns `python3 evals/megamoind-entry/run.py`. One run per case is noisy; confirm a failure with `RUNS=3`.
 
 A change to a step of `megamoind` or `megamoind-batch` updates the diagrams in `docs/megamoind.md` in the same commit.
