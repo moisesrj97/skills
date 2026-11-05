@@ -16,11 +16,12 @@ npx skills update                                  # pull new versions
 |---|---|---|
 | engineering | `agent-byline` | Marks the PR comments, reviews and replies an agent posts on your behalf. |
 | engineering | `comment-cleanup` | Prunes the comments a change added down to the non-obvious "why". |
+| engineering | `craftsmanship` | Kent Beck's Tidy First (where each tidying goes by area of impact) and Test Desiderata (the trade-offs between test properties). |
 | engineering | `debug-trace` | Temporary tagged debug points dumped to an isolated trace file, then removed. |
 | engineering | `diff-review` | One review round in a fresh reviewer agent of any model, with findings backed by quoted code. |
 | engineering | `gh-attach` | Attaches local images and videos to GitHub issues, PRs and comments with `gh --attach`. |
 | engineering | `github-pr` | Draft PR with a Conventional Commits title and a "why"-first description. |
-| engineering | `megamoind` | Takes a ticket end to end: TDD, reviews, real-app check, PR, CI loop. |
+| engineering | `megamoind` | Takes a ticket end to end: tidy first, TDD, reviews, real-app check, PR, CI loop. |
 | engineering | `megamoind-batch` | Takes a batch of tickets (a spec, a list, a label) to PRs, one async megamoind agent per ticket, stacked by dependency. |
 | engineering | `pair-review` | Review → fix → re-review loop with a reviewer from another model family, through `diff-review`. |
 | engineering | `retro-digest` | Groups the open retro findings across projects, applies the approved ones and records each outcome. |

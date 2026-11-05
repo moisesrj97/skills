@@ -24,6 +24,8 @@ Every agent runs **async**: you start it, go on with the others, and its report 
 
 Each ticket runs in its own agent, prompted with `/megamoind <ticket> base=<branch> brief=<file> stop-at=draft` plus one line asking it to write its step 9 report to `<scratch>/<ticket>-report.md` and end the file with `END OF REPORT`.
 
+A ticket can land as several **layers**: a tidy pre-PR below its branch, a post-PR above it. They belong to the ticket's place in its chain, and its report lists them bottom to top.
+
 - **Inside Herdr** (`HERDR_ENV=1`): one pane per agent in a **column to the right** of your pane. The first splits your pane right (`herdr pane split --current --direction right --cwd "$PWD" --no-focus`); each next one splits the bottom pane of that column down. Start it with `herdr agent start <ticket> --kind claude --pane <id> -- --name <ticket>` and prompt it with `herdr agent prompt <ticket> "<prompt>" --wait --timeout 7200000`, run in the background. The agent's quick reviewer (megamoind step 3) opens its pane inside the column, next to it. An agent asking a question in its pane is HITL: tell the user which pane needs them; they answer there.
 - **Inside T3 Code** (`mcp__t3-code__delegate_task` available): one child per ticket with `delegate_task` (not the Agent tool, which T3 keeps in the foreground), `isolation: "shared"` so it works in this same checkout. Each child is a thread the user can open; a child asking a question is HITL: tell the user which thread needs them (its link); they answer there. T3 notifies you whenever a child's turn ends, even while it still waits on a Monitor: only a report file sealed with `END OF REPORT` means done. On any other notice, check the file and reply only if the child is stuck; don't poll. Later work for a child (step 3's lower-layer changes, step 4's red checks) goes to its thread with `t3_thread_send`, which keeps its history.
 - **Otherwise**: a subagent per ticket with the Agent tool and `run_in_background: true`. It stops and reports a HITL question instead of asking; ask the user and resume the same agent with SendMessage.
@@ -59,7 +61,7 @@ Turn the tickets' blocking relationships into **chains**:
 - tickets likely to share files join one chain (see above);
 - each chain becomes one GitButler stack off the default branch; chains with one ticket are a plain branch.
 
-For every ticket, prepare the brief `megamoind` step 0 would ask for: plan and test seams (with the visual reference when the ticket reproduces something already in the product), branch name, and how to verify it. Work out once how to run the app (env, data or login) and which servers to share, and write into each brief the exact command that brings up the stack (e.g. `yarn dev:doctor --flow <flow>`, plus the services that flow leaves out), not a skill's name. Each brief also says that reds from a stale base are the orchestrator's, not HITL. If the repo has CODEOWNERS, say that marking the PRs ready will request those reviewers automatically.
+For every ticket, prepare the brief `megamoind` step 0 would ask for: plan and test seams (with the visual reference when the ticket reproduces something already in the product), branch name, and how to verify it. The agent settles what the brief leaves open of the plan (reuse, tidyings, a bug's cause), so a brief carries the user's decisions, not that legwork. Work out once how to run the app (env, data or login) and which servers to share, and write into each brief the exact command that brings up the stack (e.g. `yarn dev:doctor --flow <flow>`, plus the services that flow leaves out), not a skill's name. Each brief also says that reds from a stale base are the orchestrator's, not HITL. If the repo has CODEOWNERS, say that marking the PRs ready will request those reviewers automatically.
 
 Show it all in **one** round: the tickets the batch resolved to, the chains bottom → top with branch names, which chains run in parallel, and each ticket's brief. Done when the user has confirmed it; then write each brief to `<scratch>/<ticket>-brief.md`, adding their answers.
 
@@ -69,13 +71,13 @@ Update the workspace from the target once (`but pull`), before any agent starts.
 
 ### 3. Run the chains
 
-Start the bottom ticket of each chain, up to 3 agents, with `base=` the default branch. When an agent's report file is sealed with `END OF REPORT`, read it and start the next ticket of that chain with `base=` the branch just finished, or the next waiting chain if a slot is free. A report with an open HITL question stops that chain until the user answers; the other chains keep running.
+Start the bottom ticket of each chain, up to 3 agents, with `base=` the default branch. When an agent's report file is sealed with `END OF REPORT`, read it and start the next ticket of that chain with `base=` the top layer it lists, or the next waiting chain if a slot is free. A report with an open HITL question stops that chain until the user answers; the other chains keep running.
 
 If a ticket turns out to need a change in a lower layer of its chain, the change belongs there. The ticket's agent stops and asks for it; leave it stopped until the change lands. Send the change to that layer's agent, which commits it on its own branch and runs its gates; GitButler restacks the branches above. Push the stack (`but push`), then tell the waiting agent its base moved. No one has reviewed the drafts yet, so rewriting them is fine.
 
 ### 4. All ready
 
-Once every ticket's draft PR is green, bring the stacks up to date while the agents are idle: `but pull --check`, then `but pull`, reinstall dependencies if the lockfile changed, and `but push`. Then ask the user **once** whether to mark all the PRs ready, listing them, and send a `PushNotification` as the question goes out: a question waiting in a thread goes unnoticed. On a yes, `gh pr ready <number>` each, bottom of each chain first.
+Once every ticket's draft PR is green, bring the stacks up to date while the agents are idle: `but pull --check`, then `but pull`, reinstall dependencies if the lockfile changed, and `but push`. Then ask the user **once** whether to mark all the PRs ready, listing them, and send a `PushNotification` as the question goes out: a question waiting in a thread goes unnoticed. On a yes, `gh pr ready <number>` each, tidy layers included, bottom of each chain first.
 
 Some checks only run on ready PRs, and some only on PRs whose base is the default branch (e.g. Jenkins): a stacked layer gets those only once the layer below merges and GitHub retargets it. Report such layers as "pending retarget" and leave them out of every wait's exit condition. Loop until every other check of every PR is green:
 
@@ -91,7 +93,7 @@ Close every pane you opened, cancel any T3 child still running, and stop the dev
 | Chain | Ticket | Branch | PR | CI |
 |---|---|---|---|---|
 
-Then, from the agents' reports: findings discarded and why, what went unverified in the real app, changes that landed in a different layer than planned, and open HITL questions. Leave the tickets untouched in the tracker; they close when the user merges.
+One row per layer. Then, from the agents' reports: Later tidyings, findings discarded and why, what went unverified in the real app, changes that landed in a different layer than planned, and open HITL questions. Leave the tickets untouched in the tracker; they close when the user merges.
 
 ### 6. Reviewers (optional)
 
