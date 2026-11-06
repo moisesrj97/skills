@@ -16,11 +16,15 @@ First drafts narrate, especially ones written while reasoning out loud. Comments
 Scope is the comments this change added or modified. Leave pre-existing ones unless the user asks for a wider sweep.
 
 ```bash
-git diff --merge-base "$(git symbolic-ref --short refs/remotes/origin/HEAD)" -U0 -- '*.ts' '*.tsx' '*.js' | awk '
+base=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null) \
+  || base="origin/$(gh repo view --json defaultBranchRef -q .defaultBranchRef.name)"
+git diff --merge-base "$base" -U0 -- . ':!*.md' ':!*.lock' ':!*-lock.*' | awk '
 /^\+\+\+ b\// { file=substr($0,7) }
 /^@@/ { match($0, /\+[0-9]+/); n=substr($0, RSTART+1, RLENGTH-1) }
-/^\+/ && !/^\+\+\+/ { l=$0; sub(/^\+/,"",l); if (l ~ /^[ \t]*(\/\/|\/\*|\*|#)/) print file":"n": "l; n++ }'
+/^\+/ && !/^\+\+\+/ { l=$0; sub(/^\+/,"",l); if (l ~ /^[ \t]*(\/\/|\/\*|\*|#|--|<!--)/) print file":"n": "l; n++ }'
 ```
+
+It covers every language whose comments start with `//`, `/*`, `#`, `--` or `<!--`, and skips Markdown and lockfiles. For a language with another marker, add it to the pattern.
 
 Swap the base for whatever the change is measured against (`HEAD`, `--staged`, a commit). The script catches comment-only lines, so also skim the diff for trailing comments (`doThing(); // why`) and doc blocks an edit shifted. Then open each file, because a comment can only be judged next to its code.
 

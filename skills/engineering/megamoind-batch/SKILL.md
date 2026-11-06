@@ -81,10 +81,12 @@ If a ticket turns out to need a change in a lower layer of its chain, the change
 
 Once every ticket's draft PR is green, bring the stacks up to date while the agents are idle: `but pull --check`, then `but pull`, reinstall dependencies if the lockfile changed, and `but push`. Then ask the user **once** whether to mark all the PRs ready, listing them, and send a `PushNotification` as the question goes out, because a question waiting in a thread goes unnoticed. On a yes, `gh pr ready <number>` each, tidy layers included, bottom of each chain first.
 
-Some checks only run on ready PRs, and some only on PRs whose base is the default branch (e.g. Jenkins): a stacked layer gets those only once the layer below merges and GitHub retargets it. Report such layers as "pending retarget" and leave them out of every wait's exit condition. Loop until every other check of every PR is green:
+Some checks only run on ready PRs, and some only on PRs whose base is the default branch (e.g. Jenkins): a stacked layer gets those only once the layer below merges and GitHub retargets it. Report such layers as "pending retarget" and leave them out of every wait's exit condition. Loop until every other check of every PR is green, required or not:
 
 1. Wait with `Monitor` or an until-loop on `gh pr checks` rather than a tight poll.
-2. Send each red check to the agent that owns the branch: it diagnoses with the tools at hand, classifies it (caused by its change, flaky, or also red on its base) and pushes a fix. A fix in a lower layer restacks the layers above; push the stack.
+2. Diagnose each red check enough to classify it as in `megamoind` step 8.
+   - **Base staleness** (a scan comparing against a default branch newer than the PR's base): yours. Update the stacks as at the start of this step (`but pull --check`, `but pull`, reinstall if the lockfile changed, `but push`).
+   - **Anything else**: send it to the agent that owns the branch, which handles it as its step 8 says and pushes a fix. A fix in a lower layer restacks the layers above; push the stack.
 
 Stop with HITL after 3 fix rounds that haven't turned CI green.
 

@@ -19,7 +19,7 @@ Leave out style, naming, formatting, anything a linter catches, and design alter
 
 What the brief says about the change (what a commit resolves, why a finding was declined) is the author's claim. Check it against the code before you accept it. When an existing test or a command that writes nothing can show a scenario, run it and say so under the finding.
 
-Before writing a finding, re-open the cited lines in the checked-out code and quote them under it. Drop, rather than soften, a finding you cannot back with a quote. The severity follows the scenario:
+Before writing a finding, re-open the cited lines in the version of the code the brief tells you to read, and quote them from there under it. Drop, rather than soften, a finding you cannot back with a quote. The severity follows the scenario:
 
 - **P0**: data loss, a security hole, or a crash on the main path.
 - **P1**: wrong behaviour in a common case.

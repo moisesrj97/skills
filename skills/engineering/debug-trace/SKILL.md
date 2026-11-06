@@ -44,7 +44,7 @@ Print examples (marker in the string, one line):
 ```
 console.log('CLAUDE-DBG:7c1a | after-fetch |', JSON.stringify(user));          // JS/TS
 print('CLAUDE-DBG:7c1a | after-fetch |', json.dumps(user, default=str))         # Python
-fmt.Printf("CLAUDE-DBG:7c1a | after-fetch | %+v\n", user)                       // Go
+fmt.Printf("CLAUDE-DBG:7c1a | after-fetch | %s\n", func() []byte { b, _ := json.Marshal(user); return b }()) // Go
 ```
 
 Run: `<cmd> 2>&1 | grep --line-buffered 'CLAUDE-DBG:7c1a' > /tmp/claude-debug-7c1a.log`. The pipe hides the command's exit code, so check it separately if it matters.
@@ -52,15 +52,18 @@ Run: `<cmd> 2>&1 | grep --line-buffered 'CLAUDE-DBG:7c1a' > /tmp/claude-debug-7c
 Append examples:
 
 ```
-// JS/TS: the import once, then one call per point
+// JS/TS, ES module: the import once at the top of the file, then one call per point
 import { appendFileSync } from 'node:fs'; // CLAUDE-DBG:7c1a
 appendFileSync('/tmp/claude-debug-7c1a.log', `CLAUDE-DBG:7c1a | after-fetch | ${JSON.stringify(user)}\n`);
+
+// JS, CommonJS: inline, with no import line
+require('node:fs').appendFileSync('/tmp/claude-debug-7c1a.log', `CLAUDE-DBG:7c1a | after-fetch | ${JSON.stringify(user)}\n`);
 
 # Python
 open('/tmp/claude-debug-7c1a.log','a').write(f'CLAUDE-DBG:7c1a | after-fetch | {json.dumps(user, default=str)}\n')
 ```
 
-The import is a second marked line, so cleanup catches it too. Write synchronously. Async writes (`fs.promises`, dynamic `import()`) may not land before exit.
+An import you add is a second marked line, so cleanup catches it too. This holds in any language, e.g. `"encoding/json" // CLAUDE-DBG:7c1a` in a Go import block. Leave an import the file already had unmarked, or cleanup deletes it. Write synchronously. Async writes (`fs.promises`, dynamic `import()`) may not land before exit.
 
 ## 4. Instrument
 

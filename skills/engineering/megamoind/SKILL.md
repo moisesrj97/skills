@@ -127,8 +127,8 @@ Done when every layer has its PR. Keep each one current through steps 6 and 8: a
 
 Loop until every check is green:
 
-1. Wait for the checks to finish with `Monitor` or an until-loop on `gh pr checks <number>` rather than a tight poll. Some required checks appear minutes after the others, so the wait ends only when every required check from step 0 exists and is green; "all checks passed" with one missing is still pending. With `stop-at=draft`, that means the draft checks only, and the report lists the ready-only ones as pending for the caller. A layer stacked on another gets the checks that run only on PRs based on the default branch once the layer below merges: list those as "pending retarget" and leave them out of the wait. When T3 Code delegated the ticket, wait inside the turn (`t3_background_wait` on the Monitor or loop task) rather than ending it.
-2. On a red check, diagnose with the tools at hand: a CI skill the project or the user has installed, `gh pr checks`, the job logs. Classify it:
+1. Wait for the checks to finish with `Monitor` or an until-loop on `gh pr checks <number>` rather than a tight poll. The wait ends when every check on the PR is green, required or not, and every required check from step 0 exists. Some required checks appear minutes after the others, so "all checks passed" with one missing is still pending. With `stop-at=draft`, that means the draft checks only, and the report lists the ready-only ones as pending for the caller. A layer stacked on another gets the checks that run only on PRs based on the default branch once the layer below merges: list those as "pending retarget" and leave them out of the wait. When T3 Code delegated the ticket, wait inside the turn (`t3_background_wait` on the Monitor or loop task) rather than ending it.
+2. On any red check, required or not, diagnose with the tools at hand: a CI skill the project or the user has installed, `gh pr checks`, the job logs. Classify it:
    - **caused by this change**: fix it, run the gates, push;
    - **flaky or infrastructure**: re-run it once; red again is HITL;
    - **also red on `<base>`**: HITL, leave it alone;

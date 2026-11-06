@@ -26,9 +26,14 @@ gh pr view 123 --repo owner/repo --json baseRefName,headRefName
 
 ## Step 2: Read the relevant code
 
-For an inline comment (it has `path`), read the file around the flagged line, at least 20 lines on each side, enough to see what the code does and why it is written that way.
+Read the PR's head from GitHub rather than the local checkout, which may hold another branch.
 
-For a general comment with no file, read `git diff` against the base branch to see what the PR changed.
+For an inline comment (it has `path`), read the file at the head branch around the flagged line, at least 20 lines on each side, enough to see what the code does and why it is written that way:
+```bash
+gh api "repos/owner/repo/contents/<path>?ref=<headRefName>" -H "Accept: application/vnd.github.raw"
+```
+
+For a general comment with no file, read what the PR changed with `gh pr diff 123 --repo owner/repo`.
 
 ## Step 3: Evaluate the suggestion
 

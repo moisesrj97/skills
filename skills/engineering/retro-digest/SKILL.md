@@ -1,6 +1,7 @@
 ---
 name: retro-digest
-description: "Reviews the open findings in ~/.skill-docs/retros/ across all projects, groups recurring ones, applies those the user approves and records each outcome. Use only when the user or a scheduled task explicitly asks for it."
+description: "Reviews the open findings in ~/.skill-docs/retros/ across all projects, groups recurring ones, applies those the user approves and records each outcome. Manual only."
+disable-model-invocation: true
 ---
 
 # Retro digest
