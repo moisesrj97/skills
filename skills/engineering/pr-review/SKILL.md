@@ -14,7 +14,7 @@ Read the PR description, the issue or ticket it links (with the tracker the proj
 
 ## 2. Review
 
-Call the Skill tool with `diff-review` twice, launching both before waiting for either: reviewers `claude-opus-5-5:medium` and `gpt-6.1-sol:medium`, scope `<base>...<head sha>`, each with its own round file. Pass the trade-offs the author or ticket accepted as the already-decided list.
+Call the Skill tool with `diff-review` twice, launching both before waiting for either: reviewers `claude-opus-5-5:medium` and `gpt-6.1-sol:medium`, scope `<base>...<head sha>`, each with its own round file. Pass the trade-offs the author or ticket accepted as the already-decided list. When the GPT reviewer can't run (no Codex target in T3 Code and no `codex` CLI, or its round fails twice), go on with the Opus round alone and say so in the report.
 
 ## 3. Verify
 
