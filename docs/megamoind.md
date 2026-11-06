@@ -11,9 +11,9 @@ flowchart TD
     brief -- yes --> fill["0. Settle what the brief leaves open<br/>reuse, tidyings, a bug's cause"]
     fill --> s1
     s0 --> s1["1. Branch<br/>GitButler or git, tidy-first pre-PR below if planned<br/>reinstall deps if the lockfile moved"]
-    s1 --> s2["2. Implement<br/>tidy first (first commit or pre-PR)<br/>→ mattpocock-skills:tdd (bug: diagnosis loop is the first red, then its phase 6 cleanup)<br/>→ tidy after (commit or post-PR above; else Later list)<br/>gates green; no tests in brief → failure-path checklist"]
-    s2 --> s3["3. Quick review<br/>mattpocock-skills:code-review<br/>standards + spec, base...HEAD<br/>+ tidy-first.md, test-desiderata.md"]
-    s3 --> s4["4. Pair review<br/>pair-review base...HEAD standards=…<br/>GPT reviewer via diff-review, fix, re-review until done"]
+    s1 --> s2["2. Implement<br/>tidy first (first commit or pre-PR)<br/>→ mattpocock-skills:tdd (bug: diagnosis loop is the first red, then its phase 6 cleanup)<br/>→ tidy after: craftsmanship's Tidy a diff, diff-review lens=cleanup<br/>(commit or post-PR above; else Later list)<br/>gates green; no tests in brief → failure-path checklist"]
+    s2 --> s3["3. Security review<br/>diff-review lens=security, base...HEAD<br/>one round, fix with tests"]
+    s3 --> s4["4. Pair review<br/>pair-review base...HEAD spec=brief standards=test-desiderata.md<br/>GPT reviewer via diff-review, fix, re-review until done"]
     s4 --> s5["5. Verify in the real app<br/>browser (frontend) or debug-trace (backend)<br/>injected states via fetch, screenshots for the PR"]
     s5 --> s6["6. Comment cleanup<br/>commit, gates"]
     s6 --> draft{"stop-at=draft?"}

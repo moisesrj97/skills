@@ -1,7 +1,7 @@
 ---
 name: pair-review
 description: "Reviews your own change in a loop: a reviewer from another model family reviews it through diff-review, you fix its findings, and it re-reviews until done or a human must decide. Use when asked for a pair-review or a review-and-fix loop. Not for a teammate's PR; use pr-review."
-argument-hint: "[scope] [reviewer=<model>[:<effort>]] [standards=<file>,…]"
+argument-hint: "[scope] [reviewer=<model>[:<effort>]] [spec=<file>] [standards=<file>,…]"
 ---
 
 # Pair review
@@ -12,6 +12,7 @@ You are the **author**. A **reviewer**, by default from another model family, re
 
 - **scope**: what to review. A PR number (`34847`), a ref range (`base...head`), or `diff` (uncommitted work). If omitted, use the current branch's open PR (`gh pr view --json number`), else the diff against its base. For a stacked PR the meaningful diff is `<parent-branch>...<branch>`, not `master...`.
 - **reviewer**: `<model id>[:<effort>]`, passed to `diff-review`. Default `gpt-6.1-sol:medium`.
+- **spec**: a file with what the change must do (a ticket, a brief), passed to `diff-review` every round.
 - **standards**: files of rules the change is held to, passed to `diff-review` every round.
 
 State the resolved scope and reviewer in one line before starting.
@@ -26,7 +27,7 @@ The reviewer starts fresh in round 1 and rediscovers every accepted trade-off an
 
 ### Run the round
 
-Call the Skill tool with `diff-review`, passing the scope, the reviewer, the round number and the already-decided list. Keep the reviewer handle `diff-review` returns in round 1. From round 2 on, also pass that handle, the commits since (amended or unpushed included) with the findings each resolves, and the findings you did **not** act on, each with its reason (decided by the user / out of scope / disagree because …). When a round returns a new handle (the old reviewer was gone), keep the new one.
+Call the Skill tool with `diff-review`, passing the scope, the reviewer, the spec, the standards, the round number and the already-decided list. Keep the reviewer handle `diff-review` returns in round 1. From round 2 on, also pass that handle, the commits since (amended or unpushed included) with the findings each resolves, and the findings you did **not** act on, each with its reason (decided by the user / out of scope / disagree because …). When a round returns a new handle (the old reviewer was gone), keep the new one.
 
 ### Triage each finding
 

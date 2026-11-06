@@ -1,6 +1,6 @@
 ---
 name: megamoind
-description: "Delegate a ticket end to end, unattended: TDD implementation, quick review, pair-review, real-app verification, a PR ready for review and a CI loop until green. Use when the user hands over one ticket (a GitHub issue or a tracker ID such as a ClickUp task) to take all the way to a PR, e.g. \"megamoind PD-123\", \"llévate el #42 hasta la PR\", or when another skill delegates one ticket's implementation. Several tickets go to megamoind-batch."
+description: "Delegate a ticket end to end, unattended: TDD implementation, tidying, security review, pair-review, real-app verification, a PR ready for review and a CI loop until green. Use when the user hands over one ticket (a GitHub issue or a tracker ID such as a ClickUp task) to take all the way to a PR, e.g. \"megamoind PD-123\", \"llévate el #42 hasta la PR\", or when another skill delegates one ticket's implementation. Several tickets go to megamoind-batch."
 argument-hint: "<ticket ID> [base=<branch>] [brief=<file>] [stop-at=draft]"
 ---
 
@@ -21,7 +21,7 @@ Invoking this skill is the user's approval to commit, push to the ticket's own b
 
 ## When a skill is not available
 
-This skill hands off to `megamoind-batch`, `craftsmanship`, `mattpocock-skills:diagnosing-bugs`, `mattpocock-skills:tdd`, `mattpocock-skills:code-review`, `debug-trace`, `merge-risk`, `github-pr`, `pair-review` and `comment-cleanup`, called by these exact names. If the Skill tool reports one as not available, stop and ask. An improvised copy silently skips whatever the real skill enforces.
+This skill hands off to `megamoind-batch`, `craftsmanship`, `mattpocock-skills:diagnosing-bugs`, `mattpocock-skills:tdd`, `diff-review`, `debug-trace`, `merge-risk`, `github-pr`, `pair-review` and `comment-cleanup`, called by these exact names. If the Skill tool reports one as not available, stop and ask. An improvised copy silently skips whatever the real skill enforces.
 
 ## Gates
 
@@ -75,7 +75,7 @@ Three passes, with structure and behaviour always in separate commits:
 
 1. **Tidy first**: the plan's first tidyings, as the PR's first `refactor:` commit or on the pre-PR branch, following `craftsmanship`.
 2. **Behaviour**: call the Skill tool with `mattpocock-skills:tdd` and build the ticket at the seams agreed in step 0, reusing what step 0 found. For a bug, the diagnosis loop from step 0 is the first red test; once it is green, run `diagnosing-bugs` phase 6 (its instrumentation and throwaway harnesses removed, the original reproduction rerun) before committing.
-3. **Tidy after**: polish the change's new code, then the tidyings the change revealed, each placed by area of impact: a `refactor:` commit on the ticket's branch, or the post-PR branch `<name>-tidy-after` on top of it. One that is Later goes on a list for the report.
+3. **Tidy after**: run `craftsmanship`'s *Tidy a diff* over `<base>...HEAD`. It places each tidying by area of impact: a `refactor:` commit on the ticket's branch, or the post-PR branch `<name>-tidy-after` on top of it. One that is Later goes on a list for the report.
 
 Run type-check and the single test files you are touching as you go, and the gates once at the end. Commit locally at each working checkpoint.
 
@@ -83,17 +83,15 @@ When the brief rules out tests, write a **failure-path checklist** to the scratc
 
 Done when every point of the ticket is implemented, every planned tidying has landed or moved to Later, every checklist item is handled or accepted, and the gates are green.
 
-### 3. Quick review
+### 3. Security review
 
-Run `mattpocock-skills:code-review` over `<base>...HEAD` in its own agent, with the ticket as the spec and `craftsmanship`'s `tidy-first.md` and `test-desiderata.md` (absolute paths, from the folder it loaded from) as extra standards sources. Inside Herdr (`HERDR_ENV=1`) that agent is a pane split from yours (right if your pane is wide, down if tall), started with `herdr agent start <name> --kind claude --pane <id> -- --name <name>` and closed once you have read its file; outside Herdr, a subagent.
+Call the Skill tool with `diff-review` with `lens=security` over `<base>...HEAD`. One round, with no loop: step 4 reviews the whole change again, these fixes included.
 
-The reviewer only reads and reports: it writes its findings to a file in the scratchpad and **quotes** the cited lines under every finding. Code edits and posting stay with you. Read the file. A finding is confirmed when its quote is there and you can trace its failure scenario in it.
-
-Done when every confirmed finding is fixed with tests, every other one is discarded with a one-line reason for the report, and the gates are green.
+Done when every finding it returns is fixed with a test that fails without the fix, or discarded with a one-line reason for the report, and the gates are green.
 
 ### 4. Pair review
 
-Call the Skill tool with `pair-review` with args `<base>...HEAD standards=<the same two files>`, passing the user's decisions from step 0 and any HITL answers as its already-decided list. A finding fixed by a tidying goes on the layer its area of impact picks. It fixes and re-reviews until done; its HITL stops are this skill's HITL stops.
+Call the Skill tool with `pair-review` with args `<base>...HEAD spec=<scratchpad>/<ticket>-brief.md standards=<craftsmanship's test-desiderata.md, absolute path>`, passing the user's decisions from step 0 and any HITL answers as its already-decided list. A finding fixed by a tidying goes on the layer its area of impact picks. It fixes and re-reviews until done; its HITL stops are this skill's HITL stops.
 
 ### 5. Verify in the real app
 
@@ -145,7 +143,7 @@ First call the Skill tool with `retro-with-docs` on this session; if it is not a
 
 - Each layer bottom to top: PR URL, branch, merge-risk color, final CI state.
 - The Later tidyings, each with its files and why it waits.
-- Each review pass (quick review, pair-review rounds): findings, what was fixed, what was discarded and why.
+- Each review pass (tidy after, security review, pair-review rounds): findings, what was fixed, what was discarded and why.
 - What was verified in the real app and how; what wasn't, and why.
 - CI failures met and how each was resolved.
 - Open HITL questions.
