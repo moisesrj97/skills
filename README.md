@@ -16,7 +16,7 @@ npx skills update                                  # pull new versions
 |---|---|---|
 | engineering | `agent-byline` | Marks the PR comments, reviews and replies an agent posts on your behalf. |
 | engineering | `comment-cleanup` | Prunes the comments a change added down to the non-obvious "why". |
-| engineering | `craftsmanship` | Kent Beck's Tidy First (where each tidying goes by area of impact) and Test Desiderata (the trade-offs between test properties). |
+| engineering | `craftsmanship` | Kent Beck's Tidy First (where each tidying goes by area of impact), the four rules of simple design, and Test Desiderata (the trade-offs between test properties). Tidies a diff through `diff-review`'s cleanup lens. |
 | engineering | `debug-trace` | Temporary tagged debug points dumped to an isolated trace file, then removed. |
 | engineering | `diff-review` | One review round in a separate reviewer agent of any model, through a lens (bugs, security or cleanup), continued across the rounds of a loop, with findings backed by quoted code and checked against a spec when given. |
 | engineering | `gh-attach` | Attaches local images and videos to GitHub issues, PRs and comments with `gh --attach`. |
