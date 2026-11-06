@@ -36,6 +36,7 @@ This PR resolves <ticket URL>
 - Add `## Next steps` for follow-ups or stacked PRs, and `## Related` for issue or PR references other than the ticket.
 - The reviewer has the diff, so the description carries the *why*: no restated diff, file lists or code blocks.
 - A testing section only when the user asks for one. Anything left unverified is one line in Solution.
+- `## Merge risk` goes before Screenshots, only with a `merge-risk` report the caller provides, pasted as given.
 - `## Screenshots` goes last, only with screenshots the caller or the user provides: each image as `![<what it shows>](./<file>)` under its one-line source (local data, injected in the browser…).
 
 ## 3. Preview

@@ -17,11 +17,11 @@ flowchart TD
     s4 --> s5["5. Verify in the real app<br/>browser (frontend) or debug-trace (backend)<br/>injected states via fetch, screenshots for the PR"]
     s5 --> s6["6. Comment cleanup<br/>commit, gates"]
     s6 --> draft{"stop-at=draft?"}
-    draft -- no --> s7r["7. One PR per layer, bottom first, ready for review<br/>github-pr + gh-attach screenshots, full CI starts"]
-    draft -- yes --> s7d["7. One PR per layer, as drafts"]
+    draft -- no --> s7r["7. One PR per layer, bottom first, ready for review<br/>merge-risk → github-pr (## Merge risk) + gh-attach screenshots,<br/>full CI starts"]
+    draft -- yes --> s7d["7. One PR per layer, as drafts<br/>merge-risk → github-pr (## Merge risk)"]
     s7r --> s8["8. CI loop<br/>until every required check exists and is green<br/>(draft checks only with stop-at=draft;<br/>stacked layers: pending retarget)<br/>fix / re-run flaky / HITL if red on base<br/>HITL after 3 failed fix pushes"]
     s7d --> s8
-    s8 --> s9["9. Report<br/>retro-with-docs first, then the report<br/>layers bottom to top, Later tidyings<br/>report file written before any turn ends"]
+    s8 --> s9["9. Report<br/>retro-with-docs first, then the report<br/>layers bottom to top with merge-risk color, Later tidyings<br/>report file written before any turn ends"]
     s9 --> stopdraft{"stop-at=draft?"}
     stopdraft -- no --> s10["10. Reviewers<br/>only after explicit yes"]
     stopdraft -- yes --> done([done])

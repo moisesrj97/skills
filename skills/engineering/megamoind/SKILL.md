@@ -21,7 +21,7 @@ Invoking this skill is the user's approval to commit, push to the ticket's own b
 
 ## When a skill is not available
 
-This skill delegates to `craftsmanship`, `mattpocock-skills:diagnosing-bugs`, `mattpocock-skills:tdd`, `mattpocock-skills:code-review`, `debug-trace`, `github-pr`, `pair-review` and `comment-cleanup`, called by these exact names. If the Skill tool reports one as not available, stop and ask. An improvised copy silently skips whatever the real skill enforces.
+This skill delegates to `craftsmanship`, `mattpocock-skills:diagnosing-bugs`, `mattpocock-skills:tdd`, `mattpocock-skills:code-review`, `debug-trace`, `merge-risk`, `github-pr`, `pair-review` and `comment-cleanup`, called by these exact names. If the Skill tool reports one as not available, stop and ask. An improvised copy silently skips whatever the real skill enforces.
 
 ## Gates
 
@@ -104,7 +104,7 @@ Call the Skill tool with `comment-cleanup` over the whole branch diff (`<base>..
 
 ### 7. PR
 
-Open one PR per layer, bottom first. For each, call the Skill tool with `github-pr` to write the title and description and open the PR **ready for review**, so the full CI runs (some checks skip drafts); with `stop-at=draft`, open it as a draft. A tidy PR's description says it changes structure only and names the ticket's PR it serves. The approval it asks for is already given: print them and go on without waiting for `approve`. Under GitButler, create the PR with `but pr new <branch> -F <file>` (first line title, rest description; add `--draft` with `stop-at=draft`) instead of `gh`: it pushes the branch and its ancestors and sets the right base in a stack. Mention anything left unverified from step 5. With screenshots from step 5, hand `github-pr` each file and its one-line source; a later fix that changes a captured screen (steps 6 and 8) means capturing it again and re-attaching it.
+Open one PR per layer, bottom first. For each, call the Skill tool with `merge-risk` over the layer's range (`<layer below or base>...<layer>`), then with `github-pr`, handing it that report for its `## Merge risk` section. `github-pr` writes the title and description and opens the PR **ready for review**, so the full CI runs (some checks skip drafts); with `stop-at=draft`, open it as a draft. A tidy PR's description says it changes structure only and names the ticket's PR it serves. The approval it asks for is already given: print them and go on without waiting for `approve`. Under GitButler, create the PR with `but pr new <branch> -F <file>` (first line title, rest description; add `--draft` with `stop-at=draft`) instead of `gh`: it pushes the branch and its ancestors and sets the right base in a stack. Mention anything left unverified from step 5. With screenshots from step 5, hand `github-pr` each file and its one-line source; a later fix that changes a captured screen (steps 6 and 8) means capturing it again and re-attaching it. A step 8 fix that changes exposed code means rerunning `merge-risk` and updating the section (`gh pr edit <number> --body-file <file>`).
 
 ### 8. CI loop
 
@@ -126,7 +126,7 @@ When a caller passed a report path, write the report there before ending any tur
 
 First call the Skill tool with `retro-with-docs` on this session; if it is not available, skip it and say so in the report.
 
-- Each layer bottom to top: PR URL, branch, final CI state.
+- Each layer bottom to top: PR URL, branch, merge-risk color, final CI state.
 - The Later tidyings, each with its files and why it waits.
 - Each review pass (quick review, pair-review rounds): findings, what was fixed, what was discarded and why.
 - What was verified in the real app and how; what wasn't, and why.

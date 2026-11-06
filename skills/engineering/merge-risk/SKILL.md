@@ -1,7 +1,7 @@
 ---
 name: merge-risk
 description: Rates how risky a PR is to merge as a traffic light, green, yellow or red, by what users would suffer if it fails, with the reasons behind the color. Use when asked how risky a PR or a merge is. Not for finding bugs; use diff-review.
-argument-hint: "[PR number or URL]"
+argument-hint: "[PR number, URL or ref range]"
 ---
 
 # Merge risk
@@ -10,7 +10,7 @@ The color measures **exposure**, which is what a user sees if the change fails i
 
 ## 1. Gather
 
-- The scope is the PR given, else the current branch's PR (`gh pr view --json number`), else the diff against the default branch (`git symbolic-ref --short refs/remotes/origin/HEAD`).
+- The scope is the PR or ref range (`<base>...<branch>`) given, else the current branch's PR (`gh pr view --json number`), else the diff against the default branch (`git symbolic-ref --short refs/remotes/origin/HEAD`).
 - Read the diff, the PR description and `gh pr checks`.
 - Read the `## Merge risk` section of the project's `CLAUDE.local.md` or `CLAUDE.md` if it has one. Its main flows and critical areas override your own guess. Without it, infer the main flows from the product and mark them as inferred in the report.
 
