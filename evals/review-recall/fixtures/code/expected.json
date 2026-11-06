@@ -1,0 +1,13 @@
+{
+  "seeds": [
+    {"id": "missing-await", "file": "src/notes/service.ts", "match": "if (!canEdit(userId, note)) {", "why": "canEdit is now async; the un-awaited Promise is always truthy, so nobody is ever Forbidden"},
+    {"id": "removed-empty-title", "file": "src/notes/service.ts", "match": "note.title = title.trim();", "why": "the empty-title guard was dropped in the refactor"},
+    {"id": "caller-offset", "file": "src/api/routes.ts", "match": "const notes = await listNotes(req.userId, limit);", "why": "listNotes now takes (offset, limit); the route passes limit as offset"},
+    {"id": "moved-lost-guard", "file": "src/shared/paging.ts", "match": "return Math.ceil(total / pageSize);", "why": "pageCount moved without its pageSize <= 0 guard"},
+    {"id": "spec-409", "file": "src/notes/service.ts", "match": "note.archived = true;", "why": "spec: archiving an archived note must fail with 409"}
+  ],
+  "decoys": [
+    {"id": "loop-bound", "file": "src/shared/paging.ts", "match": "for (let i = 0; i <= pages - 1; i++) {", "why": "correct bound written unusually"},
+    {"id": "slice-end", "file": "src/notes/service.ts", "match": "const end = offset + limit;", "why": "correct slice end"}
+  ]
+}

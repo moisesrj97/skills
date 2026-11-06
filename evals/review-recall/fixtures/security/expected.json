@@ -1,0 +1,18 @@
+{
+  "seeds": [
+    {"id": "idor-objectid", "file": "src/routes/notes.ts", "match": "const note = await Note.findById(req.params.id);", "why": "no ownership check on a guessable ObjectId (P2)"},
+    {"id": "nosql-operator", "file": "src/routes/notes.ts", "match": "const share = await Share.findOne({ token: req.body.token });", "why": "{\"$ne\": null} as token opens any share (P10)"},
+    {"id": "llm-to-query", "file": "src/routes/notes.ts", "match": "res.json(await Note.find(filter));", "why": "LLM output becomes an unscoped filter: other tenants' notes (E14)"},
+    {"id": "stored-xss-public", "file": "src/web/PublicNote.tsx", "match": "dangerouslySetInnerHTML={{ __html: note.html }}", "why": "user HTML rendered for public viewers (P5, P7)"}
+  ],
+  "decoys": [
+    {"id": "env-in-exec", "file": "scripts/backup.ts", "match": "execSync(", "why": "E4, P3"},
+    {"id": "example-secret", "file": "test/llm.test.ts", "match": "const apiKey = ", "why": "E8, P9"},
+    {"id": "jsx-text", "file": "src/web/PublicNote.tsx", "match": "<h1>{note.title}</h1>", "why": "P5"},
+    {"id": "self-xss", "file": "src/web/DraftPreview.tsx", "match": "className=\"preview\"", "why": "P7"},
+    {"id": "admin-delete", "file": "src/routes/notes.ts", "match": "await Note.findByIdAndDelete(req.params.id);", "why": "P8"},
+    {"id": "log-path", "file": "src/routes/notes.ts", "match": "logger.info(`${req.method} ${req.path}`);", "why": "P1"},
+    {"id": "quadratic", "file": "src/routes/notes.ts", "match": "const dupes = mine.filter(", "why": "E1"},
+    {"id": "fixed-regex", "file": "src/routes/notes.ts", "match": "if (!/^[a-z0-9-]{1,64}$/.test(req.params.slug)) {", "why": "E1, E11"}
+  ]
+}

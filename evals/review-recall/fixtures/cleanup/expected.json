@@ -1,0 +1,38 @@
+{
+  "seeds": [
+    {
+      "id": "reimplements-slugify",
+      "file": "src/boards/dashboard.ts",
+      "match": "const slug = board.title",
+      "why": "re-implements utils/strings.ts slugify"
+    },
+    {
+      "id": "sequential-awaits",
+      "file": "src/boards/dashboard.ts",
+      "match": "const settings = await getSettings(userId);",
+      "why": "three independent requests run one after another"
+    },
+    {
+      "id": "special-case-shared",
+      "file": "src/shared/httpClient.ts",
+      "match": "if (url.includes('/billing')) {",
+      "why": "billing special case inside the shared client; pass retries from the billing caller"
+    }
+  ],
+  "decoys": [
+    {
+      "id": "or-to-nullish",
+      "file": "src/boards/dashboard.ts",
+      "match": "return opts.pageSize || fallback;",
+      "why": "|| is required: a pageSize of 0 falls back; ?? would change behaviour",
+      "pattern": "pageSize \\?\\?"
+    },
+    {
+      "id": "redundant-comment",
+      "file": "src/boards/dashboard.ts",
+      "match": "// return the greeting and the cards",
+      "why": "a comment: comment-cleanup's job",
+      "pattern": "(?i)comment"
+    }
+  ]
+}

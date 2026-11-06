@@ -31,4 +31,6 @@ Add the skill to the table in `README.md` in the same commit.
 
 A change to the description or body of `megamoind` or `megamoind-batch`, or to the megamoind rule in `~/.claude/CLAUDE.md`, reruns `python3 evals/megamoind-entry/run.py`. One run per case is noisy; confirm a failure with `RUNS=3`.
 
+A change to `diff-review`'s `reviewer.md` or `lenses/`, or to `craftsmanship`'s `tidy-first.md` or `simple-design.md`, reruns `python3 evals/review-recall/run.py` and compares each arm's range with the previous version's.
+
 A change to a step of `megamoind` or `megamoind-batch` updates the diagrams in `docs/megamoind.md` in the same commit.
