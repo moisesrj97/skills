@@ -1,6 +1,6 @@
 ---
 name: diff-review
-description: Runs one review round of a diff in a separate reviewer agent of the chosen model and returns quote-backed findings, without fixing. Use when asked for a diff-review or a review by a named or different model, or when a skill calls for one.
+description: Runs one review round of a diff in a separate reviewer agent of the chosen model and returns quote-backed findings without fixing. Use to find bugs in a diff, for a security review of a diff, a review by another model, or when a skill calls for one.
 argument-hint: "[scope] [lens=code|security|cleanup] [reviewer=<model>[:<effort>]] [spec=<file>] [standards=<file>,…]"
 ---
 
@@ -11,8 +11,8 @@ A reviewer that shares the author's context shares its blind spots. The reviewer
 ## Arguments
 
 - **scope**: a PR number, a ref range (`base...head`) or `diff` (uncommitted work). When omitted, the current branch's PR (`gh pr view --json number`), else the diff against its base. For a stacked PR the meaningful diff is `<parent-branch>...<branch>`.
-- **lens**: what the reviewer looks for, from `references/lenses/<lens>.md`. `code` (default): bugs, each with a failure scenario. `cleanup`: code that works but costs, each with that cost.
-- **reviewer**: `<model id>[:<effort>]`. Default `claude-opus-5-5:high`, or `claude-opus-5-5:medium` for `cleanup`. A `claude-*` model runs on Claude, a `gpt-*` model on Codex, e.g. `gpt-6.1-sol:medium`.
+- **lens**: what the reviewer looks for, from `references/lenses/<lens>.md`. `code` (default): bugs, each with a failure scenario. `security`: exploitable vulnerabilities, filtered by numbered exclusions and precedents. `cleanup`: code that works but costs, each with that cost.
+- **reviewer**: `<model id>[:<effort>]`. Default `claude-opus-5-5:high`; `gpt-6.1-sol:high` for `security`, so another model family checks what the reviewer finds, falling back to `claude-opus-5-5:high` when Codex can't run; `claude-opus-5-5:medium` for `cleanup`. A `claude-*` model runs on Claude, a `gpt-*` model on Codex, e.g. `gpt-6.1-sol:medium`.
 - **spec**: a file with what the change must do (a ticket, a brief). The `code` lens checks the change against it.
 - **standards**: files of rules the change is held to, on top of the project's own.
 - From a calling skill: the round number, the already-decided list and, after round 1, the **reviewer handle** this skill returned in round 1, what changed since and the findings not acted on with their reasons.
@@ -48,7 +48,11 @@ When a continue fails (the session or thread is gone), start a fresh reviewer fo
 
 The round is complete when the round file ends with `END OF ROUND`. Without that seal the round was cut. Check the tail of the log and run it once more, and return a second failure to the caller with the error.
 
-Then find each finding's quote in the version the reviewer was told to read. Discard a finding whose quote is missing or matches nothing there, with a one-line reason. A quote that matches at another line number stands. Done when every finding is confirmed or discarded.
+Then find each finding's quote in the version the reviewer was told to read. Discard a finding whose quote is missing or matches nothing there, with a one-line reason. A quote that matches at another line number stands.
+
+For `security`, trace each remaining finding yourself in that version, from the attacker's input to the sink, and test it against every exclusion and precedent in `references/lenses/security.md`. Discard one that a rule rules out, naming the rule (`E4`, `P2`), and one the code refutes, naming the line.
+
+Done when every finding is confirmed or discarded.
 
 ## 4. Return
 
