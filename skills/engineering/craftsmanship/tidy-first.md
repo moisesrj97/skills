@@ -1,6 +1,6 @@
 # Tidy First: catalogue and rules
 
-From Kent Beck, *Tidy First?* (2023). Where a tidying goes and when to do it are in [`SKILL.md`](SKILL.md).
+From Kent Beck, *Tidy First?* (2023). [`SKILL.md`](SKILL.md) says when to tidy and where each tidying goes.
 
 ## Catalogue
 
@@ -20,11 +20,11 @@ Each tidying takes minutes and preserves behaviour.
 - **Extract helper**: a block with one purpose becomes a function named for it.
 - **One pile**: code split so finely that the logic hides is inlined back into one place, read whole, then split along the lines that make sense.
 - **Explaining comment**: record what you had to learn to change the code, the non-obvious "why".
-- **Delete redundant comment**: a comment that restates the code goes.
+- **Delete redundant comment**: delete a comment that restates the code.
 
 ## Rules
 
-- **Small batches**: tidyings chain (a guard clause exposes an explaining variable, which exposes a helper). Stop the chain when the behaviour change is easy, not when the code is perfect.
+- **Small batches**: tidyings chain (a guard clause exposes an explaining variable, which exposes a helper). Stop the chain once the behaviour change is easy, before the code is perfect.
 - **One kind per commit** when the batch is large: a reviewer scans "rename X to Y across 12 files" in seconds, and a mix of five kinds in minutes.
-- **Coupling is the target**: the tidyings worth doing first are those that cut the coupling the behaviour change would otherwise have to work across.
-- **Tests stay green, assertions intact** on every tidying commit. A test may follow a rename or move (an import path, a symbol's name); a tidying that needs a different assertion is a behaviour change.
+- **Coupling is the target**: tidy first what cuts the coupling the behaviour change would otherwise work across.
+- **Structure and behaviour never share a commit.** A tidying commit keeps tests green and assertions intact. A test may follow a rename or move (an import path, a symbol's name); needing a different assertion makes it a behaviour change.

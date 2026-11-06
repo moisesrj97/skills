@@ -1,12 +1,12 @@
 ---
 name: pr-review
-description: Reviews someone else's PR with two reviewers from different model families, verifies every finding against the wider code, the stack and the author's notes, and rates the merge risk. Use when asked to review a teammate's PR. Not for your own change; use pair-review.
+description: Reviews a teammate's PR with two reviewers from different model families, verifies each finding against the wider code, the stack and the author's notes, and rates merge risk. Use when asked to review someone else's PR. Not for your own change; use pair-review.
 argument-hint: "<PR number or URL>"
 ---
 
 # PR review
 
-You are the **coordinator**: two reviewers produce raw findings, and your job is the triage between those and the list the user reads. You only read: the checkout may be a workspace other agents share, so fetch the PR (`git fetch origin pull/<n>/head`) and read it with `git show <sha>:<file>`, never a checkout.
+You are the **coordinator**. Two reviewers produce raw findings, and you triage them into the list the user reads. You only read. The checkout may be a workspace other agents share, so fetch the PR (`git fetch origin pull/<n>/head`) and read it with `git show <sha>:<file>` instead of checking it out.
 
 ## 1. Context
 
@@ -18,11 +18,11 @@ Call the Skill tool with `diff-review` twice, launching both before waiting for 
 
 ## 3. Verify
 
-Merge duplicates, noting which reviewer found each. Then trace every finding **wider** than the reviewer did: a reviewer reads the diff and its neighbours, and its scenario often breaks, or gets worse, against code it never opened. Follow it through callers, upstream validation, flags, the consumers of a changed contract, other services, and the tests. Put each finding in one bucket:
+Merge duplicates, noting which reviewer found each. Then trace every finding **wider** than the reviewer did. A reviewer reads the diff and its neighbours, and its scenario often breaks, or gets worse, against code it never opened. Follow it through callers, upstream validation, flags, the consumers of a changed contract, other services, and the tests. Put each finding in one bucket:
 
 - **Confirmed**: the scenario reaches the wrong result through the real code. Keep or correct its severity.
 - **Fixed above**: a PR higher in the stack fixes it. Name the PR.
-- **Accepted**: the author or ticket names it as a known trade-off or a planned follow-up. An open question the review answers is not accepted: it is Confirmed or Discarded.
+- **Accepted**: the author or ticket names it as a known trade-off or a planned follow-up. An open question the review answers goes to Confirmed or Discarded instead.
 - **Discarded**: the scenario can't happen. Name the line that stops it.
 
 Done when every finding has a bucket and the `path:line` that put it there.

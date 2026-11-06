@@ -1,6 +1,6 @@
 # Test Desiderata
 
-From Kent Beck, *Test Desiderata* (2019). How the properties are used is in [`SKILL.md`](SKILL.md).
+From Kent Beck, *Test Desiderata* (2019). [`SKILL.md`](SKILL.md) says how to use them.
 
 ## Properties
 
@@ -9,7 +9,7 @@ From Kent Beck, *Test Desiderata* (2019). How the properties are used is in [`SK
 | **Isolated** | gives the same result whatever runs before or after it | it fails alone or only in the full suite |
 | **Composable** | covers one dimension of variation, so dimensions are tested separately and combined | N inputs × M outputs need N×M tests |
 | **Deterministic** | gives the same result while nothing changes | it reads the clock, randomness, the network or ordering it doesn't control |
-| **Fast** | runs in the time a red → green cycle allows | the loop waits for it |
+| **Fast** | runs in the time a red-green cycle allows | the loop waits for it |
 | **Writable** | costs little to write next to the code it tests | each new case needs a page of setup |
 | **Readable** | tells a reader what it checks and why | the expected value is a magic number with no source |
 | **Behavioral** | fails when the behaviour under test changes | breaking the code leaves it green |
@@ -23,9 +23,9 @@ From Kent Beck, *Test Desiderata* (2019). How the properties are used is in [`SK
 
 A property is given up only to buy another. The usual trades:
 
-- **Predictive ↔ fast, deterministic**: an integration test through real collaborators predicts production better and runs slower and less reliably than one with fakes.
-- **Structure-insensitive ↔ specific**: a test at an outer interface survives refactors, and a failure in it points less precisely at the cause.
-- **Writable ↔ specific**: one broad test is cheap to write, and its failure says little.
-- **Composable ↔ predictive**: testing dimensions separately covers more combinations for less, and misses bugs that live only in a combination.
+- **Predictive versus fast and deterministic**: an integration test through real collaborators predicts production better and runs slower and less reliably than one with fakes.
+- **Structure-insensitive versus specific**: a test at an outer interface survives refactors, and a failure in it points less precisely at the cause.
+- **Writable versus specific**: one broad test is cheap to write, and its failure says little.
+- **Composable versus predictive**: testing dimensions separately covers more combinations for less, and misses bugs that live only in a combination.
 
 A test-double earns its place by buying fast, deterministic or isolated where the real collaborator can't give them; one that sells predictive and buys nothing is a finding.

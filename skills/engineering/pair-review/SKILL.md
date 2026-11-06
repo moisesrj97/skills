@@ -1,12 +1,12 @@
 ---
 name: pair-review
-description: "Iterative review loop: a reviewer from another model family reviews the change through diff-review, you fix what it finds, and it re-reviews until nothing notable is left or a human decision is needed; then recap. Arguments: scope (PR number, ref range, or 'diff') and reviewer (default gpt-6.1-sol:medium)."
+description: Reviews your own change in a loop: a reviewer from another model family reviews it through diff-review, you fix its findings, and it re-reviews until done or a human must decide. Use when asked for a pair-review or a review-and-fix loop. Not for a teammate's PR; use pr-review.
 argument-hint: "[scope] [reviewer=<model>[:<effort>]] [standards=<file>,…]"
 ---
 
 # Pair review
 
-You are the **author**. A **reviewer**, by default from another model family, reviews your change through the `diff-review` skill. You triage what it finds, fix what deserves fixing, tell it what changed, and it reviews again. The point of a separate agent is an independent read: it has none of your context, so it doesn't share your blind spots. Your job is to keep that independence useful — fix real problems, don't relitigate settled ones, and stop when the reviews stop paying off.
+You are the **author**. A **reviewer**, by default from another model family, reviews your change through the `diff-review` skill. You triage what it finds, fix what deserves fixing, tell it what changed, and it reviews again. Its value is an independent read from an agent without your context or your blind spots. Keep that read useful: fix real problems, leave settled ones settled, and stop when the reviews stop paying off.
 
 ## Arguments
 
@@ -16,11 +16,11 @@ You are the **author**. A **reviewer**, by default from another model family, re
 
 State the resolved scope and reviewer in one line before starting.
 
-## Round 0 — collect what is already decided
+## Round 0. Collect the already-decided list
 
-Before round 1, gather decisions the user has already made about this change in the conversation: findings they declined, trade-offs they accepted, things explicitly out of scope ("no cap for now", "one FF shared", "fallback not needed").
+Before round 1, gather the decisions the user has already made about this change in the conversation: findings they declined, trade-offs they accepted, things explicitly out of scope ("no cap for now", "one FF shared", "fallback not needed").
 
-Why: a fresh reviewer will rediscover every accepted trade-off and report it again. Without this list, round 1 is mostly noise and you spend it explaining yourself.
+A fresh reviewer rediscovers every accepted trade-off and reports it again. Without this list, round 1 is mostly noise and you spend it explaining yourself.
 
 ## Each round
 
@@ -32,26 +32,26 @@ Call the Skill tool with `diff-review`, passing the scope, the reviewer, the rou
 
 Read the round file `diff-review` returns, with the findings it discarded. Then put every finding into one bucket:
 
-- **Fix**: a real defect or cheap, clearly-right improvement inside the scope of the change. Includes defects in the tests you wrote in an earlier round — those are common and the reviewer is good at catching them.
-- **Already decided**: matches a user decision. Don't fix, don't ask again; add it to the already-decided list for the next round.
-- **Needs the human (HITL)**: anything that is the user's call — reverses a decision they made, changes scope (a second concern in the PR), is a design alternative with real trade-offs, needs product/ops input, or new evidence makes a declined finding more severe. Stop the loop and ask, with your recommendation. Resume after they answer.
-- **Disagree**: you believe it's wrong. Verify before dismissing (read the code, run it). If it still looks wrong, say why in the next round's not-acted-on list; if the next reviewer reports it again with a concrete scenario, treat it as HITL.
+- **Fix**: a real defect or a cheap, clearly right improvement inside the scope of the change. This includes defects in the tests you wrote in an earlier round, which are common and which the reviewer catches well.
+- **Already decided**: matches a user decision. Leave it unfixed without asking again, and add it to the already-decided list for the next round.
+- **Needs the human (HITL)**: anything that is the user's call. It reverses a decision they made, changes scope (a second concern in the PR), is a design alternative with real trade-offs, needs product or ops input, or new evidence makes a declined finding more severe. Stop the loop and ask, with your recommendation. Resume after they answer.
+- **Disagree**: you believe it's wrong. Verify before dismissing (read the code, run it). If it still looks wrong, say why in the next round's not-acted-on list. If the next reviewer reports it again with a concrete scenario, treat it as HITL.
 
-Report each round to the user briefly: counts per bucket, what you fixed, what you skipped and why.
+Done when every finding sits in one bucket. Report each round to the user briefly: counts per bucket, what you fixed, what you skipped and why.
 
 ### Fix
 
 - Follow the project's own conventions (CLAUDE.md, lint, type-check, test commands) and the user's commit rules.
-- Write or adjust tests with each fix. When a fix is a test, **prove it can fail**: break the code it guards (remove the middleware, corrupt the input) in a temporary copy, run it, see red, restore. A test that stays green under the mutation the reviewer described is the bug. Restore from a backup copy, and confirm with `git diff` that nothing leaked.
-- Run type-check, lint and the relevant tests; the full suite before handing back.
-- Commit locally. Amending your own unpushed commits from this loop is fine; never rewrite pushed history.
+- Write or adjust tests with each fix. When a fix is a test, **prove it can fail**. Break the code it guards (remove the middleware, corrupt the input) in a temporary copy, run the test, see red, and restore. A test that stays green under the mutation the reviewer described is the bug. Restore from a backup copy, and confirm with `git diff` that nothing leaked.
+- Run type-check, lint and the relevant tests, and the full suite before handing back.
+- Commit locally. You may amend your own unpushed commits from this loop, and pushed history stays as it is.
 - Push once the loop ends **Done**, only to the change's own branch (`--force-with-lease` after amends), and only with type-check, lint and tests green. Posting to GitHub (comments, reviews, ready-for-review) still waits for the user.
 
 ## Stop conditions
 
 - **Done**: the reviewer writes `NO FINDINGS`, or what remains is only nits you'd decline anyway.
 - **HITL**: stop and ask (see triage). Keep the reviewer to message again when you resume.
-- **Not converging**: after ~5 rounds, or when two consecutive rounds only produce findings about your previous round's fixes without the count falling, stop and tell the user — something structural is off, and more rounds won't fix it.
+- **Not converging**: after about 5 rounds, or when two consecutive rounds only produce findings about your previous round's fixes without the count falling, stop and tell the user. Something structural is off, and more rounds won't fix it.
 
 ## Recap
 
@@ -63,4 +63,4 @@ Finish with:
 | … | | |
 | last | 0 | done |
 
-Then: commits created or amended (hashes, pushed or not), verification run (type-check, lint, tests, mutation checks), anything left pending (push, HITL questions), and one or two lines on how the loop itself went — what the reviewer caught that a single pass wouldn't, and anything to brief better next time.
+Then list the commits created or amended (hashes, pushed or not), the verification run (type-check, lint, tests, mutation checks), anything left pending (push, HITL questions), and one or two lines on how the loop went, including what the reviewer caught that a single pass wouldn't and anything to brief better next time.

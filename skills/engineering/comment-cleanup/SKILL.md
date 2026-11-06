@@ -1,31 +1,19 @@
 ---
 name: comment-cleanup
 description: >-
-  Prunes the comments and JSDoc a change added or modified down to the minimum a
-  reader actually needs, rewriting unclear code so it explains itself instead of
-  being narrated.
-
-  Use this skill whenever the user asks to clean up, reduce, trim, review or
-  remove comments or JSDoc — including phrasings like "revisa los comentarios",
-  "elimina los comentarios redundantes", "resume los comentarios", "el código
-  debería ser autoexplicativo", "too many comments", "drop the JSDoc", "make
-  this self-documenting" — and run it proactively as the final pass after
-  implementing a feature or before committing, since added comments are almost
-  always over-written on the first draft.
+  Prunes the comments and JSDoc a change added or modified to the few a reader
+  needs, and rewrites unclear code so it explains itself. Use when asked to
+  clean up or trim comments, and as the final pass after implementing a change,
+  before committing.
 ---
 
 # Comment cleanup
 
-Comments are the least reliable part of a codebase: they are not compiled, not tested, and they
-rot the moment the code moves. Every one you keep is a small permanent liability, so it has to
-buy something the code cannot express on its own. This pass exists because first drafts —
-especially ones written while reasoning out loud — narrate. The narration has to go before the
-change lands.
+First drafts narrate, especially ones written while reasoning out loud. Comments are not compiled or tested and rot when the code moves, so each one you keep must buy something the code cannot say. Remove the narration before the change lands.
 
 ## 1. Find the comments in scope
 
-Only comments this change added or modified. Pre-existing ones are someone else's decision;
-leave them unless the user asks for a wider sweep.
+Scope is the comments this change added or modified. Leave pre-existing ones unless the user asks for a wider sweep.
 
 ```bash
 git diff --merge-base "$(git symbolic-ref --short refs/remotes/origin/HEAD)" -U0 -- '*.ts' '*.tsx' '*.js' | awk '
@@ -34,38 +22,26 @@ git diff --merge-base "$(git symbolic-ref --short refs/remotes/origin/HEAD)" -U0
 /^\+/ && !/^\+\+\+/ { l=$0; sub(/^\+/,"",l); if (l ~ /^[ \t]*(\/\/|\/\*|\*|#)/) print file":"n": "l; n++ }'
 ```
 
-Swap the base for whatever the change is measured against (`HEAD`, `--staged`, a commit). This
-catches comment-only lines; trailing comments (`doThing(); // why`) and doc blocks that shifted
-by an edit need a read of the diff itself, so skim it too. Then open each file — a comment can
-only be judged next to the code it sits on.
+Swap the base for whatever the change is measured against (`HEAD`, `--staged`, a commit). The script catches comment-only lines, so also skim the diff for trailing comments (`doThing(); // why`) and doc blocks an edit shifted. Then open each file, because a comment can only be judged next to its code.
 
-## 2. Judge each one: what does a reader lose if it disappears?
+Done when you have every in-scope comment and have read each one beside its code.
 
-- **Nothing — the code already says it.** Delete. This is the majority.
-- **The reason it is like this.** Keep it, condensed. Rationale, a rejected alternative, an
-  external constraint, an ordering requirement, a deliberate fail-open, a ticket deferral, a
-  workaround for someone else's bug — none of that is recoverable by reading the code.
-- **What the code does.** The comment is a symptom: the code is unclear. Fix the code (step 4),
-  then delete the comment.
+## 2. Judge each one by what a reader loses without it
 
-Recognise on sight and cut: restatements of a name or type (`/** The session id. */`), narration
-of the next line, section banners (`// --- Helpers ---`), `// Arrange / // Act / // Assert`,
-changelog notes about the change itself (`// added this to fix the crash`), commented-out code,
-and a JSDoc block on one new member of an interface whose siblings have none.
+- **Nothing, because the code already says it.** Delete. Most comments land here.
+- **Why the code is like this.** Keep it and condense it. Rationale, a rejected alternative, an external constraint, an ordering requirement, a deliberate fail-open, a ticket deferral, a workaround for someone else's bug. Reading the code recovers none of these.
+- **What the code does.** The code is unclear. Fix the code (step 4), then delete the comment.
 
-Two judgment calls worth naming:
+Recognise these on sight and cut them: restatements of a name or type (`/** The session id. */`), narration of the next line, section banners (`// --- Helpers ---`), `// Arrange / // Act / // Assert`, changelog notes about the change itself (`// added this to fix the crash`), and commented-out code.
 
-- **Match the surrounding convention, don't impose this one.** If every method in the file has a
-  full JSDoc block, a new one without it is the inconsistency. Look at the siblings first.
-- **Uncertainty argues for keeping.** If a comment claims a constraint you cannot verify, keep
-  it. Deleting a true warning is far more expensive than leaving a stale line, and you must
-  never rewrite a comment into a claim you have not confirmed.
+- **Match the siblings.** A JSDoc block on one new member of an interface whose siblings have none goes. If every method in the file has a full JSDoc block, the new method without one is the inconsistency.
+- **Uncertainty argues for keeping.** Keep a comment that claims a constraint you cannot verify. Deleting a true warning costs far more than leaving a stale line. Rewrite a comment only into claims you have confirmed.
+
+Done when every in-scope comment has a verdict.
 
 ## 3. Condense the keepers
 
-A surviving comment should be one line, two at most, and should state the constraint rather than
-walk through the mechanism — the code below it is the mechanism. Cut the hedging, the
-recapitulation, and the second half that re-explains the first.
+A keeper is one line, two at most, and states the constraint. The code below it is the mechanism. Cut the hedging, the recap, and any second half that re-explains the first.
 
 Before:
 
@@ -74,7 +50,7 @@ Before:
 // version of its own rather than reusing the run that wrote it: nothing below the import has an
 // annotation left to read or to publish. `runs` is descending, so this is the highest import.
 // Sound only because the migration refuses to import the root over a run that wrote a folder of
-// its own — otherwise a re-annotated legacy Design would hide a version that is there.
+// its own; otherwise a re-annotated legacy Design would hide a version that is there.
 ```
 
 After:
@@ -86,8 +62,7 @@ After:
 
 ## 4. When the code needs the comment, change the code
 
-Prefer this over keeping a "what" comment — a good name is checked by the compiler and travels
-with the call sites. Behaviour must stay identical, and the edit must stay small:
+Prefer this over keeping a "what" comment. The compiler checks a good name, and the name travels with the call sites. Keep behaviour identical and the edit small:
 
 - rename a variable, function or parameter to say what the comment said
 - extract a magic number, regex or string into a named constant
@@ -95,33 +70,29 @@ with the call sites. Behaviour must stay identical, and the edit must stay small
 - replace a positional boolean with a named argument or a union type
 - narrow a type so an "assumes X" comment becomes unrepresentable
 
-If making the code self-explaining needs a real refactor (moving responsibilities, changing a
-signature used across modules), say so and leave the comment — a cleanup pass is not the place
-to reshape a design.
+If the code needs a real refactor to explain itself (moving responsibilities, changing a signature used across modules), keep the comment and say so. A cleanup pass leaves the design as it is.
 
-## 5. Never delete these
+## 5. Keep the comments that are code
 
-They look like comments but are code:
+Tools read these, so they stay:
 
-- linter and compiler directives: `eslint-disable*`, `biome-ignore`, `@ts-expect-error`,
-  `@ts-ignore`, `prettier-ignore`
+- linter and compiler directives: `eslint-disable*`, `biome-ignore`, `@ts-expect-error`, `@ts-ignore`, `prettier-ignore`
 - coverage pragmas: `istanbul ignore`, `c8 ignore`, `v8 ignore`
 - bundler magic comments: `/* webpackChunkName: … */`, `/* @vite-ignore */`, `/*#__PURE__*/`
 - `/** @jsxImportSource … */`, license and copyright headers, generated-file banners
 - annotations a tool reads: OpenAPI/Swagger blocks, decorators' docs, i18n extraction hints
 - `@deprecated` and `@see` tags pointing at a replacement
 
-`@ts-expect-error` also deserves a one-line reason if it lacks one — that is the rare case where
-this pass adds a comment.
+Give a `@ts-expect-error` that lacks a reason a one-line reason. It is the rare case where this pass adds a comment.
 
 ## 6. Apply, verify, report
 
-Apply the edits. If step 4 renamed anything, grep for the old name across the repo and run the
-touched package's typecheck (`yarn tsc --noEmit` or the package's own script) plus its tests —
-renames break call sites, comment deletions do not.
+Apply the edits. If step 4 renamed anything, grep the repo for the old name and run the touched package's typecheck (`yarn tsc --noEmit` or the package's own script) and its tests. Renames break call sites, and comment deletions do not.
 
-Then report tersely: per file, how many comments were cut and how many condensed, followed by a
-flat list of every surviving comment as a single line each. The list is the point of the report —
-it is the user's chance to veto a keeper, and it makes an over-eager deletion visible. Call out
-separately anything you left because you could not verify it, and any code change you declined
-to make in step 4.
+Report tersely:
+
+- per file, how many comments you cut and how many you condensed
+- every surviving comment, one line each. This list is the point of the report. It lets the user veto a keeper and makes an over-eager deletion visible.
+- anything you kept because you could not verify it, and any step 4 code change you declined
+
+Done when the edits are applied, any rename leaves no old name behind and passes typecheck and tests, and the report lists every surviving comment.

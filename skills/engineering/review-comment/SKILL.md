@@ -1,68 +1,66 @@
 ---
 name: review-comment
-description: "Evaluates a GitHub PR review comment from its URL: makes the fix, commits, pushes and replies with the commit, or explains why no change is needed. Use when the user hands over a review comment link to address."
+description: "Takes a GitHub PR review comment URL and either makes the fix, pushes it and replies with the commit, or explains why no change is needed. Use when the user hands over a review comment link to address."
 disable-model-invocation: true
 ---
 
-# Review Comment Handler
-
-You help developers handle GitHub PR review comments efficiently. Given a comment URL, you read what the reviewer said, look at the relevant code, and decide: is this change worth making? Then you act accordingly — either fix it and close the loop, or arm the developer with a clear explanation to push back.
+# Review comment
 
 ## Step 1: Parse the URL and fetch the comment
 
 PR comment URLs come in two forms:
 
-- **Review (inline) comment**: `https://github.com/owner/repo/pull/123#discussion_r789012`
-  → Fetch: `gh api repos/owner/repo/pulls/comments/789012`
-- **General PR comment**: `https://github.com/owner/repo/pull/123#issuecomment-789012`
-  → Fetch: `gh api repos/owner/repo/issues/comments/789012`
+- **Inline review comment** `https://github.com/owner/repo/pull/123#discussion_r789012`, fetched with `gh api repos/owner/repo/pulls/comments/789012`.
+- **General PR comment** `https://github.com/owner/repo/pull/123#issuecomment-789012`, fetched with `gh api repos/owner/repo/issues/comments/789012`.
 
-Extract `owner`, `repo`, the PR number (e.g. `123`), and the comment ID from the URL — the PR number is needed when posting a reply to an inline comment. Run the appropriate `gh api` call and collect:
+Take `owner`, `repo`, the PR number (`123`) and the comment ID from the URL. The reply to an inline comment needs the PR number. From the `gh api` call, collect:
 - `body`: the reviewer's message
 - `path`: file path (review comments only)
 - `line` or `original_line`: the line number (review comments only)
 - `diff_hunk`: surrounding diff context (review comments only)
 
-Also fetch the PR's base branch for commit context:
+Fetch the PR's base and head branches:
 ```bash
 gh pr view 123 --repo owner/repo --json baseRefName,headRefName
 ```
 
 ## Step 2: Read the relevant code
 
-If it's an inline review comment (has `path`), read the file around the flagged line. Provide enough context — at least 20 lines before and after — to understand what the code does and why it's written that way.
+For an inline comment (it has `path`), read the file around the flagged line, at least 20 lines on each side, enough to see what the code does and why it is written that way.
 
-If it's a general PR comment with no specific file, use `git diff` against the base branch to understand what changed in the PR.
+For a general comment with no file, read `git diff` against the base branch to see what the PR changed.
 
 ## Step 3: Evaluate the suggestion
 
-Now think carefully. Ask yourself:
+- **Is the reviewer right?** Does the change improve correctness, safety, readability or maintainability?
+- **Is it already handled?** The concern may be addressed elsewhere, or the code may already handle the case the reviewer worries about.
+- **Style or substance?** A style disagreement that doesn't affect quality is a weaker reason to change.
+- **Does the change break anything?** Would it introduce regressions, violate project conventions or contradict other recent changes?
 
-- **Is the reviewer right?** Does the change improve correctness, safety, readability, or maintainability?
-- **Is it already handled?** Sometimes the concern is addressed elsewhere, or the code does handle the case the reviewer is worried about.
-- **Is it a matter of style vs. substance?** Style disagreements that don't affect quality are weaker reasons to change.
-- **Does the change break anything?** Would it introduce regressions, violate project conventions, or contradict other recent changes?
+Judge from the code and its intent. A reviewer asking is no reason to say yes, and extra work is no reason to say no.
 
-Be honest. Don't default to "yes, fix it" just because a reviewer asked. Don't default to "no" just because the change is extra work. Read the code, understand the intent, and make a genuine judgment call.
+## Step 4a: The change is needed, so make it
 
-## Step 4a: If the change IS needed — make it
+When the change is clearly right, make it without hedging.
 
-1. Make the change on the PR's head branch: under GitButler it must be applied (`but status`), otherwise check it out first (`gh pr checkout <number>`). Be surgical: only touch what the comment is about.
+1. Make the change on the PR's head branch. Under GitButler the branch must be applied (`but status`); otherwise check it out first (`gh pr checkout <number>`). Be surgical and touch only what the comment is about.
 2. Run the project's lint, type-check and the tests covering the change, with the commands from its `CLAUDE.md` / `CLAUDE.local.md` or `package.json`. Fix anything red before going on.
 3. **Show the human the diff, the commit message and the reply you will post, and wait for one explicit approval** before committing. The commit message follows the project's convention, subject line only.
-4. Commit and push to the PR's head branch. Under GitButler (`but status` works): `but commit -b <branch> -m "<message>" <ids>` with the ids from `but diff`, then `but push <branch>`: without a branch it pushes every branch with unpushed commits, other agents' included. Otherwise `git add`, `git commit`, `git push`. Take the full hash of the pushed commit with `git rev-parse <branch>`; under GitButler `HEAD` is the workspace commit, which the reviewer can't open.
+4. Commit and push to the PR's head branch, before replying, so the hash in the reply is already on the remote. Under GitButler (`but status` works), run `but commit -b <branch> -m "<message>" <ids>` with the ids from `but diff`, then `but push <branch>`. A bare `but push` pushes every branch with unpushed commits, other agents' included. Otherwise `git add`, `git commit`, `git push`. Take the full hash of the pushed commit with `git rev-parse <branch>`; under GitButler `HEAD` is the workspace commit, which the reviewer can't open.
 5. Reply in **the reviewer's language**, opening with the byline from the `agent-byline` skill, then `Fixed in <full hash>` (`Arreglado en <full hash>` in Spanish) and no reasoning.
    Write the body to a file and reply to the original comment with `gh api`:
-    - For review (inline) comments: `gh api repos/owner/repo/pulls/PR_NUMBER/comments/COMMENT_ID/replies -F body=@<file>` — note the PR number is required; `repos/owner/repo/pulls/comments/ID/replies` (without the PR number) returns 404.
-    - For general PR comments (issuecomment): GitHub does not support threaded replies on issue comments, so post a new comment on the PR that quotes the original: `gh api repos/owner/repo/issues/PR_NUMBER/comments -F body=@<file>`, with the quoted excerpt between the byline and `Fixed in <full hash>`.
+    - For an inline review comment, reply in its thread with `gh api repos/owner/repo/pulls/PR_NUMBER/comments/COMMENT_ID/replies -F body=@<file>`, never with a new comment from `gh pr comment`. The path needs the PR number; `repos/owner/repo/pulls/comments/ID/replies` returns 404.
+    - For a general PR comment (issuecomment), GitHub has no threaded replies, so post a new comment on the PR that quotes the original, `gh api repos/owner/repo/issues/PR_NUMBER/comments -F body=@<file>`, with the quoted excerpt between the byline and `Fixed in <full hash>`.
 
-## Step 4b: If the change is NOT needed — brief the developer
+Done when the reply with the pushed hash is posted.
 
-Don't reply to the comment yourself — the developer needs to do it in their own voice and with appropriate context. Instead, give them a clear, honest explanation they can use:
+## Step 4b: The change is not needed, so brief the developer
+
+Post nothing. The developer replies in their own voice and with context you lack. Give them a direct brief:
 
 - What the reviewer was concerned about
-- Why the current code is actually correct / why the change isn't warranted
-- A suggested reply they can post (in the same language as the reviewer's comment), short and respectful
+- Why the current code is correct, or why the change isn't warranted
+- A short, respectful reply they can post, in the reviewer's language
 
 Example structure:
 ```
@@ -71,12 +69,3 @@ You could reply with something like:
 
 "[Suggested reply in reviewer's language]"
 ```
-
-Keep the explanation direct. The developer will take it from here.
-
-## Key behaviors
-
-- **Language matching**: match the reviewer's language in any reply you post or draft.
-- **Scope**: change only what the comment is about; when the change is clearly right, make it without hedging.
-- **Push before replying**: the hash in the reply must already be on the remote.
-- **Reply in the thread**: an inline comment gets a threaded reply through `gh api`, never a new comment from `gh pr comment`.

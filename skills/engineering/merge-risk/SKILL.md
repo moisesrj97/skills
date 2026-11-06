@@ -1,12 +1,12 @@
 ---
 name: merge-risk
-description: Rates how risky a PR is to merge as a traffic light, green, yellow or red, by what users would suffer if it fails, with the reasons behind the color. Use when asked how risky a PR or a merge is. Not for finding bugs; use diff-review.
+description: Rates a PR's merge risk as a green, yellow or red traffic light, by what users would suffer if it fails, with the reasons behind the color. Use when asked how risky a PR or a merge is. Not for finding bugs; use diff-review.
 argument-hint: "[PR number, URL or ref range]"
 ---
 
 # Merge risk
 
-The color measures **exposure**, which is what a user sees if the change fails in production. The user is whoever runs what the PR ships: end users for a product, the callers of a library or service, the people running a tool. A 2,000-line feature behind a flag that is off is green. A one-line change to a shared query can be red. The color informs the merge decision, which stays with the user.
+The color measures **exposure**: what a user sees if the change fails in production. The user is whoever runs what the PR ships: end users for a product, the callers of a library or service, the people running a tool. A 2,000-line feature behind a flag that is off is green. A one-line change to a shared query can be red. The color informs the merge decision, which stays with the user.
 
 ## 1. Gather
 
@@ -31,7 +31,7 @@ Answer two questions from the code. If it fails, what does the user see? How do 
 - 🟡 **Medium.** A secondary flow breaks or a main one degrades, and a revert fixes it.
 - 🔴 **High.** A main flow breaks, data is lost or corrupted, or the fix takes more than a revert because of a migration, data already written, or a contract that other services or clients consume.
 
-Tests on the exposed path and a green CI make a failure less likely. List them as reasons, and grade by what a failure would break. When two levels fit, take the higher one and name what would settle it.
+Tests on the exposed path and a green CI make a failure less likely. List them as reasons, and grade by what a failure would break. When two levels fit, take the higher one and name what would settle it. Done when every exposed change has a level.
 
 ## 4. Report
 
