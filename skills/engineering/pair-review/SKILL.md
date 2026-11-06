@@ -30,7 +30,7 @@ Call the Skill tool with `diff-review`, passing the scope, the reviewer, the rou
 
 ### Triage each finding
 
-Read the round file `diff-review` returns, with the findings it discarded. Then put every finding into one bucket:
+Read the round file `diff-review` returns, with the findings it discarded. A PLAUSIBLE finding comes with a `Confirm by`: check that first, so it reaches its bucket confirmed or refuted. Then put every finding into one bucket:
 
 - **Fix**: a real defect or a cheap, clearly right improvement inside the scope of the change. This includes defects in the tests you wrote in an earlier round, which are common and which the reviewer catches well.
 - **Already decided**: matches a user decision. Leave it unfixed without asking again, and add it to the already-decided list for the next round.

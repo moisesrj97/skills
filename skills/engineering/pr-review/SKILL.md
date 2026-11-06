@@ -18,7 +18,7 @@ Call the Skill tool with `diff-review` twice, launching both before waiting for 
 
 ## 3. Verify
 
-Merge duplicates, noting which reviewer found each. Then trace every finding **wider** than the reviewer did. A reviewer reads the diff and its neighbours, and its scenario often breaks, or gets worse, against code it never opened. Follow it through callers, upstream validation, flags, the consumers of a changed contract, other services, and the tests. Put each finding in one bucket:
+Merge duplicates, noting which reviewer found each. Then trace every finding **wider** than the reviewer did. A reviewer reads the diff and its neighbours, and its scenario often breaks, or gets worse, against code it never opened. Follow it through callers, upstream validation, flags, the consumers of a changed contract, other services, and the tests. Start with the PLAUSIBLE findings, from what their `Confirm by` names; one the trace can't confirm is Discarded. Put each finding in one bucket:
 
 - **Confirmed**: the scenario reaches the wrong result through the real code. Keep or correct its severity.
 - **Fixed above**: a PR higher in the stack fixes it. Name the PR.

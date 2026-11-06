@@ -1,7 +1,7 @@
 ---
 name: diff-review
-description: Runs one review round of a diff in a separate reviewer agent of the chosen model (default Claude Opus 5.5) and returns quote-backed findings, without fixing. Use when asked for a diff-review or a review by a named or different model, or when a skill calls for one.
-argument-hint: "[scope] [reviewer=<model>[:<effort>]] [standards=<file>,…]"
+description: Runs one review round of a diff in a separate reviewer agent of the chosen model and returns quote-backed findings, without fixing. Use when asked for a diff-review or a review by a named or different model, or when a skill calls for one.
+argument-hint: "[scope] [lens=code|security|cleanup] [reviewer=<model>[:<effort>]] [spec=<file>] [standards=<file>,…]"
 ---
 
 # Diff review
@@ -11,7 +11,9 @@ A reviewer that shares the author's context shares its blind spots. The reviewer
 ## Arguments
 
 - **scope**: a PR number, a ref range (`base...head`) or `diff` (uncommitted work). When omitted, the current branch's PR (`gh pr view --json number`), else the diff against its base. For a stacked PR the meaningful diff is `<parent-branch>...<branch>`.
-- **reviewer**: `<model id>[:<effort>]`, default `claude-opus-5-5:high`. A `claude-*` model runs on Claude, a `gpt-*` model on Codex, e.g. `gpt-6.1-sol:medium`.
+- **lens**: what the reviewer looks for, from `references/lenses/<lens>.md`. `code` (default): bugs, each with a failure scenario. `cleanup`: code that works but costs, each with that cost.
+- **reviewer**: `<model id>[:<effort>]`. Default `claude-opus-5-5:high`, or `claude-opus-5-5:medium` for `cleanup`. A `claude-*` model runs on Claude, a `gpt-*` model on Codex, e.g. `gpt-6.1-sol:medium`.
+- **spec**: a file with what the change must do (a ticket, a brief). The `code` lens checks the change against it.
 - **standards**: files of rules the change is held to, on top of the project's own.
 - From a calling skill: the round number, the already-decided list and, after round 1, the **reviewer handle** this skill returned in round 1, what changed since and the findings not acted on with their reasons.
 
@@ -19,15 +21,15 @@ A reviewer that shares the author's context shares its blind spots. The reviewer
 
 The round file is `<scratch>/review-round-<N>.md`, in the session scratchpad when the system prompt lists one, else a fresh `mktemp -d`. Write the reviewer's prompt to `<scratch>/review-prompt-<N>.md`, with every item below that applies:
 
-- First line: `You are the reviewer. Read <skill-dir>/references/reviewer.md and follow it.`, with the absolute path of the folder this skill loaded from.
+- First line: `You are the reviewer. Read <skill-dir>/references/reviewer.md and <skill-dir>/references/lenses/<lens>.md and follow them.`, with the absolute path of the folder this skill loaded from.
 - The scope and the exact command that shows the diff, with the range as given, since `a..b` and `a...b` differ.
 - Which version of the code to read and quote. For a range, that is its head (`git show <head>:<file>`), since the checkout can hold other changes. For `diff`, it is the working tree.
 - Where the round goes: the round file, or, for a CLI reviewer (step 2), the final message and no file writes.
-- With `standards=`, their absolute paths, to read before reviewing. A breach is a finding that cites the rule.
-- The already-decided list, phrased as "do not reopen unless you find new evidence that changes its severity".
+- With `spec=` and `standards=`, their absolute paths, to read before reviewing.
+- The already-decided list, phrased as "do not reopen unless you find new evidence that changes its severity". A PLAUSIBLE finding the author declined belongs on it.
 - After round 1, the commits since (say if they are amended or unpushed, since the reviewer reads the local branch), which findings each resolves, and the findings not acted on with their reasons. Tell the reviewer to review the **whole** scope again, since fixes can break things elsewhere, and to write the new round file.
 
-A continued reviewer already holds `reviewer.md`, the scope, the standards and its earlier rounds, so its prompt from round 2 on carries only the round file path, the already-decided list and the items of the last bullet. A fresh reviewer gets every item, plus the previous round file.
+A continued reviewer already holds its instructions, the scope, the spec, the standards and its earlier rounds, so its prompt from round 2 on carries only the round file path, the already-decided list and the items of the last bullet. A fresh reviewer gets every item, plus the previous round file.
 
 ## 2. Launch
 
@@ -50,4 +52,4 @@ Then find each finding's quote in the version the reviewer was told to read. Dis
 
 ## 4. Return
 
-Called by a skill, return the round file, the discarded findings and the reviewer handle. Called by the user, list the confirmed findings most severe first, then the discarded ones with their reasons.
+Called by a skill, return the round file, the discarded findings and the reviewer handle. Called by the user, list the confirmed findings most severe first, then the discarded ones with their reasons. When the `ReportFindings` tool is available, also report the confirmed findings with it, carrying each one's verdict and scenario.
