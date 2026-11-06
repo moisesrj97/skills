@@ -30,13 +30,21 @@ This PR resolves <ticket URL>
 ## Solution
 
 <what a reviewer needs and the diff doesn't show: decisions, trade-offs, constraints, grouped by area in short bullets>
+
+## Testing
+
+<how the change was verified: the tests that cover it and any manual check with the data it ran on; anything left unverified, named as such>
+
+## How to revert
+
+<"Revert this PR." when that undoes everything; otherwise the extra steps, in order: migrations to roll back, data already written, flags to flip, consumers to update first>
 ```
 
 - The ticket line appears only with a ticket link.
 - Add `## Next steps` for follow-ups or stacked PRs, and `## Related` for issue or PR references other than the ticket.
 - The reviewer has the diff, so the description carries the *why*, not a restated diff, file lists or code blocks.
-- Add a testing section only on request. Anything left unverified is one line in Solution.
-- `## Merge risk` goes before Screenshots, only with a `merge-risk` report the caller provides, pasted as given.
+- Testing lists only checks that actually ran, in this session or reported by the caller or the commits.
+- `## Merge risk` goes after How to revert, only with a `merge-risk` report the caller provides, pasted as given.
 - `## Screenshots` goes last, only with screenshots the caller or the user provides: each image as `![<what it shows>](./<file>)` under its one-line source (local data, injected in the browser…).
 
 ## 3. Preview
