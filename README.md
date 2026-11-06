@@ -23,6 +23,7 @@ npx skills update                                  # pull new versions
 | engineering | `github-pr` | Draft PR with a Conventional Commits title and a "why"-first description. |
 | engineering | `megamoind` | Takes a ticket end to end: tidy first, TDD, reviews, real-app check, PR, CI loop. |
 | engineering | `megamoind-batch` | Takes a batch of tickets (a spec, a list, a label) to PRs, one async megamoind agent per ticket, stacked by dependency. |
+| engineering | `merge-risk` | Traffic-light rating of how risky a PR is to merge, by what users would suffer if it fails, with the reasons. |
 | engineering | `pair-review` | Review → fix → re-review loop with a reviewer from another model family, through `diff-review`. |
 | engineering | `retro-digest` | Groups the open retro findings across projects, applies the approved ones and records each outcome. |
 | engineering | `retro-with-docs` | Retro of an agent session: stoppers and environment fixes, written to `~/.skill-docs/retros/<project>/`. |
