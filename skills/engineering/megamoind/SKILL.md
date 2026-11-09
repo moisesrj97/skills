@@ -33,8 +33,18 @@ The checks that must be green before any push: type-check, lint and tests for **
 - A heavy spec that times out under full-suite load counts as red only after it fails again in isolation.
 - Run checks as wide as the project's scripts do, but point every auto-fix (`--write`, `--fix`, a formatter) at the files of your branch's diff only. One aimed at a whole folder rewrites files outside the ticket and can break them, e.g. by dropping a `@ts-expect-error`.
 - Before each commit, check it holds only your ticket's files (`but diff` under GitButler, `git diff --stat` otherwise).
+- A commit hook that runs lint-staged reads the config in the working tree. When one change both adds a lint or format rule and fixes the files it flags, commit in the order fixes, then pure formatting, then the config, adding the new rule to the working tree only for that last commit.
 
 Push only with every gate green or **foreign** (see "Sharing the workspace").
+
+## Docs or skill changes
+
+When the diff holds no code (a README, a skill, a recipe), the steps keep their shape and change what they test:
+
+- **Gates**: links and anchors resolve.
+- **Step 2**: the test is each claim the doc makes, checked against the code it documents and cited with `file:line`, plus its code snippets type-checked against the real types. A skill with a `benchmark/evals.json` gets one new eval per behaviour change, with the opposite case as a control.
+- **Step 5**: run every command or snippet the doc adds exactly as written, in the real app. For a skill, run each new eval prompt in a fresh agent that reads only the skill.
+- **Step 6** is skipped.
 
 ## Steps
 
@@ -42,7 +52,7 @@ Push only with every gate green or **foreign** (see "Sharing the workspace").
 
 Fetch the ticket (`gh issue view` for a GitHub issue, the tracker's tools otherwise); a tracker you can't reach is HITL. Read the ticket and the code it touches, and look for what the change can **reuse**: helpers, a similar feature, how the neighbouring tests are written. Call the Skill tool with `craftsmanship`. For a bug, call the Skill tool with `mattpocock-skills:diagnosing-bugs` and take it through phase 4, so the plan names the confirmed cause; its fix waits for step 2.
 
-With `brief=`, read it, settle on your own whatever of the plan below it leaves open (only the user's decisions are HITL), and go to step 1. Otherwise ask everything in **one** round, with your proposal for each. Each option states only consequences you checked in code or data this session: grep the consumer before claiming "with X, Y happens", and mark anything unchecked "unverified: …".
+With `brief=`, read it, settle on your own whatever of the plan below it leaves open (only the user's decisions are HITL), and go to step 1. Otherwise ask everything in **one** round, with your proposal for each. Each option states only consequences you checked in code or data this session: grep the consumer before claiming "with X, Y happens", and mark anything unchecked "unverified: …". An option that extends scope to a sibling case ("X has the same bug") quotes the routing line that sends the user's action into that code, found by tracing every call site.
 
 - **Plan**: the approach in a few lines, what it reuses, the seams where tests go with what each buys and sells (Test Desiderata), the tidyings worth doing first or after and where each goes by area of impact (Tidy First), and anything ambiguous in the ticket. When the ticket replaces or reproduces something already visible in the product, the plan keeps its current look, cites the **visual reference** (the screenshot, the live screen), and checks that the shape of the data (copy keys, props) can carry that look, e.g. one copy key can't style half its text.
 - **Branch name**: the format in the project's `## Ticket tracker` section, else `<ticket-id>-<short-kebab-description>`, with no `/`. A pre-PR or post-PR from the plan adds `<name>-tidy-first` or `<name>-tidy-after`.
@@ -63,7 +73,7 @@ With a pre-PR, create `<name>-tidy-first` on `<base>` as above. Under GitButler,
 
 ### Sharing the workspace
 
-Under GitButler, other agents' branches may be applied in the same working directory, so their unfinished changes show up in your type-check, tests and dev server. Commit only your own hunks (`but commit -b <branch> <ids>`, ids from `but diff`) and edit only files your ticket needs. A red gate is **foreign** when every failure sits in a file outside your branch's diff that `but status` shows changed by another branch or uncommitted outside yours. A change you produced yourself, e.g. a formatter or codegen run, is never foreign, even uncommitted. Leave a foreign red alone (fixing it would mix two tickets in one branch), list it for the report and count the gate as green.
+Under GitButler, other agents' branches may be applied in the same working directory, so their unfinished changes show up in your type-check, tests and dev server. Commit only your own hunks (`but commit -b <branch> <ids>`, ids from `but diff`) and edit only files your ticket needs. A red gate is **foreign** when every failure sits in a file outside your branch's diff that `but status` shows changed by another branch or uncommitted outside yours. A change you produced yourself, e.g. a formatter or codegen run, is never foreign, even uncommitted. Leave a foreign red alone (fixing it would mix two tickets in one branch), list it for the report and count the gate as green. Their edits also hot-reload into your dev server: a checker overlay naming files outside your diff is foreign, so remove it from the DOM and go on, and when the UI stops reacting after a burst of hot updates you didn't cause, reload the page before debugging.
 
 The inverse is a **borrowed green**: another applied branch supplies hunks yours lacks (an import, a type, a helper), so your gates pass locally and CI, which builds your branch alone, fails. Your code may depend only on `<base>` and your own commits. A branch still applied but marked `(merged upstream)` in `but status` means your base is stale, so update before implementing. When you can't update, check that each symbol you use from a file other branches touch exists in `<base>` (`git show <base>:<file>`). CI settles both doubts, but only after the push; this check comes before it.
 
