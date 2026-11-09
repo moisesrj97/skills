@@ -1,7 +1,7 @@
 ---
 name: megamoind
 description: "Delegate a ticket end to end, unattended: TDD implementation, tidying, security review, pair-review, real-app verification, a PR ready for review and a CI loop until green. Use when the user hands over one ticket (a GitHub issue or a tracker ID such as a ClickUp task) to take all the way to a PR, e.g. \"megamoind PD-123\", or when another skill delegates one ticket's implementation. Several tickets go to megamoind-batch."
-argument-hint: "<ticket ID> [base=<branch>] [brief=<file>] [stop-at=draft]"
+argument-hint: "[ticket ID] [base=<branch>] [brief=<file>] [stop-at=draft]"
 ---
 
 # Megamoind
@@ -14,7 +14,7 @@ Invoking this skill is the user's approval to commit, push to the ticket's own b
 
 ## Arguments
 
-- `<ticket>`: a GitHub issue or an ID from the tracker the project's `## Ticket tracker` section names (e.g. ClickUp).
+- `<ticket>`: a GitHub issue or an ID from the tracker the project's `## Ticket tracker` section names (e.g. ClickUp). Missing, step 0 gets one first.
 - `base=<branch>`: the branch to build on, e.g. the ticket below in a stack. Default: the default branch (`git symbolic-ref --short refs/remotes/origin/HEAD`). Every `<base>` below means this.
 - `brief=<file>`: step 0 already answered by whoever delegated the ticket. Read it instead of asking; only what it leaves open is HITL.
 - `stop-at=draft`: the caller owns ready-for-review and reviewers. Step 7 opens the PR as a draft, step 8 loops on the checks that run on drafts, and step 10 is skipped.
@@ -49,6 +49,11 @@ When the diff holds no code (a README, a skill, a recipe), the steps keep their 
 ## Steps
 
 ### 0. Brief and HITL check
+
+With no ticket in the request, get one before anything else, in one question with two options:
+
+- **Give the ID**: the user writes it.
+- **Create it**: a ticket in the tracker, titled and described from the user's request, in the in-progress status, assigned to the user running this skill (GitHub: `gh issue create --assignee @me`). It goes where the `## Ticket tracker` section says new tickets go; when it names no place, ask for one. Its new ID is the ticket from here on.
 
 Fetch the ticket (`gh issue view` for a GitHub issue, the tracker's tools otherwise); a tracker you can't reach is HITL. Read the ticket and the code it touches, and look for what the change can **reuse**: helpers, a similar feature, how the neighbouring tests are written. Call the Skill tool with `craftsmanship`. For a bug, call the Skill tool with `mattpocock-skills:diagnosing-bugs` and take it through phase 4, so the plan names the confirmed cause; its fix waits for step 2.
 

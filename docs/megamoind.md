@@ -6,7 +6,10 @@ Reference diagrams for [`megamoind`](../skills/engineering/megamoind/SKILL.md) a
 
 ```mermaid
 flowchart TD
-    start(["/megamoind &lt;ticket&gt;"]) --> brief{"brief= given?"}
+    start(["/megamoind &lt;ticket&gt;"]) --> tid{"ticket ID given?"}
+    tid -- yes --> brief{"brief= given?"}
+    tid -- no --> ask["Ask: give the ID, or create it<br/>(in progress, assigned to the user)"]
+    ask --> brief
     brief -- no --> s0["0. Brief and HITL check<br/>reuse search, craftsmanship, bug → diagnosing-bugs to phase 4<br/>plan (seams' Desiderata trade-offs, tidyings by area of impact),<br/>branch, base, verification, CODEOWNERS,<br/>required checks (draft / ready-only), gh for screenshots, brief to ticket?<br/>one round of questions, brief saved to a file"]
     brief -- yes --> fill["0. Settle what the brief leaves open<br/>reuse, tidyings, a bug's cause"]
     fill --> s1

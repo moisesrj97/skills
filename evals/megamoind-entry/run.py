@@ -6,7 +6,7 @@ checks the routing decision in the transcript. It exercises what is installed:
 the skill under ~/.claude/skills (a symlink to this checkout) and the rule in
 ~/.claude/CLAUDE.md.
 
-Usage: run.py [case-id ...]   env: RUNS (default 1), MODEL, MAX_TURNS (default 3)
+Usage: run.py [case-id ...]   env: RUNS (default 1), MODEL, MAX_TURNS (default 3; a case's max_turns overrides it)
 """
 
 import json
@@ -33,6 +33,8 @@ BRIEF = """# ABC-123 brief
 """
 
 ASKS_ABOUT_MEGAMOIND = re.compile(r"megamoind[^\n]*\?|\?[^\n]*megamoind|(without|sin) megamoind", re.I)
+ASKS_FOR_ID = re.compile(r"\bID\b")
+OFFERS_CREATION = re.compile(r"\b(cre[aoé]\w*|create)\b", re.I)
 
 
 def make_fixture() -> Path:
@@ -47,11 +49,11 @@ def make_fixture() -> Path:
     return root
 
 
-def run_claude(prompt: str, cwd: Path) -> list[dict]:
+def run_claude(prompt: str, cwd: Path, max_turns: str) -> list[dict]:
     cmd = [
         "claude", "-p", prompt,
         "--output-format", "stream-json", "--verbose",
-        "--max-turns", MAX_TURNS,
+        "--max-turns", max_turns,
         "--permission-mode", "acceptEdits",
         "--strict-mcp-config",
         "--disallowedTools", *DISALLOWED,
@@ -100,6 +102,7 @@ def observe(events: list[dict], fixture: Path) -> dict:
         "review_skill_invoked": any("review" in s for s in skills_invoked(events)),
         "asks_about_megamoind": bool(ASKS_ABOUT_MEGAMOIND.search(asked_text)),
         "asks_user": bool(asked_tool) or text.rstrip().endswith("?"),
+        "offers_ticket_creation": bool(ASKS_FOR_ID.search(asked_text) and OFFERS_CREATION.search(asked_text)),
         "edits": any(u["name"] in ("Edit", "Write", "NotebookEdit") for u in uses),
         "readme_fixed": "receive" in (fixture / "README.md").read_text(),
         "brief_read": any(
@@ -113,7 +116,8 @@ def run_case(case: dict) -> tuple[dict, list[dict]]:
     results = []
     for _ in range(RUNS):
         fixture = make_fixture()
-        events = run_claude(case["prompt"].replace("{fixture}", str(fixture)), fixture)
+        events = run_claude(case["prompt"].replace("{fixture}", str(fixture)), fixture,
+                            str(case.get("max_turns", MAX_TURNS)))
         seen = observe(events, fixture)
         failed = {k: seen[k] for k, want in case["checks"].items() if seen[k] != want}
         results.append({"failed": failed, "tools": [u["name"] for u in tool_uses(events)],

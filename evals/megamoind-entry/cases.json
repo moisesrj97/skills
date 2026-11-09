@@ -6,6 +6,13 @@
     "checks": {"megamoind_invoked": true, "asks_about_megamoind": false, "batch_invoked": false}
   },
   {
+    "id": "explicit-no-ticket",
+    "prompt": "megamoind añade un flag --version a cli.py",
+    "expect": "megamoind without a ticket ID asks to give the ID or create the ticket, and edits nothing yet.",
+    "checks": {"megamoind_invoked": true, "offers_ticket_creation": true, "edits": false, "batch_invoked": false},
+    "max_turns": 8
+  },
+  {
     "id": "explicit-batch",
     "prompt": "megamoind-batch ABC-120",
     "expect": "Invokes megamoind-batch straight away, without asking whether to go without it.",
