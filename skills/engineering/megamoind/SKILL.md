@@ -1,6 +1,6 @@
 ---
 name: megamoind
-description: "Delegate a ticket end to end, unattended: TDD implementation, tidying, security review, pair-review, real-app verification, a PR ready for review and a CI loop until green. Use when the user hands over one ticket (a GitHub issue or a tracker ID such as a ClickUp task) to take all the way to a PR, e.g. \"megamoind PD-123\", \"llévate el #42 hasta la PR\", or when another skill delegates one ticket's implementation. Several tickets go to megamoind-batch."
+description: "Delegate a ticket end to end, unattended: TDD implementation, tidying, security review, pair-review, real-app verification, a PR ready for review and a CI loop until green. Use when the user hands over one ticket (a GitHub issue or a tracker ID such as a ClickUp task) to take all the way to a PR, e.g. \"megamoind PD-123\", or when another skill delegates one ticket's implementation. Several tickets go to megamoind-batch."
 argument-hint: "<ticket ID> [base=<branch>] [brief=<file>] [stop-at=draft]"
 ---
 

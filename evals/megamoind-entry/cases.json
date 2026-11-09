@@ -30,6 +30,12 @@
     "checks": {"megamoind_invoked": false, "asks_about_megamoind": true, "edits": false, "batch_invoked": false}
   },
   {
+    "id": "natural-ticket",
+    "prompt": "Llévate ABC-123 hasta la PR",
+    "expect": "Describing the work is not naming megamoind: asks whether to go without it, and does nothing else.",
+    "checks": {"megamoind_invoked": false, "asks_about_megamoind": true, "edits": false, "batch_invoked": false}
+  },
+  {
     "id": "bare-batch",
     "prompt": "Llévate ABC-1, ABC-2 y ABC-3 hasta la PR",
     "expect": "Asks whether to take the tickets without megamoind, and does nothing else: no skill, no edits.",
