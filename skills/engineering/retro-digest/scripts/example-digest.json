@@ -1,0 +1,83 @@
+{
+  "title": "Retro digest 2026-01-15",
+  "reviewFile": "retro-review-2026-01-15.json",
+  "legend": {
+    "app/": "my-app/2026-01-1x-",
+    "lib/": "my-lib/2026-01-1x-"
+  },
+  "inPlace": [
+    {
+      "members": [
+        "app/login-flow#R2"
+      ],
+      "note": "Already in the review skill (commit abc1234)."
+    }
+  ],
+  "clusters": [
+    {
+      "id": "C1",
+      "title": "Guessed CLI syntax for the amend command",
+      "members": [
+        "app/login-flow#R1*",
+        "lib/release#R3"
+      ],
+      "scope": "global",
+      "projects": [
+        "app",
+        "lib"
+      ],
+      "score": 4,
+      "target": "~/.claude/CLAUDE.md",
+      "proposal": "One line with the exact syntax.",
+      "observation": "Cheap and recurring: apply.",
+      "recommend": "apply"
+    },
+    {
+      "id": "C2",
+      "title": "Flaky unit test seen once",
+      "members": [
+        "app/payments#R4*"
+      ],
+      "scope": "project",
+      "projects": [
+        "app"
+      ],
+      "score": 1,
+      "target": "app/test/payments.test.ts",
+      "proposal": "Restore global fetch after each test.",
+      "observation": "One-off; reject until it recurs.",
+      "recommend": "reject"
+    }
+  ],
+  "recurring": [
+    {
+      "id": "R-A",
+      "title": "Hook for retired subcommands",
+      "openMembers": [
+        "lib/release#R5"
+      ],
+      "rejected": "app/login-flow#R4",
+      "reason": "not worth maintaining",
+      "observation": "Recurred once; fold.",
+      "recommend": "fold"
+    }
+  ],
+  "plan": [
+    {
+      "repo": "dot-files",
+      "items": [
+        "C1"
+      ],
+      "ticket": false,
+      "note": "straight to main"
+    },
+    {
+      "repo": "my-app",
+      "items": [
+        "C2"
+      ],
+      "ticket": true,
+      "note": "one PR"
+    }
+  ]
+}
