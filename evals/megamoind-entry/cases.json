@@ -36,6 +36,12 @@
     "checks": {"megamoind_invoked": false, "asks_about_megamoind": true, "edits": false, "batch_invoked": false}
   },
   {
+    "id": "natural-label",
+    "prompt": "Implementa los issues con ready-for-agent",
+    "expect": "Describing the work is not naming megamoind-batch: asks whether to go without it, and does nothing else.",
+    "checks": {"megamoind_invoked": false, "batch_invoked": false, "asks_about_megamoind": true, "edits": false}
+  },
+  {
     "id": "bare-batch",
     "prompt": "Llévate ABC-1, ABC-2 y ABC-3 hasta la PR",
     "expect": "Asks whether to take the tickets without megamoind, and does nothing else: no skill, no edits.",

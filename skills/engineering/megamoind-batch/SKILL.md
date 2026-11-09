@@ -1,6 +1,6 @@
 ---
 name: megamoind-batch
-description: "Delegate a batch of tickets end to end, unattended: one megamoind agent per ticket, independent tickets in parallel, dependent ones stacked, ending in draft PRs that go ready together once every one is green. Use when the user hands over more than one ticket to take to PRs: a spec ID (the output of /to-spec and /to-tickets), a list of tickets or a tracker query such as a label, e.g. \"megamoind-batch PD-120\", \"megamoind #12 #14 #15\", \"implementa los issues con ready-for-agent\"."
+description: "Delegate a batch of tickets end to end, unattended: one megamoind agent per ticket, independent tickets in parallel, dependent ones stacked, ending in draft PRs that go ready together once every one is green. Use when the user hands over more than one ticket to take to PRs: a spec ID (the output of /to-spec and /to-tickets), a list of tickets or a tracker query such as a label, e.g. \"megamoind-batch PD-120\", \"megamoind #12 #14 #15\"."
 argument-hint: "<spec ID | ticket IDs | tracker query>"
 ---
 
