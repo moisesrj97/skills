@@ -42,6 +42,8 @@ In one message, for the decided clusters:
 - **Applied and reopened**: grouped by the repo or file that owns each target, the commits or PRs each group becomes, their order and dependencies, and which need a ticket. Ask for the ticket ids or "create them", and for any adjustment to a proposal.
 - **Rejected**: a reason for each, offering your observation as the default.
 
+Before writing a group's ticket or brief, check every concrete claim its proposals make (paths, response shapes, flag names, ports) with a grep or read of the target repo and write it with `file:line`; mark the rest "unverified: …".
+
 Done when every group has its tickets and every rejection its reason.
 
 ## 5. Apply and record
