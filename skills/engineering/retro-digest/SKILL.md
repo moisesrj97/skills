@@ -18,28 +18,35 @@ A **cluster** is a set of findings with the same root cause and the same fix, ev
 
 - **Scope** is **global** when the fix lands in shared setup (user-level steering files, skills, hooks, tooling) or when the same friction shows up in more than one project, which moves even a project-level fix there. It is **project** when the fix lands in one repo.
 - **Score** = occurrences × the highest severity (blocker 4, high 3, medium 2, low 1).
-- **Already in place**: read its target. If the change is already there, mark the cluster resolved in step 4 without asking.
+- **Already in place**: read its target. If the change is already there, mark the cluster resolved in step 5 without asking.
 - **Recurring after rejection**: a cluster with a `rejected` member is not proposed again. List it apart with its count and the rejection reason, for the user to reopen it or fold its open members into the rejected one.
 
-## 3. Ask
+## 3. Decide
 
-The user reviews the digest on a standalone HTML page and saves the decisions to a file you read.
+The user decides each cluster on a standalone HTML page; everything else waits for step 4.
 
 Write the digest to `<scratchpad>/retro-digest.json`, shaped like [`scripts/example-digest.json`](scripts/example-digest.json):
 
 - `clusters`, highest score first, with ids `C1…`: members (the canonical one marked `*`), scope, projects, score, target and proposal, plus your `observation` (why apply or reject, what it overlaps, what a past attempt showed) and your `recommend`.
 - `recurring`, with ids `R-A…`: the open members, the rejected member with its reason, your observation, and `recommend` (`fold` unless you argue otherwise).
-- `inPlace`: the clusters you already marked resolved.
-- `plan`: per repo or target file, the clusters that ship together and `ticket: true` where that repo's workflow needs one.
 - `legend` for the id prefixes, a `title` with today's date, and `reviewFile`: `retro-review-<date>.json`.
 
-Build the page with `node <skill-dir>/scripts/build-review-page.mjs <scratchpad>/retro-digest.json <scratchpad>/retro-digest.html` and open it in the browser (`open` on macOS). The page validates the review and saves it as `reviewFile` in the browser's downloads folder, or copies it for the chat. Send one self-contained message, since the user may read it hours later in a scheduled thread: the page's path, the cluster count, the top three by score, and that answering in chat works too. Wait.
+Build the page with `node <skill-dir>/scripts/build-review-page.mjs <scratchpad>/retro-digest.json <scratchpad>/retro-digest.html` and open it in the browser (`open` on macOS). Every row starts on your `recommend`; the user changes what they disagree with and saves `reviewFile` to the browser's downloads folder, or copies it for the chat. Send one self-contained message, since the user may read it hours later in a scheduled thread: the page's path, the cluster count, the top three by score, the clusters already marked resolved, and that answering in chat works too. Wait.
 
-Done when the user says they're done or answers in chat. Read the newest `~/Downloads/retro-review-<date>*.json` (the browser appends ` (1)` to a repeat save); if there is none, ask where it was saved.
+Done when the user says they're done or answers in chat. Read `decisions` from the newest `~/Downloads/retro-review-<date>*.json` (the browser appends ` (1)` to a repeat save); if there is none, ask where it was saved.
 
-## 4. Apply and record
+## 4. Plan the changes
 
-Read the decisions from the review (`decisions.<id>.decision` and its `note`, `tickets` per repo, `comment`). A note on an applied cluster is an instruction for that change; on a rejected one it is the reason. Apply each approved cluster as its own change, in the repo that owns its target and following that repo's own workflow (branch, commit and PR rules). Implement a `mechanical` finding as a deterministic check (lint rule, hook, CI job) instead of prose.
+In one message, for the decided clusters:
+
+- **Applied and reopened**: grouped by the repo or file that owns each target, the commits or PRs each group becomes, their order and dependencies, and which need a ticket. Ask for the ticket ids or "create them", and for any adjustment to a proposal.
+- **Rejected**: a reason for each, offering your observation as the default.
+
+Done when every group has its tickets and every rejection its reason.
+
+## 5. Apply and record
+
+Apply each approved cluster as its own change, in the repo that owns its target and following that repo's own workflow (branch, commit and PR rules). Implement a `mechanical` finding as a deterministic check (lint rule, hook, CI job) instead of prose.
 
 Then rewrite the `- status:` line of every member of every cluster you touched:
 

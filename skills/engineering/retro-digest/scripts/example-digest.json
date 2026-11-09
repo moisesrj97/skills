@@ -5,14 +5,6 @@
     "app/": "my-app/2026-01-1x-",
     "lib/": "my-lib/2026-01-1x-"
   },
-  "inPlace": [
-    {
-      "members": [
-        "app/login-flow#R2"
-      ],
-      "note": "Already in the review skill (commit abc1234)."
-    }
-  ],
   "clusters": [
     {
       "id": "C1",
@@ -60,24 +52,6 @@
       "reason": "not worth maintaining",
       "observation": "Recurred once; fold.",
       "recommend": "fold"
-    }
-  ],
-  "plan": [
-    {
-      "repo": "dot-files",
-      "items": [
-        "C1"
-      ],
-      "ticket": false,
-      "note": "straight to main"
-    },
-    {
-      "repo": "my-app",
-      "items": [
-        "C2"
-      ],
-      "ticket": true,
-      "note": "one PR"
     }
   ]
 }

@@ -10,14 +10,7 @@ import { validateReview } from './validate.mjs';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const digest = JSON.parse(fs.readFileSync(path.join(here, 'example-digest.json'), 'utf8'));
 
-const complete = () => ({
-  decisions: {
-    C1: { decision: 'apply' },
-    C2: { decision: 'reject', note: 'one-off' },
-    'R-A': { decision: 'fold' },
-  },
-  tickets: {},
-});
+const complete = () => ({ decisions: { C1: 'apply', C2: 'reject', 'R-A': 'fold' } });
 
 test('a complete review passes', () => {
   assert.deepEqual(validateReview(digest, complete()), []);
@@ -26,31 +19,17 @@ test('a complete review passes', () => {
 test('every cluster and recurring item needs a valid decision', () => {
   const review = complete();
   delete review.decisions.C1;
-  review.decisions['R-A'] = { decision: 'apply' };
+  review.decisions['R-A'] = 'apply';
   assert.deepEqual(validateReview(digest, review), [
     'C1: pick one of apply, reject, open',
     'R-A: pick one of reopen, fold',
   ]);
 });
 
-test('a rejection without a reason fails', () => {
-  const review = complete();
-  review.decisions.C2 = { decision: 'reject', note: '  ' };
-  assert.deepEqual(validateReview(digest, review), ['C2: a rejection needs a reason']);
-});
-
 test('ids outside the digest fail', () => {
   const review = complete();
-  review.decisions.C9 = { decision: 'apply' };
+  review.decisions.C9 = 'apply';
   assert.deepEqual(validateReview(digest, review), ['C9: not in this digest']);
-});
-
-test('a ticket is required only for a repo with an applied item', () => {
-  const review = complete();
-  review.decisions.C2 = { decision: 'apply' };
-  assert.deepEqual(validateReview(digest, review), ['my-app: give a ticket or write "create"']);
-  review.tickets['my-app'] = 'create';
-  assert.deepEqual(validateReview(digest, review), []);
 });
 
 const pageScript = (html) => html.match(/<script>([\s\S]*)<\/script>/)[1];
