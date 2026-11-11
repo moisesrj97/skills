@@ -6,7 +6,7 @@ argument-hint: "[scope] [reviewer=<model>[:<effort>]] [spec=<file>] [standards=<
 
 # Pair review
 
-You are the **author**. A **reviewer**, by default from another model family, reviews your change through the `diff-review` skill. You triage what it finds, fix what deserves fixing, tell it what changed, and it reviews again. Its value is an independent read from an agent without your context or your blind spots. Every round goes to the **same reviewer**, so it remembers what it reported and judges your fixes against its own findings. Keep that read useful: fix real problems, leave settled ones settled, and stop when the reviews stop paying off.
+You are the **author**. A **reviewer**, by default from another model family, reviews your change through the `diff-review` skill. You triage what it finds, fix what deserves fixing, tell it what changed, and it reviews again. Its value is an independent read from an agent without your context or your blind spots. Every round goes to the **same reviewer**, so it remembers what it reported and judges your fixes against its own findings. Keep that read useful: fix real problems, leave settled ones settled, hold every round to the change's scope, and stop when the reviews stop paying off. Scope creep is what breaks the loop: every edit beyond a finding is new diff the reviewer re-reads and new findings it can raise, so the rounds stop converging.
 
 ## Arguments
 
@@ -33,15 +33,17 @@ Call the Skill tool with `diff-review`, passing the scope, the reviewer, the spe
 
 Read the round file `diff-review` returns, with the findings it discarded. A PLAUSIBLE finding comes with a `Confirm by`: check that first, so it reaches its bucket confirmed or refuted. Then put every finding into one bucket:
 
-- **Fix**: a real defect or a cheap, clearly right improvement inside the scope of the change. This includes defects in the tests you wrote in an earlier round, which are common and which the reviewer catches well.
+- **Fix**: a defect the change introduced, or a cheap, clearly right improvement to lines the change itself adds or modifies. This includes defects in the tests you wrote in an earlier round, which are common and which the reviewer catches well.
+- **Out of scope**: a real issue the change did not introduce: pre-existing code, a neighbouring module, a wider refactor the finding suggests. Leave the code as it is, record it as a follow-up for the recap, and pass it in the next round's not-acted-on list as out of scope.
 - **Already decided**: matches a user decision. Leave it unfixed without asking again, and add it to the already-decided list for the next round.
-- **Needs the human (HITL)**: anything that is the user's call. It reverses a decision they made, changes scope (a second concern in the PR), is a design alternative with real trade-offs, needs product or ops input, or new evidence makes a declined finding more severe. Stop the loop and ask, with your recommendation. Resume after they answer.
+- **Needs the human (HITL)**: anything that is the user's call. It reverses a decision they made, needs an out-of-scope change for this change to be correct (a second concern in the PR), is a design alternative with real trade-offs, needs product or ops input, or new evidence makes a declined finding more severe. Stop the loop and ask, with your recommendation. Resume after they answer.
 - **Disagree**: you believe it's wrong. Verify before dismissing (read the code, run it). If it still looks wrong, say why in the next round's not-acted-on list. If the reviewer reports it again with a concrete scenario after reading your reason, treat it as HITL.
 
 Done when every finding sits in one bucket. Report each round to the user briefly: counts per bucket, what you fixed, what you skipped and why.
 
 ### Fix
 
+- Make the smallest fix that closes the finding. Refactors, renames and tidying the finding doesn't ask for wait for a follow-up, even when cheap. Before committing, read the fix's diff and revert every hunk no finding asks for.
 - Follow the project's own conventions (CLAUDE.md, lint, type-check, test commands) and the user's commit rules.
 - Write or adjust tests with each fix. When a fix is a test, **prove it can fail**. Break the code it guards (remove the middleware, corrupt the input) in a temporary copy, run the test, see red, and restore. A test that stays green under the mutation the reviewer described is the bug. Restore from a backup copy, and confirm with `git diff` that nothing leaked.
 - Run type-check, lint and the relevant tests, and the full suite before handing back.
@@ -64,4 +66,4 @@ Finish with:
 | … | | |
 | last | 0 | done |
 
-Then list the commits created or amended (hashes, pushed or not), the verification run (type-check, lint, tests, mutation checks), anything left pending (push, HITL questions), and one or two lines on how the loop went, including what the reviewer caught that a single pass wouldn't and anything to brief better next time.
+Then list the commits created or amended (hashes, pushed or not), the verification run (type-check, lint, tests, mutation checks), anything left pending (push, HITL questions), the out-of-scope follow-ups, and one or two lines on how the loop went, including what the reviewer caught that a single pass wouldn't and anything to brief better next time.
