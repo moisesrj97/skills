@@ -24,6 +24,7 @@ npx skills update                                  # pull new versions
 | engineering | `megamoind` | Takes a ticket end to end: tidy first, TDD, reviews, real-app check, PR, CI loop. |
 | engineering | `megamoind-batch` | Takes a batch of tickets (a spec, a list, a label) to PRs, one async megamoind agent per ticket, stacked by dependency. |
 | engineering | `merge-risk` | Traffic-light rating of how risky a PR is to merge, by what users would suffer if it fails, with the reasons. |
+| engineering | `notify-user` | Sends you a push notification through your ntfy server, with the token read from a file you write. |
 | engineering | `pr-review` | Reviews a teammate's PR with Opus, Sol and a security pass through `diff-review`, checks it against its ticket, verifies each finding against the wider code, the stack and the author's notes, and rates it with `merge-risk`. |
 | engineering | `pair-review` | Review → fix → re-review loop with a reviewer from another model family, through `diff-review`. |
 | engineering | `retro-digest` | Groups the open retro findings across projects, applies the approved ones and records each outcome. Manual only. |
