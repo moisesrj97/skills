@@ -64,7 +64,7 @@ With `brief=`, read it, settle on your own whatever of the plan below it leaves 
 - **Base** (GitButler): run `but pull --check`. When the workspace is behind and updating would move other branches, ask: "the workspace is N commits behind; updating would move X and Y. Update?". A no leaves the base stale, so guard against a **borrowed green** (see "Sharing the workspace").
 - **Verification**: how to run the app or service (the dev commands, required env, data or login, ports), and which flows prove the change works.
 - **CODEOWNERS**: if the repo has one, opening the PR ready for review requests those reviewers automatically. Say so, since it defeats waiting to add reviewers.
-- **Required checks**: the names CI must turn green, from the project's `CLAUDE.md` / `CLAUDE.local.md`, else the base's rules (`gh api repos/{owner}/{repo}/rules/branches/<base>`, the `required_status_checks` entries). If neither gives them, ask. `gh pr checks --required` lists only the checks already reported, so it can't tell you one is missing. Split them into checks that run on drafts and ready-only ones (e.g. a Jenkins job that builds only non-draft PRs whose base is the default branch).
+- **Required checks**: the names CI must turn green, from the project's `CLAUDE.md` / `CLAUDE.local.md`, else `python3 <skill-dir>/scripts/ci.py required <base>` (the base's rulesets and branch protection). If neither gives them, ask. Split them into checks that run on drafts and ready-only ones (e.g. a Jenkins job that builds only non-draft PRs whose base is the default branch).
 - **Screenshots** (frontend changes): the PR gets them through `gh-attach`, which needs gh ≥ 2.99. Check `gh --version` now; if it is older, ask the user to upgrade.
 - **Ticket description**: ask whether to copy the brief's product decisions (what changes, UI choices, acceptance criteria) into the ticket's description. On a yes, write them into the description, keeping its existing content, never as a comment.
 
@@ -140,7 +140,13 @@ Done when every layer has its PR. Keep each one current through steps 6 and 8: a
 
 Loop until every check is green:
 
-1. Wait for the checks to finish with `Monitor` or an until-loop on `gh pr checks <number>` rather than a tight poll. The wait ends when every check on the PR is green, required or not, and every required check from step 0 exists. Some required checks appear minutes after the others, so "all checks passed" with one missing is still pending. With `stop-at=draft`, that means the draft checks only, and the report lists the ready-only ones as pending for the caller. A layer stacked on another gets the checks that run only on PRs based on the default branch once the layer below merges: list those as "pending retarget" and leave them out of the wait. When T3 Code delegated the ticket, wait inside the turn (`t3_background_wait` on the Monitor or loop task) rather than ending it.
+1. Wait for the checks to settle, in the background (`run_in_background`, with a time limit above the script's hour, e.g. `timeout: 3900000`), so its exit wakes you:
+
+   ```bash
+   python3 <skill-dir>/scripts/ci.py wait <number> --required "<name>" … [--skip "<name>" …]   # one flag per check
+   ```
+
+   It exits 0 once every check on the PR is green, required or not, and every required check has reported (some appear minutes after the others, and `gh pr checks --required` can't show one missing), or once a PR with no checks at all has had 5 minutes to get some and requires none; 1 with the red checks named; 4 after an hour with what is still pending or missing; 2 when `gh` failed three polls in a row. With `stop-at=draft`, pass the ready-only checks in `--skip` and list them in the report as pending for the caller. A layer stacked on another gets the checks that run only on PRs based on the default branch once the layer below merges: pass those in `--skip` too and list them as "pending retarget". When T3 Code delegated the ticket, wait inside the turn (`t3_background_wait` on that task) rather than ending it.
 2. On any red check, required or not, diagnose with the tools at hand: a CI skill the project or the user has installed, `gh pr checks`, the job logs. Classify it:
    - **caused by this change**: fix it, run the gates, push;
    - **flaky or infrastructure**: re-run it once; red again is HITL;

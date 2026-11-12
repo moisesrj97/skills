@@ -83,7 +83,7 @@ Once every ticket's draft PR is green, bring the stacks up to date while the age
 
 Some checks only run on ready PRs, and some only on PRs whose base is the default branch (e.g. Jenkins): a stacked layer gets those only once the layer below merges and GitHub retargets it. Report such layers as "pending retarget" and leave them out of every wait's exit condition. Loop until every other check of every PR is green, required or not:
 
-1. Wait with `Monitor` or an until-loop on `gh pr checks` rather than a tight poll.
+1. Wait with `ci.py wait` from the `megamoind` skill's `scripts/` (the folder next to this skill's), one per PR in the background, as `megamoind` step 8 does: one `--required` per required check (the project's `CLAUDE.md` / `CLAUDE.local.md`, else `ci.py required <default branch>`), one `--skip` per pending-retarget check of the PR.
 2. Diagnose each red check enough to classify it as in `megamoind` step 8.
    - **Base staleness** (a scan comparing against a default branch newer than the PR's base): yours. Update the stacks as at the start of this step (`but pull --check`, `but pull`, reinstall if the lockfile changed, `but push`).
    - **Anything else**: send it to the agent that owns the branch, which handles it as its step 8 says and pushes a fix. A fix in a lower layer restacks the layers above; push the stack.
