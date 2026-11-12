@@ -36,19 +36,25 @@ A continued reviewer already holds its instructions, the scope, the spec, the st
 Round 1, or a round with no handle, starts a fresh reviewer and records its **reviewer handle**. A round with a handle continues that reviewer. Continuing the same reviewer is deliberate, so do it even where a harness suggests a new agent for every re-check.
 
 - **T3 Code** (`delegate_task` is available). Fresh: `delegate_task` with `role: "review"`, `isolation: "shared"` and the target from `orchestrator_capabilities`, which is provider `claudeAgent` with option `effort`, or `codex` with option `reasoningEffort`. The handle is the child's thread id. Continue: `t3_thread_send` to that thread with the prompt. The child writes the round file. Wait for its completion notification.
-- **Otherwise**: run the reviewer's CLI in the background from the repo root and wait for it to exit. The reviewer returns the round as its final message, and the command writes that to the round file. Its log goes to `<scratch>/review-round-<N>.log`; read only its tail, since the whole log floods the context.
-  - Claude, fresh: generate a UUID (`uuidgen`), which is the handle, and run `claude -p --session-id <uuid> --model <model> --effort <effort> --permission-mode plan < <prompt file> > <round file> 2> <log>`. Continue: the same command with `--resume <uuid>` in place of `--session-id <uuid>`.
-  - Codex, fresh: `codex exec -m <model> -c model_reasoning_effort='"<effort>"' -s read-only -C <repo> --json -o <round file> - < <prompt file> > <scratch>/review-events.jsonl 2> <log>`. The handle is `jq -r 'select(.type=="thread.started").thread_id' <scratch>/review-events.jsonl`. Continue: `codex exec resume -m <model> -c model_reasoning_effort='"<effort>"' -c sandbox_mode='"read-only"' -o <round file> <handle> - < <prompt file> > /dev/null 2> <log>`, run from the repo root, since `resume` takes no `-s` or `-C`.
+- **Otherwise**: run the reviewer's CLI through the script, in the background, from the repo root, and wait for it to exit:
 
-  Every mode is read-only, so the reviewer can't edit, commit or post whatever the prompt says.
+  ```bash
+  python3 <skill-dir>/scripts/run_round.py --reviewer <model>:<effort> --prompt <prompt file> --round-file <round file> [--handle <handle>]
+  ```
 
-When a continue fails (the session or thread is gone), start a fresh reviewer for this round with the full prompt, and return its new handle.
+  A `claude-*` model runs on `claude -p`, a `gpt-*` model on `codex exec`, both read-only, so the reviewer can't edit, commit or post whatever the prompt says. The script runs an unsealed round once more and prints `{"handle", ...}`: keep the handle. On exit 1 the round failed twice; return its log tail (on stderr) to the caller. A `gpt-*` reviewer that exits 1 or 5 (CLI not installed) means Codex can't run: take the fallback **reviewer** names. Its log is `<round file>` with `.log`; read only its tail, since the whole log floods the context.
+
+When a continue fails (the T3 thread is gone, or the script exits 3), start a fresh reviewer for this round with the full prompt, and return its new handle.
 
 ## 3. Check the round
 
-The round is complete when the round file ends with `END OF ROUND`. Without that seal the round was cut. Check the tail of the log and run it once more, and return a second failure to the caller with the error.
+Check every finding's quote against the version the reviewer was told to read:
 
-Then find each finding's quote in the version the reviewer was told to read. Discard a finding whose quote is missing or matches nothing there, with a one-line reason. A quote that matches at another line number stands.
+```bash
+python3 <skill-dir>/scripts/check_quotes.py <round file> --ref <head>   # scope `diff`: --worktree
+```
+
+Exit 2 means the round file doesn't end with `END OF ROUND`, so the round was cut: run it once more, and return a second failure to the caller with the error. Otherwise the script prints each finding as CONFIRMED or DISCARDED with the reason, or UNPARSED when its header isn't `### <n>. <file>:<line>: <summary>`: check those quotes by hand. A quote that matches at another line stands. A note that some quote block is not in the cited file means it quotes evidence from elsewhere: open that file and check the block there before keeping the finding.
 
 For `security`, trace each remaining finding yourself in that version, from the attacker's input to the sink, and test it against every exclusion and precedent in `references/lenses/security.md`. Discard one that a rule rules out, naming the rule (`E4`, `P2`), and one the code refutes, naming the line.
 
