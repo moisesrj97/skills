@@ -24,9 +24,9 @@ This decides where the points go and what you check the trace against.
 
 ## 2. Marker and trace file
 
-Pick a **session marker**: `CLAUDE-DBG:` plus a fresh short token (`CLAUDE-DBG:7c1a`). Every insertion carries this exact literal and fits on a single line. That makes cleanup a deterministic grep-and-delete of whole lines, so a point split across lines would leave half of itself behind.
+Get a **session marker** and its trace file with `python3 <skill-dir>/scripts/dbg.py new`: `CLAUDE-DBG:` plus a fresh short token (`CLAUDE-DBG:7c1a`), and an empty `/tmp/claude-debug-<token>.log`. Every insertion carries this exact literal and fits on a single line. That makes cleanup a deterministic grep-and-delete of whole lines, so a point split across lines would leave half of itself behind.
 
-Trace file: `/tmp/claude-debug-<token>.log`. Outside the repo, nobody can commit it. It goes in `/tmp` rather than a session scratchpad because the instrumented process, often one the user started, must be able to write it.
+The trace file sits outside the repo, so nobody can commit it. It goes in `/tmp` rather than a session scratchpad because the instrumented process, often one the user started, must be able to write it.
 
 Tell the user both.
 
@@ -100,7 +100,7 @@ Then stop and wait. Truncate the trace (`: > /tmp/claude-debug-<token>.log`) bef
 
 ## 6. Read the trace
 
-Read the trace through a short throwaway script (inline Python via heredoc, or `jq`) that prints a compact per-stage summary, keeping raw JSON lines out of context. The summary has counts per label, one row per entity with the fields that matter, and derived checks (distinct vs total, ranks, matches between stages).
+Read the trace through summaries, keeping raw JSON lines out of context. `python3 <skill-dir>/scripts/dbg.py summary <token>` counts events per label with their keys; add `--label <label> --fields <a>,<b.c>` for one row per event with the fields that matter. Derived checks (distinct vs total, ranks, matches between stages) are specific to the question: write those as a short throwaway script (inline Python via heredoc, or `jq`).
 
 Then **verify** rather than skim:
 
@@ -115,14 +115,10 @@ Iterate with the same token: adjust points, truncate, re-run, re-read.
 When you ran it yourself, clean up as soon as you have the answer. When the user drives the runs, clean up when they say they're done, since they may want another run.
 
 ```bash
-grep -rn --exclude-dir={node_modules,.git,dist,build} 'CLAUDE-DBG:<token>' <root>
-grep -rl --exclude-dir={node_modules,.git,dist,build} 'CLAUDE-DBG:<token>' <root> \
-  | xargs sed -i '' '/CLAUDE-DBG:<token>/d'   # GNU sed: sed -i '/…/d'
-rm -f /tmp/claude-debug-<token>.log
-grep -rn --exclude-dir={node_modules,.git,dist,build} 'CLAUDE-DBG:<token>' <root>   # must print nothing
-git status --short && git diff --stat   # must show none of your edits
+python3 <skill-dir>/scripts/dbg.py list <token> <root>    # check every match is a line you added
+python3 <skill-dir>/scripts/dbg.py clean <token> <root>   # deletes them and the trace file, re-scans
 ```
 
-Check the first grep's output before deleting, in case a match sits on a line you didn't add.
+`list` and `clean` skip `node_modules`, `.git`, build output and binary files. A match on a line you didn't add means someone else's code carries your token: remove your points by hand instead. `clean` exits 1 naming any marked line left, and prints `git status --short`, which must show none of your edits.
 
-Done when the final grep prints nothing and the diff shows none of your edits. Run both before you claim cleanup. Clean up before any commit, and before handing off mid-debug.
+Done when `clean` exits 0 and the status shows none of your edits. Run it before you claim cleanup. Clean up before any commit, and before handing off mid-debug.
