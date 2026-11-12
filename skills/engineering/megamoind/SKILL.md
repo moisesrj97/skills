@@ -27,9 +27,9 @@ This skill hands off to `megamoind-batch`, `craftsmanship`, `mattpocock-skills:d
 
 The checks that must be green before any push: type-check, lint and tests for **every project the change touches**. In a monorepo that means each touched package's own `ci` (or equivalent) script as well as the root's.
 
-- Read the commands from the project's `CLAUDE.md` / `CLAUDE.local.md`, else from each `package.json`. The lockfile names the package manager.
+- Read the commands from the project's `CLAUDE.md` / `CLAUDE.local.md`, else from `python3 <skill-dir>/scripts/preflight.py --base <base> --head <branch>`: its `touched_packages` lists every package the branch's diff touches, the root included, with the gate scripts each defines, and `package_manager` names the runner.
 - Launch a long suite (several minutes) in the background from the start, so the foreground timeout can't kill it.
-- If the project has `yarn dev:doctor`, run `yarn dev:doctor --flow <flow> --no-services` before the first type-check and after any pull that touches `packages/`. It rebuilds stale workspace builds, which otherwise read as a red gate.
+- If preflight reports `dev_doctor`, run `yarn dev:doctor --flow <flow> --no-services` before the first type-check and after any pull that touches `packages/`. It rebuilds stale workspace builds, which otherwise read as a red gate.
 - A heavy spec that times out under full-suite load counts as red only after it fails again in isolation.
 - Run checks as wide as the project's scripts do, but point every auto-fix (`--write`, `--fix`, a formatter) at the files of your branch's diff only. One aimed at a whole folder rewrites files outside the ticket and can break them, e.g. by dropping a `@ts-expect-error`.
 - Before each commit, check it holds only your ticket's files (`but diff` under GitButler, `git diff --stat` otherwise).
@@ -57,15 +57,17 @@ With no ticket in the request, get one before anything else, in one question wit
 
 Fetch the ticket (`gh issue view` for a GitHub issue, the tracker's tools otherwise); a tracker you can't reach is HITL. Read the ticket and the code it touches, and look for what the change can **reuse**: helpers, a similar feature, how the neighbouring tests are written. Call the Skill tool with `craftsmanship`. For a bug, call the Skill tool with `mattpocock-skills:diagnosing-bugs` and take it through phase 4, so the plan names the confirmed cause; its fix waits for step 2.
 
+Run `python3 <skill-dir>/scripts/preflight.py` once for the repo facts below (default branch, GitButler, CODEOWNERS, required checks, gh version, the sections of each steering file).
+
 With `brief=`, read it, settle on your own whatever of the plan below it leaves open (only the user's decisions are HITL), and go to step 1. Otherwise ask everything in **one** round, with your proposal for each. Each option states only consequences you checked in code or data this session: grep the consumer before claiming "with X, Y happens", and mark anything unchecked "unverified: …". An option that extends scope to a sibling case ("X has the same bug") quotes the routing line that sends the user's action into that code, found by tracing every call site.
 
 - **Plan**: the approach in a few lines, what it reuses, the seams where tests go with what each buys and sells (Test Desiderata), the tidyings worth doing first or after and where each goes by area of impact (Tidy First), and anything ambiguous in the ticket. When the ticket replaces or reproduces something already visible in the product, the plan keeps its current look, cites the **visual reference** (the screenshot, the live screen), and checks that the shape of the data (copy keys, props) can carry that look, e.g. one copy key can't style half its text.
 - **Branch name**: the format in the project's `## Ticket tracker` section, else `<ticket-id>-<short-kebab-description>`, with no `/`. A pre-PR or post-PR from the plan adds `<name>-tidy-first` or `<name>-tidy-after`.
 - **Base** (GitButler): run `but pull --check`. When the workspace is behind and updating would move other branches, ask: "the workspace is N commits behind; updating would move X and Y. Update?". A no leaves the base stale, so guard against a **borrowed green** (see "Sharing the workspace").
 - **Verification**: how to run the app or service (the dev commands, required env, data or login, ports), and which flows prove the change works.
-- **CODEOWNERS**: if the repo has one, opening the PR ready for review requests those reviewers automatically. Say so, since it defeats waiting to add reviewers.
-- **Required checks**: the names CI must turn green, from the project's `CLAUDE.md` / `CLAUDE.local.md`, else `python3 <skill-dir>/scripts/ci.py required <base>` (the base's rulesets and branch protection). If neither gives them, ask. Split them into checks that run on drafts and ready-only ones (e.g. a Jenkins job that builds only non-draft PRs whose base is the default branch).
-- **Screenshots** (frontend changes): the PR gets them through `gh-attach`, which needs gh ≥ 2.99. Check `gh --version` now; if it is older, ask the user to upgrade.
+- **CODEOWNERS**: if preflight names one, opening the PR ready for review requests those reviewers automatically. Say so, since it defeats waiting to add reviewers.
+- **Required checks**: the names CI must turn green, from the project's `CLAUDE.md` / `CLAUDE.local.md`, else preflight's `required_checks` (the base's rulesets and branch protection; pass `--base <base>` when it isn't the default branch). If neither gives them, or preflight reports `required_checks_error`, ask. Split them into checks that run on drafts and ready-only ones (e.g. a Jenkins job that builds only non-draft PRs whose base is the default branch).
+- **Screenshots** (frontend changes): the PR gets them through `gh-attach`, which needs gh ≥ 2.99. When preflight reports `gh_attach_ok: false`, ask the user to upgrade.
 - **Ticket description**: ask whether to copy the brief's product decisions (what changes, UI choices, acceptance criteria) into the ticket's description. On a yes, write them into the description, keeping its existing content, never as a comment.
 
 Done when the user has confirmed the plan and you have everything needed to reach step 8 without asking again. Write the confirmed brief to `<scratchpad>/<ticket>-brief.md`, and re-read it whenever a later step needs a decision from step 0.
