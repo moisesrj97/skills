@@ -6,34 +6,17 @@ disable-model-invocation: true
 
 # Review comment
 
-## Step 1: Parse the URL and fetch the comment
+## Step 1: Fetch the comment and its code
 
-PR comment URLs come in two forms:
-
-- **Inline review comment** `https://github.com/owner/repo/pull/123#discussion_r789012`, fetched with `gh api repos/owner/repo/pulls/comments/789012`.
-- **General PR comment** `https://github.com/owner/repo/pull/123#issuecomment-789012`, fetched with `gh api repos/owner/repo/issues/comments/789012`.
-
-Take `owner`, `repo`, the PR number (`123`) and the comment ID from the URL. The reply to an inline comment needs the PR number. From the `gh api` call, collect:
-- `body`: the reviewer's message
-- `path`: file path (review comments only)
-- `line` or `original_line`: the line number (review comments only)
-- `diff_hunk`: surrounding diff context (review comments only)
-
-Fetch the PR's base and head branches:
 ```bash
-gh pr view 123 --repo owner/repo --json baseRefName,headRefName
+python3 <skill-dir>/scripts/comment.py fetch <url>
 ```
+
+It takes an inline review comment (`…/pull/123#discussion_r789012`) or a general PR comment (`…/pull/123#issuecomment-789012`) and prints the reviewer's `body`, the PR's base, head and `head_sha`. An inline comment adds its `path`, `line` (flagged `outdated` when the code moved on), `diff_hunk`, and `context`: the file at the PR's head, 20 lines each side of the flagged one, read from GitHub because the local checkout may hold another branch.
 
 ## Step 2: Read the relevant code
 
-Read the PR's head from GitHub rather than the local checkout, which may hold another branch.
-
-For an inline comment (it has `path`), read the file at the head branch around the flagged line, at least 20 lines on each side, enough to see what the code does and why it is written that way:
-```bash
-gh api "repos/owner/repo/contents/<path>?ref=<headRefName>" -H "Accept: application/vnd.github.raw"
-```
-
-For a general comment with no file, read what the PR changed with `gh pr diff 123 --repo owner/repo`.
+For an inline comment, read the `context`, and further at the head when it isn't enough to see what the code does and why it is written that way. For a general comment with no file, read what the PR changed with `gh pr diff <pr> --repo <owner>/<repo>`.
 
 ## Step 3: Evaluate the suggestion
 
@@ -53,9 +36,7 @@ When the change is clearly right, make it without hedging.
 3. **Show the human the diff, the commit message and the reply you will post, and wait for one explicit approval** before committing. The commit message follows the project's convention, subject line only.
 4. Commit and push to the PR's head branch, before replying, so the hash in the reply is already on the remote. Under GitButler (`but status` works), run `but commit -b <branch> -m "<message>" <ids>` with the ids from `but diff`, then `but push <branch>`. A bare `but push` pushes every branch with unpushed commits, other agents' included. Otherwise `git add`, `git commit`, `git push`. Take the full hash of the pushed commit with `git rev-parse <branch>`; under GitButler `HEAD` is the workspace commit, which the reviewer can't open.
 5. Reply in **the reviewer's language**, opening with the byline from the `agent-byline` skill, then `Fixed in <full hash>` (`Arreglado en <full hash>` in Spanish) and no reasoning.
-   Write the body to a file and reply to the original comment with `gh api`:
-    - For an inline review comment, reply in its thread with `gh api repos/owner/repo/pulls/PR_NUMBER/comments/COMMENT_ID/replies -F body=@<file>`, never with a new comment from `gh pr comment`. The path needs the PR number; `repos/owner/repo/pulls/comments/ID/replies` returns 404.
-    - For a general PR comment (issuecomment), GitHub has no threaded replies, so post a new comment on the PR that quotes the original, `gh api repos/owner/repo/issues/PR_NUMBER/comments -F body=@<file>`, with the quoted excerpt between the byline and `Fixed in <full hash>`.
+   Write the body to a file and post it with `python3 <skill-dir>/scripts/comment.py reply <url> <body file>`. It refuses a body without the byline, replies in the thread of an inline comment (to its top comment, the only one GitHub takes replies on), and posts a new PR comment for a general one, since those have no threads. For a general comment, put a quoted excerpt of the original between the byline and `Fixed in <full hash>`.
 
 Done when the reply with the pushed hash is posted.
 
