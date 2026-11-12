@@ -9,7 +9,7 @@ A retro proposes changes to the agent's **environment** (skills, steering files,
 
 ## 1. Locate the session
 
-Default to the current session unless the user names another. In Claude Code the transcripts live in `~/.claude/projects/<cwd with every non-alphanumeric char replaced by ->/<session-id>.jsonl`, and the current one is the newest by mtime. Subagent transcripts are in `<session-id>/subagents/*.jsonl`; include those that carried implementation or verification. Read each one only through the condenser (1 MB shrinks to about 20 KB):
+Default to the current session unless the user names another. In Claude Code, `python3 <skill-dir>/scripts/locate.py [--session <id or path>]` prints the transcript (the newest of this directory's project by default), its subagent transcripts, the project name and the retro folder. Include the subagents that carried implementation or verification. Read each transcript only through the condenser (1 MB shrinks to about 20 KB):
 
 ```bash
 python3 <skill-dir>/scripts/condense_session.py <session.jsonl> [--max 400]
@@ -45,7 +45,7 @@ The step is done when every stopper and friction point in the timeline is either
 
 ## 3. Write the file
 
-The project is the base name of the main checkout, `basename "$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"`, so a linked worktree files under its main repo. Outside git, it is the base name of the working directory. Write `~/.skill-docs/retros/<project>/<YYYY-MM-DD>-<topic-slug>.md`, creating the folder if needed, in this exact shape, since `retro-digest` parses it:
+Write `<retro_dir>/<YYYY-MM-DD>-<topic-slug>.md`, with the folder `locate.py` printed (`~/.skill-docs/retros/<project>`, the project being the main checkout's name, so a linked worktree files under its repo), creating it if needed, in this exact shape, since `retro-digest` parses it:
 
 ```markdown
 ---
@@ -71,4 +71,4 @@ summary: <one line: what the session set out to do>
 Dismissed as noise: <[index] reason; …>
 ```
 
-Order findings by severity. Finish by printing the file path and a table of `id | severity | problem`.
+Order findings by severity. A field may continue on indented `  - ` lines below it. Then run `python3 <skill-dir>/scripts/validate_retro.py <file>` and fix every problem it prints. Done when it prints nothing. Finish by printing the file path and a table of `id | severity | problem`.
