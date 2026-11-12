@@ -10,14 +10,14 @@ Single retros are noisy. A stopper that shows up in several sessions, or in seve
 
 ## 1. Collect
 
-Read every `~/.skill-docs/retros/<project>/*.md`. Each `## R<n>` is a finding, referenced as `<project>/<file>#R<n>`, and its `- status:` line is its state. Take every `open` finding, plus the `rejected` ones so recurrences are visible. If none is open, say so and stop.
+Run `python3 <skill-dir>/scripts/retros.py collect`. It reads every `~/.skill-docs/retros/<project>/*.md` and prints every `open` finding, plus the `rejected` ones so recurrences are visible, each with its ref (`<project>/<file>#R<n>`), date, fields and severity weight. If none is open, say so and stop.
 
 ## 2. Cluster and rank
 
 A **cluster** is a set of findings with the same root cause and the same fix, even if worded differently, from any project. Its **canonical** member, the earliest finding by date, carries the cluster's status. For each cluster:
 
 - **Scope** is **global** when the fix lands in shared setup (user-level steering files, skills, hooks, tooling) or when the same friction shows up in more than one project, which moves even a project-level fix there. It is **project** when the fix lands in one repo.
-- **Score** = occurrences × the highest severity (blocker 4, high 3, medium 2, low 1).
+- **Score** = occurrences × the highest `weight` among its members.
 - **Already in place**: read its target. If the change is already there, mark the cluster resolved in step 5 without asking.
 - **Recurring after rejection**: a cluster with a `rejected` member is not proposed again. List it apart with its count and the rejection reason, for the user to reopen it or fold its open members into the rejected one.
 
@@ -50,7 +50,7 @@ Done when every group has its tickets and every rejection its reason.
 
 Apply each approved cluster as its own change, in the repo that owns its target and following that repo's own workflow (branch, commit and PR rules). Implement a `mechanical` finding as a deterministic check (lint rule, hook, CI job) instead of prose.
 
-Then rewrite the `- status:` line of every member of every cluster you touched:
+Then set the status of every member of every cluster you touched, in one call with a JSON file of `{"<ref>": "<status>"}`: `python3 <skill-dir>/scripts/retros.py set --from <file>`. Each status is one of these, and the script refuses any other shape or a ref it can't find, naming each:
 
 - `applied (<commit, PR or file>)`, including the already-in-place ones.
 - `rejected (<reason>)`.
