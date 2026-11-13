@@ -9,8 +9,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 import known  # noqa: E402
 import locate  # noqa: E402
-import migrate_retros  # noqa: E402
-import retro_file  # noqa: E402
 import validate_retro  # noqa: E402
 
 GOOD = textwrap.dedent("""\
@@ -107,75 +105,6 @@ class Validate(unittest.TestCase):
         self.assertEqual(validate_retro.problems(wasted.replace("- target: unknown", "- target: CLAUDE.md:10-40")), [])
         bad_ref = GOOD.replace("- matches: shop/2026-11-01-x.md#R2", "- matches: R2")
         self.assertTrue(any(p.startswith("R1: matches 'R2'") for p in validate_retro.problems(bad_ref)))
-
-
-OLD = textwrap.dedent("""\
-    ---
-    date: 2026-11-04
-    project: shop
-    session: /tmp/s.jsonl
-    summary: fix the cart total
-    ---
-
-    # Retro: cart total
-
-    ## R1: Test command hard to find
-
-    - status: resolved (CLAUDE.md fixed)
-    - severity: low
-    - category: navigation
-    - kind: judgement
-    - target: CLAUDE.md
-    - evidence: [7] searched
-    - proposal: name it
-
-    ## R2: No seeded account
-
-    - status: open
-    - severity: blocker
-    - category: verification
-    - kind: mechanical
-    - target: scripts/seed.ts
-    - evidence:
-      - [12] "login failed"
-    - proposal:
-      - add a seed script
-
-    Dismissed as noise: [167]/[169] Edit before Read, fixed next call; [42] a zsh glob. [about 5] a slow boot; one transient fetch error
-    """)
-
-
-class Migrate(unittest.TestCase):
-    def test_converts_to_a_valid_file_keeping_ids(self):
-        new = migrate_retros.migrate(OLD, "2026-11-13")
-        self.assertEqual(validate_retro.problems(new), [])
-        meta, _, findings = retro_file.parse(new)
-        self.assertEqual(meta["migrated"], "2026-11-13")
-        self.assertEqual([f["id"] for f in findings], ["R2", "R1", "R3", "R4", "R5", "R6"])
-        r1 = findings[1]
-        self.assertEqual((r1["status"], r1["cause"], r1["proposal"]), ("applied (CLAUDE.md fixed)", "unrecorded", "name it"))
-        self.assertEqual(findings[0]["proposal"], "- add a seed script")
-        skipped = [(f["title"], f["evidence"]) for f in findings[2:]]
-        self.assertEqual(skipped, [("Edit before Read, fixed next call", "[167]/[169]"), ("a zsh glob", "[42]"),
-                                   ("a slow boot", "[about 5]"), ("one transient fetch error", "unrecorded")])
-
-    def test_a_semicolon_inside_parentheses_stays_in_its_item(self):
-        self.assertEqual(migrate_retros.dismissed_items("[486] a ticket mismatch (not environment; reported); [629] a slip"),
-                         [("a ticket mismatch (not environment; reported)", "[486]"), ("a slip", "[629]")])
-
-    def test_a_second_run_changes_nothing(self):
-        once = migrate_retros.migrate(OLD, "2026-11-13")
-        self.assertEqual(migrate_retros.migrate(once, "2026-11-14"), once)
-
-    def test_write_only_with_the_flag(self):
-        root = Path(tempfile.mkdtemp())
-        (root / "shop").mkdir()
-        path = root / "shop" / "2026-11-04-cart.md"
-        path.write_text(OLD)
-        migrate_retros.main(["--root", str(root)])
-        self.assertEqual(path.read_text(), OLD)
-        migrate_retros.main(["--root", str(root), "--file", "shop/2026-11-04-cart.md", "--write"])
-        self.assertEqual(validate_retro.problems(path.read_text()), [])
 
 
 class Known(unittest.TestCase):
