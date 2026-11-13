@@ -149,5 +149,13 @@ class Locate(unittest.TestCase):
         self.assertEqual(locate.project_name("/nowhere/notes"), "notes")
 
 
+class SkillDocsDir(unittest.TestCase):
+    def test_env_var_moves_the_retros_root(self):
+        out = subprocess.run([sys.executable, "-c", "import retro_file, locate; print(retro_file.ROOT, locate.RETROS)"],
+                             cwd=Path(__file__).parent, env=dict(os.environ, SKILL_DOCS_DIR="/tmp/docs"),
+                             capture_output=True, text=True, check=True).stdout.split()
+        self.assertEqual(out, ["/tmp/docs/retros", "/tmp/docs/retros"])
+
+
 if __name__ == "__main__":
     unittest.main()

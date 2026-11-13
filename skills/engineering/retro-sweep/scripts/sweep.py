@@ -17,6 +17,7 @@ retro already names it, and when the ledger already has it as clean.
 import argparse
 import datetime
 import json
+import os
 import re
 import subprocess
 import sys
@@ -24,8 +25,9 @@ import time
 from pathlib import Path
 
 PROJECTS = Path.home() / ".claude" / "projects"
-RETROS = Path.home() / ".skill-docs" / "retros"
-LEDGER = Path.home() / ".skill-docs" / "retro-sweep.json"
+SKILL_DOCS = Path(os.environ.get("SKILL_DOCS_DIR", Path.home() / ".skill-docs"))
+RETROS = SKILL_DOCS / "retros"
+LEDGER = SKILL_DOCS / "retro-sweep.json"
 CONDENSE = Path(__file__).parent / "condense_session.py"
 TEMP = re.compile(r"^/(private/)?(var/folders|tmp)/")
 SELF = "/retro-sweep"

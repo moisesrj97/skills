@@ -4,10 +4,11 @@ retro-with-docs/scripts/retro_file.py and retro-digest/scripts/retro_file.py mus
 byte-identical (test_retros.py checks it): each skill installs on its own, so neither can
 import from the other.
 """
+import os
 import re
 from pathlib import Path
 
-ROOT = Path.home() / ".skill-docs" / "retros"
+ROOT = Path(os.environ.get("SKILL_DOCS_DIR", Path.home() / ".skill-docs")) / "retros"
 REQUIRED_META = ["date", "project", "session", "summary"]
 FIELDS = ["status", "severity", "category", "kind", "target", "evidence", "expected", "cost", "cause",
           "proposal"]

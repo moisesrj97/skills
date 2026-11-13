@@ -9,13 +9,14 @@ files under its repo) and retro_dir (~/.skill-docs/retros/<project>).
 """
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
 from pathlib import Path
 
 PROJECTS = Path.home() / ".claude" / "projects"
-RETROS = Path.home() / ".skill-docs" / "retros"
+RETROS = Path(os.environ.get("SKILL_DOCS_DIR", Path.home() / ".skill-docs")) / "retros"
 
 
 def transcripts_dir(cwd, projects=PROJECTS):
