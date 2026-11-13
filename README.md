@@ -29,6 +29,7 @@ My personal and engineering skills for coding agents.
 | engineering | `retro-with-docs` | Retro of an agent session: its friction, stoppers first, as open or skipped findings in `~/.skill-docs/retros/<project>/`. | own |
 | engineering | `review-comment` | Evaluates a PR review comment, fixes it and replies with the commit. Manual only. | own |
 | engineering | `setup-repo` | Configures a repo's issue tracker, triage labels and domain docs for the tracker skills. Manual only. | [mattpocock/skills](https://github.com/mattpocock/skills) (`setup-matt-pocock-skills`) |
+| engineering | `stress-skill` | Finds how much of a skill's body can be cut while its evals still pass: bare and full arms, then one-unit-out variants in fresh `claude -p` runs, sorting each unit into load-bearing, no-op or uncovered. Manual only. | own |
 | engineering | `tdd` | Test-driven development, red-green at the agreed seams. | [mattpocock/skills](https://github.com/mattpocock/skills) |
 | engineering | `to-spec` | Turns the conversation into a spec on the issue tracker. Manual only. | [mattpocock/skills](https://github.com/mattpocock/skills) |
 | engineering | `to-tickets` | Breaks a plan or spec into tracer-bullet tickets with blocking edges. Manual only. | [mattpocock/skills](https://github.com/mattpocock/skills) |
