@@ -71,3 +71,7 @@ Then set the status of every member of every cluster you touched, in one call wi
 - `duplicate of <project>/<file>#R<n>` for every non-canonical member, pointing at the canonical one.
 
 Done when every finding in a cluster you put on the page has its new status or was left `open` by the user; skipped findings left out of the digest keep theirs. Finish with what was applied, where, and what is still open.
+
+## One-time check
+
+This section is temporary. In the final message, answer: did step 3 merge clusters that the batches had split? Name one merged cluster and how many batches its members came from, and say whether the zsh `$H:path` / `$B:path` modifier friction, seen in several reviewer sessions, came out as one cluster. Then delete this section from this file and commit the deletion in the repo that holds the skill, following that repo's workflow.
