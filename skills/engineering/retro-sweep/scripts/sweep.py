@@ -2,11 +2,11 @@
 """Pick the Claude Code sessions a retro sweep reviews, and remember what their triage found.
 
 Usage:
-  sweep.py candidates --out <dir> [--days 3] [--idle-hours 2] [--limit 40]
+  sweep.py candidates --out <dir> [--days 3] [--idle-hours 2]
       Prints a JSON list of sessions to review, each with session, cwd, first_prompt,
       size_kb, condensed (its timeline, written to <dir>) and triage: "friction" for one an
-      earlier run triaged whose retro is still missing (listed first, never limited), null
-      for a new one (oldest first, at most --limit).
+      earlier run triaged whose retro is still missing (listed first, however old), null for
+      a new one from the last --days (oldest first).
   sweep.py record --from <file.json>        {"<session path>": {"verdict": "clean" | "friction", "why": "…"}}
       Adds the verdicts to the ledger, ~/.skill-docs/retro-sweep.json.
 
@@ -64,17 +64,17 @@ def load_ledger(ledger=LEDGER):
     return json.loads(Path(ledger).read_text()) if Path(ledger).exists() else {}
 
 
-def candidates(out, days=3, idle_hours=2, limit=40, projects=PROJECTS, retros=RETROS, ledger=LEDGER, now=None):
+def candidates(out, days=3, idle_hours=2, projects=PROJECTS, retros=RETROS, ledger=LEDGER, now=None):
     now = now or time.time()
     known = load_ledger(ledger)
     reviewed = retro_sessions(retros)
     pending, fresh = [], []
     for path in Path(projects).glob("*/*.jsonl"):
         age = now - path.stat().st_mtime
-        if age < idle_hours * 3600 or age > days * 86400 or path.stem in reviewed:
-            continue
         verdict = known.get(str(path), {}).get("verdict")
-        if verdict == "clean":
+        if age < idle_hours * 3600 or path.stem in reviewed or verdict == "clean":
+            continue
+        if verdict != "friction" and age > days * 86400:
             continue
         cwd, prompt = head(path)
         if not cwd or prompt is None or TEMP.match(cwd) or SELF in prompt[:300]:
@@ -82,7 +82,7 @@ def candidates(out, days=3, idle_hours=2, limit=40, projects=PROJECTS, retros=RE
         item = {"session": str(path), "cwd": cwd, "first_prompt": prompt[:120],
                 "size_kb": path.stat().st_size // 1024, "triage": verdict, "mtime": path.stat().st_mtime}
         (pending if verdict == "friction" else fresh).append(item)
-    chosen = pending + sorted(fresh, key=lambda i: i["mtime"])[:limit]
+    chosen = sorted(pending, key=lambda i: i["mtime"]) + sorted(fresh, key=lambda i: i["mtime"])
     Path(out).mkdir(parents=True, exist_ok=True)
     for item in chosen:
         condensed = Path(out) / f"{Path(item['session']).stem}.txt"
@@ -112,12 +112,11 @@ def main(argv=None):
     c.add_argument("--out", required=True)
     c.add_argument("--days", type=float, default=3)
     c.add_argument("--idle-hours", type=float, default=2)
-    c.add_argument("--limit", type=int, default=40)
     r = sub.add_parser("record")
     r.add_argument("--from", dest="from_file", required=True)
     args = parser.parse_args(argv)
     if args.command == "candidates":
-        print(json.dumps(candidates(args.out, args.days, args.idle_hours, args.limit), indent=2, ensure_ascii=False))
+        print(json.dumps(candidates(args.out, args.days, args.idle_hours), indent=2, ensure_ascii=False))
         return 0
     try:
         record(json.loads(Path(args.from_file).read_text()))

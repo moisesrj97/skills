@@ -53,14 +53,14 @@ class Candidates(unittest.TestCase):
         self.assertEqual((found[0]["cwd"], found[0]["first_prompt"], found[0]["triage"]), ("/code/shop", "fix the cart", None))
         self.assertIn("USER: fix the cart", Path(found[0]["condensed"]).read_text())
 
-    def test_pending_friction_first_unlimited_then_oldest_new_ones_up_to_the_limit(self):
+    def test_pending_friction_first_however_old_then_new_ones_oldest_first(self):
         newer, older = self.session("newer", 5), self.session("older", 30)
-        pending = self.session("pending", 40)
+        pending = self.session("pending", 24 * 10)
         clean = self.session("clean", 20)
         sweep.record({pending: {"verdict": "friction", "why": "retried"}, clean: {"verdict": "clean"}}, self.ledger)
-        found = self.run_candidates(limit=1)
-        self.assertEqual([(c["session"], c["triage"]) for c in found], [(pending, "friction"), (older, None)])
-        self.assertNotIn(newer, [c["session"] for c in found])
+        found = self.run_candidates()
+        self.assertEqual([(c["session"], c["triage"]) for c in found],
+                         [(pending, "friction"), (older, None), (newer, None)])
 
     def test_record_refuses_an_unknown_verdict_and_writes_nothing(self):
         with self.assertRaises(ValueError):
