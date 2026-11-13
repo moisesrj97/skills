@@ -25,9 +25,20 @@ LEADING_INDEXES = re.compile(r"^((?:\[[^\]]*\][\s/,\-–]*(?:and\s+)?)+)")
 SKIPPED_STATUS = "skipped (dismissed as noise in the pre-friction format)"
 
 
+def top_level_parts(text):
+    """Split on `;` outside parentheses: a reason often carries one inside `(…; …)`."""
+    parts, depth, start = [], 0, 0
+    for i, char in enumerate(text):
+        depth += {"(": 1, ")": -1}.get(char, 0)
+        if char == ";" and depth <= 0:
+            parts.append(text[start:i])
+            start = i + 1
+    return parts + [text[start:]]
+
+
 def dismissed_items(text):
     items = []
-    for part in re.split(r";\s+", text.strip()):
+    for part in top_level_parts(text.strip()):
         items += [p.strip() for p in re.split(r"(?<=\.)\s+(?=\[)", part) if p.strip()]
     out = []
     for item in items:

@@ -159,6 +159,10 @@ class Migrate(unittest.TestCase):
         self.assertEqual(skipped, [("Edit before Read, fixed next call", "[167]/[169]"), ("a zsh glob", "[42]"),
                                    ("a slow boot", "[about 5]"), ("one transient fetch error", "unrecorded")])
 
+    def test_a_semicolon_inside_parentheses_stays_in_its_item(self):
+        self.assertEqual(migrate_retros.dismissed_items("[486] a ticket mismatch (not environment; reported); [629] a slip"),
+                         [("a ticket mismatch (not environment; reported)", "[486]"), ("a slip", "[629]")])
+
     def test_a_second_run_changes_nothing(self):
         once = migrate_retros.migrate(OLD, "2026-11-13")
         self.assertEqual(migrate_retros.migrate(once, "2026-11-14"), once)
