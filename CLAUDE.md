@@ -5,7 +5,8 @@ Public repo of skills installed with `npx skills add moisesrj97/skills`. Load `w
 ## Layout
 
 - `skills/<category>/<name>/SKILL.md`. `npx skills` installs by name and ignores the category, so every name is unique across categories.
-- Categories: `engineering/`. Open a new one only when at least two skills belong in it.
+- Categories: `engineering/`, `productivity/`. Open a new one only when at least two skills belong in it.
+- Skills taken from other repos come in through `pull-skill`, which records their source and commit in `upstream.json` and their license in `licenses/`. They are ours to adapt; `sync-upstream` weighs upstream changes later. Keep each entry's `licenses/` file: the MIT notice must ship with the copy.
 - Scripts live in the skill's `scripts/` and are referenced as `<skill-dir>/scripts/…`: installs land in different paths per agent.
 
 ## Public by default

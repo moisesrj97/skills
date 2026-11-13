@@ -1,0 +1,166 @@
+{
+  "skills": {
+    "codebase-design": {
+      "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "license": "MIT",
+      "license_file": "licenses/mattpocock-skills",
+      "path": "skills/engineering/codebase-design",
+      "ref": "main",
+      "repo": "mattpocock/skills"
+    },
+    "diagnosing-bugs": {
+      "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "license": "MIT",
+      "license_file": "licenses/mattpocock-skills",
+      "path": "skills/engineering/diagnosing-bugs",
+      "ref": "main",
+      "repo": "mattpocock/skills"
+    },
+    "domain-modeling": {
+      "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "license": "MIT",
+      "license_file": "licenses/mattpocock-skills",
+      "path": "skills/engineering/domain-modeling",
+      "ref": "main",
+      "repo": "mattpocock/skills"
+    },
+    "grill-me": {
+      "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "license": "MIT",
+      "license_file": "licenses/mattpocock-skills",
+      "path": "skills/productivity/grill-me",
+      "ref": "main",
+      "repo": "mattpocock/skills"
+    },
+    "grilling": {
+      "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "license": "MIT",
+      "license_file": "licenses/mattpocock-skills",
+      "path": "skills/productivity/grilling",
+      "ref": "main",
+      "repo": "mattpocock/skills"
+    },
+    "improve-codebase-architecture": {
+      "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "license": "MIT",
+      "license_file": "licenses/mattpocock-skills",
+      "path": "skills/engineering/improve-codebase-architecture",
+      "ref": "main",
+      "repo": "mattpocock/skills"
+    },
+    "prototype": {
+      "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "license": "MIT",
+      "license_file": "licenses/mattpocock-skills",
+      "path": "skills/engineering/prototype",
+      "ref": "main",
+      "repo": "mattpocock/skills"
+    },
+    "setup-repo": {
+      "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "license": "MIT",
+      "license_file": "licenses/mattpocock-skills",
+      "path": "skills/engineering/setup-matt-pocock-skills",
+      "ref": "main",
+      "repo": "mattpocock/skills"
+    },
+    "skill-shaper": {
+      "checked": "8c6ea248cfadea782b5345397704cfc9e49fbe77",
+      "imported": "8c6ea248cfadea782b5345397704cfc9e49fbe77",
+      "license": "MIT",
+      "license_file": "licenses/overment-skills",
+      "path": "skills/skill-shaper",
+      "ref": "main",
+      "repo": "overment/skills"
+    },
+    "tdd": {
+      "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "license": "MIT",
+      "license_file": "licenses/mattpocock-skills",
+      "path": "skills/engineering/tdd",
+      "ref": "main",
+      "repo": "mattpocock/skills"
+    },
+    "teach": {
+      "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "license": "MIT",
+      "license_file": "licenses/mattpocock-skills",
+      "path": "skills/productivity/teach",
+      "ref": "main",
+      "repo": "mattpocock/skills"
+    },
+    "to-spec": {
+      "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "license": "MIT",
+      "license_file": "licenses/mattpocock-skills",
+      "path": "skills/engineering/to-spec",
+      "ref": "main",
+      "repo": "mattpocock/skills"
+    },
+    "to-tickets": {
+      "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "license": "MIT",
+      "license_file": "licenses/mattpocock-skills",
+      "path": "skills/engineering/to-tickets",
+      "ref": "main",
+      "repo": "mattpocock/skills"
+    },
+    "triage": {
+      "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "license": "MIT",
+      "license_file": "licenses/mattpocock-skills",
+      "path": "skills/engineering/triage",
+      "ref": "main",
+      "repo": "mattpocock/skills"
+    },
+    "unslop": {
+      "checked": "6e359ce0aba9e927914d8a940510aa2ef66a8f23",
+      "imported": "6e359ce0aba9e927914d8a940510aa2ef66a8f23",
+      "license": "MIT",
+      "license_file": "licenses/cursor-plugins-pstack",
+      "path": "pstack/skills/unslop",
+      "ref": "main",
+      "repo": "cursor/plugins"
+    },
+    "walkthrough": {
+      "checked": "4c394a5a6d99e15153fc8e2aa0e4d2e42fa54132",
+      "imported": "4c394a5a6d99e15153fc8e2aa0e4d2e42fa54132",
+      "license": "MIT",
+      "license_file": "licenses/noel-lopez-skills",
+      "path": "skills/walkthrough",
+      "ref": "main",
+      "repo": "noel-lopez/skills"
+    },
+    "wayfinder": {
+      "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "license": "MIT",
+      "license_file": "licenses/mattpocock-skills",
+      "path": "skills/engineering/wayfinder",
+      "ref": "main",
+      "repo": "mattpocock/skills"
+    },
+    "writing-for-agents": {
+      "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "license": "MIT",
+      "license_file": "licenses/mattpocock-skills",
+      "path": "skills/productivity/writing-for-agents",
+      "ref": "main",
+      "repo": "mattpocock/skills"
+    }
+  }
+}
