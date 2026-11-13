@@ -47,8 +47,6 @@ My personal and engineering skills for coding agents.
 
 Skills with a source other than `own` were pulled with `pull-skill` and adapted; `upstream.json` records the commit each one came from and its license is in `licenses/`. `sync-upstream` checks them for upstream changes.
 
-The `megamoind` flows are diagrammed in [`docs/megamoind.md`](docs/megamoind.md).
-
 ## Configuration
 
 Nothing personal or company-specific is hardcoded. Skills that need it read it from outside the repo:
