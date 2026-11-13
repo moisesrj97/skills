@@ -9,7 +9,7 @@ A retro proposes changes to the agent's **environment** (skills, steering files,
 
 ## 1. Locate the session
 
-Default to the current session unless the user names another. In Claude Code, `python3 <skill-dir>/scripts/locate.py [--session <id or path>]` prints the transcript (the newest of this directory's project by default), its subagent transcripts, the project name and the retro folder. Include the subagents that carried implementation or verification. Read each transcript only through the condenser (1 MB shrinks to about 20 KB):
+Default to the current session unless the user names another. In Claude Code, `python3 <skill-dir>/scripts/locate.py [--session <id or path>] [--cwd <dir the session ran in>]` prints the transcript (the newest of this directory's project by default), its subagent transcripts, the project name and the retro folder. Include the subagents that carried implementation or verification. Read each transcript only through the condenser (1 MB shrinks to about 20 KB):
 
 ```bash
 python3 <skill-dir>/scripts/condense_session.py <session.jsonl> [--max 400]

@@ -142,6 +142,12 @@ class Locate(unittest.TestCase):
         self.assertEqual(found["project"], "shop")
         self.assertEqual(locate.locate(repo, "old", projects=projects)["session"], str(old))
 
+    def test_project_of_a_gone_t3_worktree_and_of_scratch(self):
+        t3 = Path(tempfile.mkdtemp())
+        self.assertEqual(locate.project_name(t3 / "worktrees" / "shop" / "t3-1a2b", t3), "shop")
+        self.assertEqual(locate.project_name(t3 / "scratch" / "2026-11-05-retro-digest-4fca", t3), "scratch")
+        self.assertEqual(locate.project_name("/nowhere/notes"), "notes")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -33,6 +33,7 @@ npx skills update                                  # pull new versions
 | engineering | `prototype` | Throwaway prototype to answer a design question. | [mattpocock/skills](https://github.com/mattpocock/skills) |
 | engineering | `release-decide` | Turns post-release signals into one verb per finding group with cited evidence, checks the metric sees the real work, and brings the owner only their calls. | own |
 | engineering | `retro-digest` | Groups the open retro findings across projects, applies the approved ones and records each outcome. Manual only. | own |
+| engineering | `retro-sweep` | Daily sweep of the sessions with no retro: a cheap model triages them for friction, a stronger one runs `retro-with-docs` on those that had some. Manual only. | own |
 | engineering | `retro-with-docs` | Retro of an agent session: its friction, stoppers first, as open or skipped findings in `~/.skill-docs/retros/<project>/`. | own |
 | engineering | `review-comment` | Evaluates a PR review comment, fixes it and replies with the commit. Manual only. | own |
 | engineering | `setup-repo` | Configures a repo's issue tracker, triage labels and domain docs for the tracker skills. Manual only. | [mattpocock/skills](https://github.com/mattpocock/skills) (`setup-matt-pocock-skills`) |

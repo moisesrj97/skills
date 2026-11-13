@@ -22,12 +22,24 @@ def transcripts_dir(cwd, projects=PROJECTS):
     return projects / re.sub(r"[^A-Za-z0-9]", "-", str(cwd))
 
 
-def project_name(cwd):
-    result = subprocess.run(["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
-                            cwd=cwd, capture_output=True, text=True)
-    if result.returncode == 0 and result.stdout.strip():
-        return Path(result.stdout.strip()).parent.name
-    return Path(cwd).name
+T3 = Path.home() / ".t3"
+
+
+def project_name(cwd, t3=T3):
+    cwd = Path(cwd)
+    if cwd.is_dir():
+        result = subprocess.run(["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
+                                cwd=cwd, capture_output=True, text=True)
+        if result.returncode == 0 and result.stdout.strip():
+            return Path(result.stdout.strip()).parent.name
+    # A T3 worktree may be gone by the time its session is swept, and a T3 scratch folder is
+    # one per thread: neither names a project.
+    worktrees = t3 / "worktrees"
+    if cwd.is_relative_to(worktrees) and cwd != worktrees:
+        return cwd.relative_to(worktrees).parts[0]
+    if cwd.is_relative_to(t3 / "scratch"):
+        return "scratch"
+    return cwd.name or "unknown"
 
 
 def newest(paths):
