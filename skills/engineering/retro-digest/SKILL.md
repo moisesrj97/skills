@@ -10,24 +10,38 @@ Single retros are noisy. Friction that shows up in several sessions, or in sever
 
 ## 1. Collect
 
-Run `python3 <skill-dir>/scripts/retros.py collect`. It reads every `~/.skill-docs/retros/<project>/*.md` and prints every `open` finding, plus the `rejected` ones so recurrences are visible and the `skipped` ones so recurring noise is, each with its ref (`<project>/<file>#R<n>`), date, fields and severity weight. If none is open and no skipped cluster reaches 3 members, say so and stop.
+```bash
+python3 <skill-dir>/scripts/retros.py batches --out <scratchpad>/digest
+```
 
-## 2. Cluster and rank
+It reads every `~/.skill-docs/retros/<project>/*.md` and splits into batch files every `open` finding, plus the `rejected` ones so recurrences are visible and the `skipped` ones so recurring noise is, each with its ref (`<project>/<file>#R<n>`), date and fields. A skipped finding older than four weeks is left out: a one-off that has not recurred in that long is not a pattern. Batches are sorted by where each change would land, so related findings tend to share one. If it writes no batch, say so and stop.
 
-A **cluster** is a set of findings with the same root cause and the same fix, even if worded differently, from any project. A `matches:` ref is the writer's claim that two findings are one; confirm it against both. Its **canonical** member, the earliest finding by date, carries the cluster's status. Skipped members count as occurrences. A cluster made only of skipped members goes forward once it has 3 members; a smaller one stays skipped and out of the digest. For each cluster:
+## 2. Cluster each batch
+
+A **cluster** is a set of findings with the same root cause and the same fix, even if worded differently, from any project. A `matches:` ref is the writer's claim that two findings are one; confirm it against both.
+
+Launch one subagent per batch with the Agent tool, `model: "sonnet"`, at most 5 at a time. Brief each with the cluster definition above and its batch file, and ask for every finding placed in exactly one cluster, singletons included, returned as JSON: `[{"owner": "<the skill, script, app or file the change lands in>", "cause": "<root cause, one line>", "proposal": "<the change, one line>", "members": ["<ref>", ...]}]`.
+
+Done when every batch has its clusters back.
+
+## 3. Merge and rank
+
+Batches split some clusters, so merge the returned ones that share an owner and a cause into one. The result can differ slightly from last week's; that is fine.
+
+Each merged cluster's **canonical** member, the earliest finding by date, carries the cluster's status. Skipped members count as occurrences. A cluster made only of skipped members goes forward once it has 3 members; a smaller one stays skipped and out of the digest. For each cluster:
 
 - **Scope** is **global** when the fix lands in shared setup (user-level steering files, skills, hooks, tooling) or when the same friction shows up in more than one project, which moves even a project-level fix there. It is **project** when the fix lands in one repo.
-- **Score** = occurrences × the highest `weight` among its members (1 for a skipped member without a severity).
-- **Already in place**: read its target. If the change is already there, mark the cluster resolved in step 5 without asking.
+- **Score** = occurrences × the highest `weight` among its members (blocker 4, high 3, medium 2, low 1; 1 for a skipped member without a severity).
+- **Already in place**: read its target. If the change is already there, mark the cluster resolved in step 6 without asking.
 - **Recurring after rejection**: a cluster with a `rejected` member is not proposed again. List it apart with its count and the rejection reason, for the user to reopen it or fold its open members into the rejected one.
 
-## 3. Decide
+## 4. Decide
 
-The user decides each cluster on a standalone HTML page; everything else waits for step 4.
+The user decides each cluster on a standalone HTML page; everything else waits for step 5.
 
 Write the digest to `<scratchpad>/retro-digest.json`, shaped like [`scripts/example-digest.json`](scripts/example-digest.json):
 
-- `clusters`, highest score first, with ids `C1…`: members (the canonical one marked `*`), scope, projects, score, target and proposal, plus your `observation` (why apply or reject, what it overlaps, what a past attempt showed) and your `recommend`. A cluster of skipped members needs the proposal its members never had: write it from their evidence. A proposal fixes the owner, correcting the step, rule or check that misled; recommend reject for one that adds a second way beside it (an exception paragraph, an alias, a fallback), and name the owner text to fix instead.
+- `clusters`, highest score first, with ids `C1…`: a title naming the change and the friction it removes, members (the canonical one marked `*`), scope, projects, score, target (the owner) and proposal, plus your `observation` (why apply or reject, what it overlaps, what a past attempt showed) and your `recommend`. A cluster of skipped members needs the proposal its members never had: write it from their evidence. A proposal fixes the owner, correcting the step, rule or check that misled; recommend reject for one that adds a second way beside it (an exception paragraph, an alias, a fallback), and name the owner text to fix instead.
 - `recurring`, with ids `R-A…`: the open members, the rejected member with its reason, your observation, and `recommend` (`fold` unless you argue otherwise).
 - `legend` for the id prefixes, a `title` with today's date, and `reviewFile`: `retro-review-<date>.json`.
 
@@ -35,7 +49,7 @@ Build the page with `node <skill-dir>/scripts/build-review-page.mjs <scratchpad>
 
 Done when the user says they're done or answers in chat. Read `decisions` from the newest `~/Downloads/retro-review-<date>*.json` (the browser appends ` (1)` to a repeat save); if there is none, ask where it was saved.
 
-## 4. Plan the changes
+## 5. Plan the changes
 
 In one message, for the decided clusters:
 
@@ -46,7 +60,7 @@ Before writing a group's ticket or brief, check every concrete claim its proposa
 
 Done when every group has its tickets and every rejection its reason.
 
-## 5. Apply and record
+## 6. Apply and record
 
 Apply each approved cluster as its own change, in the repo that owns its target and following that repo's own workflow (branch, commit and PR rules). Implement a `mechanical` finding as a deterministic check (lint rule, hook, CI job) instead of prose.
 

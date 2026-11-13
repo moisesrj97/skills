@@ -1,3 +1,4 @@
+import datetime
 import sys
 import tempfile
 import textwrap
@@ -93,6 +94,34 @@ class Retros(unittest.TestCase):
             with self.assertRaises(ValueError):
                 retros.set_status(self.root, ref, status)
         self.assertEqual(self.file.read_text(), RETRO)
+
+
+class Digest(unittest.TestCase):
+    def test_owner_names_the_skill_app_or_file_a_change_lands_in(self):
+        for target, expected in [("skills/engineering/megamoind/SKILL.md:12-40", "megamoind"),
+                                 ("skills/engineering/retro-sweep/scripts/sweep.py", "retro-sweep"),
+                                 ("apps/panel/src/a.ts", "panel"),
+                                 ("CLAUDE.md:26 (step 2)", "claude.md"),
+                                 ("unknown", "~unknown"), (None, "~unknown")]:
+            self.assertEqual(retros.owner(target), expected, target)
+
+    def test_old_skipped_findings_age_out_of_the_digest(self):
+        root = Path(tempfile.mkdtemp())
+        (root / "shop").mkdir()
+        (root / "shop" / "2026-11-10-cart.md").write_text(RETRO)
+        today = datetime.date(2026, 11, 20)
+        self.assertIn("shop/2026-11-10-cart.md#R3", [f["ref"] for f in retros.digestible(root, 28, today)])
+        aged = [f["ref"] for f in retros.digestible(root, 7, today)]
+        self.assertNotIn("shop/2026-11-10-cart.md#R3", aged)
+        self.assertIn("shop/2026-11-10-cart.md#R1", aged)
+
+    def test_batches_keep_findings_of_one_owner_together_and_clip_fields(self):
+        findings = [{"ref": f"p/f.md#R{i}", "target": target, "evidence": "x" * 500}
+                    for i, target in enumerate(["skills/a/zeta/SKILL.md", "apps/web/x.ts", "skills/a/zeta/scripts/s.py",
+                                                "apps/web/y.ts"])]
+        split = retros.batches(findings, 2)
+        self.assertEqual([[f["ref"] for f in b] for b in split], [["p/f.md#R1", "p/f.md#R3"], ["p/f.md#R0", "p/f.md#R2"]])
+        self.assertEqual(len(split[0][0]["evidence"]), retros.CLIP + 1)
 
 
 class SharedFormat(unittest.TestCase):
