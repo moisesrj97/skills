@@ -1,14 +1,6 @@
 # skills
 
-My personal and engineering skills for coding agents, installable with [`npx skills`](https://github.com/vercel-labs/skills).
-
-## Install
-
-```bash
-npx skills add moisesrj97/skills --list            # see what's here
-npx skills add moisesrj97/skills -g -s debug-trace # install one globally
-npx skills update                                  # pull new versions
-```
+My personal and engineering skills for coding agents.
 
 ## Skills
 
