@@ -3,7 +3,7 @@ name: codebase-design
 description: Shared vocabulary for designing deep modules. Use when the user wants to design or improve a module's interface, find deepening opportunities, decide where a seam goes, make code more testable or AI-navigable, or when another skill needs the deep-module vocabulary.
 ---
 
-# Codebase Design
+# Codebase design
 
 Design **deep modules**: a lot of behaviour behind a small interface, placed at a clean seam, testable through that interface. Use this language and these principles wherever code is being designed or restructured. The aim is leverage for callers, locality for maintainers, and testability for everyone.
 
@@ -25,7 +25,7 @@ Use these terms exactly: don't substitute "component," "service," "API," or "bou
 
 **Leverage**: what callers get from depth. More capability per unit of interface they learn. One implementation pays back across N call sites and M tests.
 
-**Locality**: what maintainers get from depth. Change, bugs, knowledge, and verification concentrate in one place rather than spreading across callers. Fix once, fixed everywhere.
+**Locality**: what maintainers get from depth. Change, bugs, knowledge, and verification concentrate in one place rather than spreading across callers. A fix in the module reaches every caller.
 
 ## Deep vs shallow
 
@@ -60,7 +60,7 @@ When designing an interface, ask:
 ## Principles
 
 - **Depth is a property of the interface, not the implementation.** A deep module can be internally composed of small, mockable, swappable parts; they just aren't part of the interface. A module can have **internal seams** (private to its implementation, used by its own tests) as well as the **external seam** at its interface.
-- **The deletion test.** Imagine deleting the module. If complexity vanishes, it was a pass-through. If complexity reappears across N callers, it was earning its keep.
+- **The deletion test.** Imagine deleting the module. If complexity vanishes, it was a pass-through. If complexity reappears across N callers, it was doing real work.
 - **The interface is the test surface.** Callers and tests cross the same seam. If you want to test *past* the interface, the module is probably the wrong shape.
 - **One adapter means a hypothetical seam. Two adapters means a real one.** Don't introduce a seam unless something actually varies across it.
 
@@ -92,7 +92,7 @@ Good interfaces make testing natural:
    }
    ```
 
-3. **Small surface area.** Fewer methods = fewer tests needed. Fewer params = simpler test setup.
+3. **Small interface.** Fewer methods mean fewer tests. Fewer params mean simpler test setup.
 
 ## Relationships
 
@@ -105,7 +105,7 @@ Good interfaces make testing natural:
 ## Rejected framings
 
 - **Depth as ratio of implementation-lines to interface-lines** (Ousterhout): rewards padding the implementation. We use depth-as-leverage instead.
-- **"Interface" as the TypeScript `interface` keyword or a class's public methods**: too narrow: interface here includes every fact a caller must know.
+- **"Interface" as the TypeScript `interface` keyword or a class's public methods**. Too narrow, since interface here includes every fact a caller must know.
 - **"Boundary"**: overloaded with DDD's bounded context. Say **seam** or **interface**.
 
 ## Going deeper

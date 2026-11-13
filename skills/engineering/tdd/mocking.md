@@ -1,9 +1,9 @@
-# When to Mock
+# When to mock
 
 Mock at **system boundaries** only:
 
 - External APIs (payment, email, etc.)
-- Databases (sometimes - prefer test DB)
+- Databases (sometimes; prefer a test DB)
 - Time/randomness
 - File system (sometimes)
 
@@ -13,7 +13,7 @@ Don't mock:
 - Internal collaborators
 - Anything you control
 
-## Designing for Mockability
+## Designing for mockability
 
 At system boundaries, design interfaces that are easy to mock:
 

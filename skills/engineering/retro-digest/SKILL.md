@@ -14,7 +14,7 @@ Single retros are noisy. Friction that shows up in several sessions, or in sever
 python3 <skill-dir>/scripts/retros.py batches --out <scratchpad>/digest
 ```
 
-It reads every `~/.skill-docs/retros/<project>/*.md` and splits into batch files every `open` finding, plus the `rejected` ones so recurrences are visible and the `skipped` ones so recurring noise is, each with its ref (`<project>/<file>#R<n>`), date and fields. A skipped finding older than four weeks is left out: a one-off that has not recurred in that long is not a pattern. Batches are sorted by where each change would land, so related findings tend to share one. If it writes no batch, say so and stop.
+It reads every `~/.skill-docs/retros/<project>/*.md` and splits into batch files every `open` finding, plus the `rejected` ones so recurrences show and the `skipped` ones so recurring noise shows. Each finding carries its ref (`<project>/<file>#R<n>`), date and fields. The script leaves out skipped findings older than four weeks, since a one-off that has not recurred in that long is not a pattern. It sorts batches by where each change would land, so related findings tend to share one. If it writes no batch, say so and stop.
 
 ## 2. Cluster each batch
 
@@ -31,7 +31,7 @@ Batches split some clusters, so merge the returned ones that share an owner and 
 Each merged cluster's **canonical** member, the earliest finding by date, carries the cluster's status. Skipped members count as occurrences. A cluster made only of skipped members goes forward once it has 3 members; a smaller one stays skipped and out of the digest. For each cluster:
 
 - **Scope** is **global** when the fix lands in shared setup (user-level steering files, skills, hooks, tooling) or when the same friction shows up in more than one project, which moves even a project-level fix there. It is **project** when the fix lands in one repo.
-- **Score** = occurrences × the highest `weight` among its members (blocker 4, high 3, medium 2, low 1; 1 for a skipped member without a severity).
+- **Score** is the occurrences times the highest `weight` among its members (blocker 4, high 3, medium 2, low 1; 1 for a skipped member without a severity).
 - **Already in place**: read its target. If the change is already there, mark the cluster resolved in step 6 without asking.
 - **Recurring after rejection**: a cluster with a `rejected` member is not proposed again. List it apart with its count and the rejection reason, for the user to reopen it or fold its open members into the rejected one.
 
@@ -53,8 +53,8 @@ Done when the user says they're done or answers in chat. Read `decisions` from t
 
 In one message, for the decided clusters:
 
-- **Applied and reopened**: grouped by the repo or file that owns each target, the commits or PRs each group becomes, their order and dependencies, and which need a ticket. Ask for the ticket ids or "create them", and for any adjustment to a proposal.
-- **Rejected**: a reason for each, offering your observation as the default.
+- **Applied and reopened.** Group them by the repo or file that owns each target, and give the commits or PRs each group becomes, their order and dependencies, and which need a ticket. Ask for the ticket ids or "create them", and for any adjustment to a proposal.
+- **Rejected.** Give a reason for each, with your observation as the default.
 
 Before writing a group's ticket or brief, check every concrete claim its proposals make (paths, response shapes, flag names, ports) with a grep or read of the target repo and write it with `file:line`; mark the rest "unverified: …".
 

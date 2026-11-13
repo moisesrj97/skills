@@ -7,7 +7,7 @@ metadata:
   version: "0.7.0"
 ---
 
-# Skill Shaper
+# Skill shaper
 
 You already know how to write instructions. This skill adds the judgment calls and the few facts about skill loading you can't infer. The user's instructions take precedence.
 
@@ -16,7 +16,7 @@ You already know how to write instructions. This skill adds the judgment calls a
 Answer from evidence first: the conversation, the project, and the skills your harness lists. Ask only what the evidence can't settle.
 
 - **Job to be done.** What failure does the skill fix? That decides the rules. Label guesses: "my guess is X, because Y".
-- **Poka-yoke.** One right answer → a script, CI check or hook. An always-on one-liner → `AGENTS.md`. Judgment plus a step that must never be skipped → a thin skill and a guard. If it isn't a skill, say why.
+- **Poka-yoke.** A task with one right answer belongs in a script, CI check or hook. An always-on one-liner belongs in `AGENTS.md`. Judgment plus a step that must never be skipped needs a thin skill and a guard. If it isn't a skill, say why.
 - **MECE.** Each request belongs to exactly one skill. On overlap, extend the neighbour or add "Not for X; use Y" to the new description.
 - **Baseline.** When the task is safe to run, have a fresh agent with the same tools do it once without the skill. The bare tool run with its defaults isn't a baseline, and neither is your own run: you know too much. If you can't start a fresh agent, say so and give the user the prompt to run. Its mistakes are the skill's job; if it makes none, the skill may not be needed.
 - **Newcomer test.** Write only what the baseline got wrong and local facts no model can know: names, paths, flags, limits, footguns. Cut general know-how (using common tools, reading `--help`, guarding secrets, checking output, reporting back) and anything the tool's own help or `AGENTS.md` already says.
@@ -40,7 +40,7 @@ Use the lightest steering that works.
   Slop: "Transcribes local audio and video recordings, such as meetings, calls, interviews, lectures, podcasts and voice memos, into well-formatted Markdown with named speakers and correct spelling of terms… (.mp3, .m4a, .wav…) … Not for live dictation, reading text aloud, subtitle files…"
   Clean: "Transcribes audio and video recordings with the `transcribe` CLI. Use when the user wants a transcript, notes or quotes from a recording."
 - **Spec:** `name` is lowercase letters, digits and hyphens, at most 64 characters, and matches the folder. `description` is at most 1,024 characters, with no XML. Avoid names already listed or built in (`skill-creator`, `create-skill`).
-- **Placement:** repo-specific → the project. Personal or cross-project → the global folder. Keep one copy in `.agents/skills/<name>/` and link it into `.claude/skills/` only for Claude Code users. Details: [references/placement.md](references/placement.md).
+- **Placement:** a repo-specific skill goes in the project, a personal or cross-project one in the global folder. Keep one copy in `.agents/skills/<name>/` and link it into `.claude/skills/` only for Claude Code users. Details: [references/placement.md](references/placement.md).
 - **Side effects:** a skill that deploys, sends, deletes or spends is explicit-only. That means `disable-model-invocation: true` for Claude Code and Cursor, and `policy.allow_implicit_invocation: false` in `agents/openai.yaml` for Codex. Say what invoking the skill authorises and what needs a fresh yes. A plain request never loads an explicit-only skill, so add a guard or an `AGENTS.md` pointer.
 - **User data:** rules and lists the user edits live in the project, not the skill folder. A personal skill keeps them in its body.
 - **Portability:** frontmatter outside the spec and agent-specific syntax work in one agent only.

@@ -9,19 +9,19 @@ from disk, thrown away when it stops being useful.
 
 - `<slug>` comes from what the human asked for (`pr-1234`, `working-tree`), so
   the file stays findable.
-- `<genid>` is a short random id baked at generation time
+- `<genid>` is a short random id generated per run
   (`openssl rand -hex 2`). Every run is a new file and a fresh read.
 
 ## Written in Spanish
 
-The guide is read by a human whose working language is Spanish. Code
+The human reading the guide works in Spanish. Code
 identifiers, paths and commands keep their original form.
 
 ## Three blocks
 
-**1. Impacto.** What this change means for the user, or for the system. What
-someone gets from 30 seconds of reading. Stamp the SHA it was generated
-against, and the branch, so the guide can never quietly outlive its subject.
+**1. Impacto.** What this change means for the user, or for the system. It is
+what someone gets from 30 seconds of reading. Stamp the SHA it was generated
+against, and the branch, so a reader can tell when the guide is out of date.
 
 **2. Mapa.** The shape of the change, the ordered list of stops with the one
 line saying why that order, and **de dónde venimos**: the context that lives
@@ -29,22 +29,21 @@ outside the diff and without which the change reads as half-information.
 
 **3. Recorrido.** The stops, each with its prose, its links, and a cited
 fragment only where a sentence is unreadable without seeing that exact line.
-Three to five lines, as an anchor. The code lives in the IDE; the guide is the
-guide.
+Three to five lines, as an anchor. The reader opens the full code in the IDE.
 
 Close with **Resto**: every file of the changeset that earned no stop, each with
-one line saying why (mechanical rename, snapshot, lockfile). This is what makes
-the walk narrative and the coverage total at the same time.
+one line saying why (mechanical rename, snapshot, lockfile). This keeps the
+walk a narrative while still covering every file.
 
-## Visuals earn their place
+## Visuals
 
 Every diagram, table or badge replaces a paragraph that would otherwise have to
-be written. That is the whole rule; picking what fits *this* change is the work.
+be written. Pick the ones that fit *this* change.
 
 Everything renders offline from a `file://` page: inline SVG, native CSS, no
 external library, font or request.
 
-## Built to be read
+## Typography and layout
 
 - A reading measure, generous line height, real typographic hierarchy. This is
   a long read, not a dashboard.
@@ -79,7 +78,7 @@ When step 2 of the skill settled on GitHub links instead, the same `data-src`
 markup builds `https://github.com/<owner>/<repo>/blob/<sha>/<path>#L<line>`,
 and the header says the links go to GitHub and why.
 
-## Progress that takes care of itself
+## Progress
 
 Stops are checkable, with a progress indicator. State lives in `localStorage`
 under `walkthrough:<genid>`, so:

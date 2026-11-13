@@ -1,4 +1,4 @@
-# Domain Docs
+# Domain docs
 
 How the engineering skills should consume this repo's domain documentation when exploring the codebase.
 
@@ -46,6 +46,6 @@ If the concept you need isn't in the glossary yet, that's a signal: either you'r
 
 ## Flag ADR conflicts
 
-If your output contradicts an existing ADR, surface it explicitly rather than silently overriding:
+If your output contradicts an existing ADR, flag it explicitly rather than silently overriding it:
 
 > _Contradicts ADR-0007 (event-sourced orders), but worth reopening because…_

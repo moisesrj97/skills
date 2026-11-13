@@ -1,8 +1,8 @@
-# Good and Bad Tests
+# Good and bad tests
 
-## Good Tests
+## Good tests
 
-**Integration-style**: Test through real interfaces, not mocks of internal parts.
+**Integration-style.** Test through real interfaces, not mocks of internal parts.
 
 ```typescript
 // GOOD: Tests observable behavior
@@ -22,9 +22,9 @@ Characteristics:
 - Describes WHAT, not HOW
 - One logical assertion per test
 
-## Bad Tests
+## Bad tests
 
-**Implementation-detail tests**: Coupled to internal structure.
+**Implementation-detail tests.** They couple to internal structure.
 
 ```typescript
 // BAD: Tests implementation details
@@ -60,7 +60,7 @@ test("createUser makes user retrievable", async () => {
 });
 ```
 
-**Tautological tests**: Expected value restates the implementation, so the test passes by construction.
+**Tautological tests.** The expected value restates the implementation, so the test passes by construction.
 
 ```typescript
 // BAD: Expected value is recomputed the way the code computes it

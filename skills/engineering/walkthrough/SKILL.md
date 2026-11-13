@@ -23,15 +23,15 @@ with other skills and their own eyes. This guide is deliberately blind to them.
 ## 1. Resolve the changeset
 
 Turn the argument into a concrete diff: `git diff HEAD` for a dirty tree, a
-range for local commits, `gh pr diff` for a PR. Ambiguity about what counts as
-"the change" is resolved by asking, never by picking.
+range for local commits, `gh pr diff` for a PR. When it's unclear what counts
+as "the change", ask rather than pick.
 
 ## 2. Decide where the links point
 
-Links open files **on disk right now**, so they only tell the truth when disk
+Links open files **on disk right now**, so they're only accurate when disk
 matches the changeset.
 
-For a **local** changeset (dirty tree, local commits) disk is the truth. Link to
+For a **local** changeset (dirty tree, local commits) disk always matches. Link to
 the IDE and move on.
 
 For a **PR**, compare local `HEAD` with the PR's `headRefOid`. On a mismatch,
@@ -85,8 +85,8 @@ can't catch themselves.
 ## 7. Hand it over
 
 Open the file in the browser (`open <path>`), and report the path and the number
-of stops. Everything else is in the guide: summarising it in the terminal is how
-it goes unread.
+of stops. Everything else is in the guide; summarise it in the terminal and
+nobody opens the guide.
 
 ## What this skill does NOT do
 

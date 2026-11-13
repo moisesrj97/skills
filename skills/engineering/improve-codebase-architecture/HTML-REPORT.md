@@ -1,6 +1,6 @@
-# HTML Report Format
+# HTML report format
 
-The architectural review is rendered as a single self-contained HTML file in the OS temp directory. Tailwind and Mermaid both come from CDNs. Mermaid handles graph-shaped diagrams reliably; hand-built divs and inline SVG handle the more editorial visuals (mass diagrams, cross-sections). Mix the two: don't lean on Mermaid for everything, it'll start to look generic.
+Render the architectural review as a single self-contained HTML file in the OS temp directory. Tailwind and Mermaid both come from CDNs. Use Mermaid for graph-shaped diagrams, and hand-built divs and inline SVG for the more editorial visuals (mass diagrams, cross-sections). Mix the two, since a report drawn all in Mermaid looks generic.
 
 ## Scaffold
 
@@ -35,11 +35,11 @@ The architectural review is rendered as a single self-contained HTML file in the
 
 ## Header
 
-Repo name, date, and a compact legend: solid box = module, dashed line = seam, red arrow = leakage, thick dark box = deep module. No introduction paragraph. Straight into the candidates.
+Repo name, date, and a compact legend: solid box = module, dashed line = seam, red arrow = leakage, thick dark box = deep module. Skip the introduction paragraph and go straight into the candidates.
 
 ## Candidate card
 
-The diagrams carry the weight. Prose is sparse, plain, and uses the glossary terms (from the `/codebase-design` skill) without ceremony.
+The diagrams do most of the explaining. Keep the prose short and plain, in the glossary terms from the `/codebase-design` skill.
 
 Each candidate is one `<article>`:
 
@@ -56,11 +56,11 @@ No paragraphs of explanation. If the diagram needs a paragraph to be understood,
 
 ## Diagram patterns
 
-Pick the pattern that fits the candidate. Mix them. Don't make every diagram look the same. Variety is part of the point.
+Pick the pattern that fits each candidate, and vary the patterns across candidates.
 
-### Mermaid graph (the workhorse for dependencies / call flow)
+### Mermaid graph (for dependencies and call flow)
 
-Use a Mermaid `flowchart` or `graph` when the point is "X calls Y calls Z, and look at the mess." Wrap it in a Tailwind-styled card so it doesn't feel parachuted in. Style with classDef to colour leakage edges red and the deep module dark. Sequence diagrams work well for "before: 6 round-trips; after: 1."
+Use a Mermaid `flowchart` or `graph` when the point is "X calls Y calls Z, and look at the mess." Wrap it in a Tailwind-styled card so it matches the rest of the page. Use classDef to colour leakage edges red and the deep module dark. Sequence diagrams work well for "before: 6 round-trips; after: 1."
 
 ```html
 <div class="rounded-lg border border-slate-200 bg-white p-4">
@@ -75,9 +75,9 @@ Use a Mermaid `flowchart` or `graph` when the point is "X calls Y calls Z, and l
 </div>
 ```
 
-### Hand-built boxes-and-arrows (when Mermaid's layout fights you)
+### Hand-built boxes and arrows (when Mermaid's layout gets in the way)
 
-Modules as `<div>`s with borders and labels. Arrows as inline SVG `<line>` or `<path>` elements positioned absolutely over a relative container. Reach for this when you want the "after" diagram to feel like one thick-bordered deep module with greyed-out internals, since Mermaid won't render that with the right weight.
+Modules as `<div>`s with borders and labels. Arrows as inline SVG `<line>` or `<path>` elements positioned absolutely over a relative container. Use this when the "after" diagram should show one thick-bordered deep module with greyed-out internals, since Mermaid won't render that with the right weight.
 
 ### Cross-section (good for layered shallowness)
 
@@ -85,7 +85,7 @@ Stack horizontal bands (`h-12 border-l-4`) to show layers a call passes through.
 
 ### Mass diagram (good for "interface as wide as implementation")
 
-Two rectangles per module: one for interface surface area, one for implementation. Before: interface rectangle is nearly as tall as the implementation rectangle (shallow). After: interface rectangle is short, implementation rectangle is tall (deep).
+Two rectangles per module: one for the interface's size, one for the implementation's. Before: interface rectangle is nearly as tall as the implementation rectangle (shallow). After: interface rectangle is short, implementation rectangle is tall (deep).
 
 ### Call-graph collapse
 
@@ -101,11 +101,11 @@ Before: a tree of function calls rendered as nested boxes. After: the same tree 
 
 ## Top recommendation section
 
-One larger card. Candidate name, one sentence on why, anchor link to its card. That's it.
+One larger card with the candidate's name, one sentence on why, and an anchor link to its card.
 
 ## Tone
 
-Plain English, concise, but the architectural nouns and verbs come straight from the `/codebase-design` skill. Concision is not an excuse to drift.
+Plain, concise English, with the architectural nouns and verbs taken exactly from the `/codebase-design` skill, however short the sentence.
 
 **Use exactly:** module, interface, implementation, depth, deep, shallow, seam, adapter, leverage, locality.
 
@@ -120,4 +120,4 @@ Plain English, concise, but the architectural nouns and verbs come straight from
 
 **Wins bullets** name the gain in glossary terms: *"locality: bugs concentrate in one module"*, *"leverage: one interface, N call sites"*, *"interface shrinks; implementation absorbs the wrappers"*. Don't write *"easier to maintain"* or *"cleaner code"*, because those terms aren't in the glossary and don't earn their place.
 
-No hedging, no throat-clearing, no "it's worth noting that…". If a sentence could be a bullet, make it a bullet. If a bullet could be cut, cut it. If a term isn't in the `/codebase-design` glossary, reach for one that is before inventing a new one.
+State each point directly, without hedging or preamble. If a sentence could be a bullet, make it a bullet. If a bullet could be cut, cut it. If a term isn't in the `/codebase-design` glossary, reach for one that is before inventing a new one.

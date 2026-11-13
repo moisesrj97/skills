@@ -1,4 +1,4 @@
-# GLOSSARY.md Format
+# GLOSSARY.md format
 
 ## Structure
 

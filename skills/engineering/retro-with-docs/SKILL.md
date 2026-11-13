@@ -21,7 +21,7 @@ Each line starts with its `[index]`, the evidence reference. `--max` caps each e
 
 **Friction** is anything in the timeline that cost the agent time, tokens or correctness. Hunt **stoppers** first, the friction that rates blocker: any moment the agent could not move forward on its own, because it stopped to ask the user for help, worked around a broken step, skipped or faked a step (verification above all), retried in circles, or gave up. Then the rest: user corrections, `ERROR` results, repeated calls, long searches for a file or fact, review findings the implementer should have avoided.
 
-Several friction points with one cause are one finding citing all their indexes. A stop the flow plans for (a question to the user) is friction only when its input claimed the answer was already settled. A flaw in what the session produced, even when the product is a skill or steering file, points at the real friction, whatever in the environment let it through.
+Several friction points with one cause are one finding citing all their indexes. A stop the flow plans for (a question to the user) is friction only when its input claimed the answer was already settled. When the session produced something flawed, even a skill or steering file, the finding is whatever in the environment let the flaw through.
 
 A finding is **open** when it clears the bar:
 
@@ -56,11 +56,11 @@ Kind is **mechanical** when a deterministic check (lint rule, hook, CI job, scri
 
 Severity is **blocker** when the run stopped for the user or a step was skipped or faked, **high** when it caused a wrong result, rework or a user correction, **medium** when it wasted notable time or tokens, and **low** for a minor detour. Rate a workaround the agent found alone by its cost.
 
-The step is done when every friction point in the timeline is a finding, open or skipped, and each one has been looked up with `known.py`.
+The step is done when every friction point in the timeline is a finding, open or skipped, and you have looked each one up with `known.py`.
 
 ## 3. Write the file
 
-Write `<retro_dir>/<YYYY-MM-DD>-<topic-slug>.md`, with the folder `locate.py` printed (`~/.skill-docs/retros/<project>`, the project being the main checkout's name, so a linked worktree files under its repo), creating it if needed, in this exact shape, since `retro-digest` parses it:
+Write `<retro_dir>/<YYYY-MM-DD>-<topic-slug>.md` in the folder `locate.py` printed, creating it if needed. That folder is `~/.skill-docs/retros/<project>`, where the project is the main checkout's name, so a linked worktree files under its repo. Use this exact shape, since `retro-digest` parses it:
 
 ```markdown
 ---
@@ -93,6 +93,6 @@ summary: <one line: what the session set out to do>
 - evidence: [<index>] <short quote>
 ```
 
-The evidence carries what happened; `cause` and `proposal` carry only what it supports. A proposal fixes the owner: it corrects the step, rule or check that misled instead of adding a special case beside it.
+Put what happened in `evidence`, and keep `cause` and `proposal` to what the evidence supports. A proposal fixes the owner: it corrects the step, rule or check that misled instead of adding a special case beside it.
 
 Order open findings by severity, then the skipped ones. A field may continue on indented `  - ` lines below it. Then run `python3 <skill-dir>/scripts/validate_retro.py <file>` and fix every problem it prints. Done when it prints nothing. Finish by printing the file path and a table of `id | severity | problem` for the open findings, plus the count of skipped ones.
