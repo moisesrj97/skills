@@ -8,9 +8,14 @@
 `run` puts the variant at .claude/skills/<name>/ of a throwaway git repo and runs `claude -p` there with
 `--setting-sources project,local`, so the child sees that copy and none of the user's skills or CLAUDE.md.
 cases.json is a list of:
-  {"id", "prompt", "checks": [...], "fixture"?: dir relative to cases.json, "setup"?: shell run in the repo,
-   "path_prefix"?: dir relative to cases.json put first on PATH (fake CLIs), "max_turns"?: n}
+  {"id", "prompt" | "turns": [...], "checks": [...], "fixture"?: dir relative to cases.json,
+   "setup"?: shell run in the repo, "path_prefix"?: dir relative to cases.json put first on PATH (fake CLIs),
+   "env"?: {name: value}, "with"?: [skill dirs relative to cases.json], "max_turns"?: n}
+"turns" are user messages sent one per turn, each once the child ends the previous turn: a scripted user for
+a skill that asks questions. max_turns caps each turn's agentic steps, not the number of turns.
 The child and its fakes get BENCH_REPO, the repo's path: a fake logs there, since the child may cd elsewhere.
+"with" installs other skills whole beside the one under test, for a skill that calls them.
+"env" values may contain $BENCH_REPO, e.g. to point a skill that writes under $HOME at the throwaway repo.
 A check is {"id", "want"?: true, and one of:
   "regex": pattern, "in": "final" | "transcript"   (transcript = every text and tool call, as JSON)
   "cmd": shell run in the repo after the run; exit 0 passes
@@ -25,6 +30,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -92,13 +98,47 @@ def claude(prompt: str, cwd: Path, flags: list[str], env=None) -> str:
     return subprocess.run(cmd, cwd=cwd, input=prompt, capture_output=True, text=True, timeout=TIMEOUT, env=env).stdout
 
 
+def converse(turns: list[str], cwd: Path, flags: list[str], env: dict) -> list[dict]:
+    cmd = ["claude", "-p", "--setting-sources", "project,local", "--strict-mcp-config", "--no-session-persistence",
+           "--input-format", "stream-json", "--output-format", "stream-json", "--verbose", *flags]
+    with subprocess.Popen(cmd, cwd=cwd, env=env, text=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                          stderr=subprocess.DEVNULL) as proc:
+        timer = threading.Timer(TIMEOUT, proc.kill)
+        timer.start()
+        pending, events = list(turns), []
+
+        def send():
+            text = pending.pop(0)
+            # stream-json doesn't echo user messages, so the transcript gets them from here.
+            events.append({"type": "user_turn", "text": text})
+            proc.stdin.write(json.dumps({"type": "user", "message": {"role": "user", "content": text}}) + "\n")
+            proc.stdin.flush()
+
+        try:
+            send()
+            for line in proc.stdout:
+                if not line.startswith("{"):
+                    continue
+                event = json.loads(line)
+                events.append(event)
+                if event.get("type") != "result":
+                    continue
+                if pending:
+                    send()
+                else:
+                    proc.stdin.close()
+        finally:
+            timer.cancel()
+    return events
+
+
 def make_repo(case: dict, base: Path, skill: Path | None) -> Path:
     repo = Path(tempfile.mkdtemp(prefix=f"stress-{case['id']}-"))
     if fixture := case.get("fixture"):
         shutil.copytree(base / fixture, repo, dirs_exist_ok=True)
-    if skill:
-        name = re.search(r"^name:\s*(\S+)", (skill / "SKILL.md").read_text(), re.M).group(1)
-        shutil.copytree(skill, repo / ".claude" / "skills" / name)
+    for d in ([skill] if skill else []) + [(base / w).resolve() for w in case.get("with", [])]:
+        name = re.search(r"^name:\s*(\S+)", (d / "SKILL.md").read_text(), re.M).group(1)
+        shutil.copytree(d, repo / ".claude" / "skills" / name)
     git = ["git", "-c", "user.name=bench", "-c", "user.email=bench@example.test"]
     subprocess.run(["git", "init", "-q", "-b", "main"], cwd=repo, check=True)
     if setup := case.get("setup"):
@@ -111,6 +151,8 @@ def make_repo(case: dict, base: Path, skill: Path | None) -> Path:
 def transcript(events: list[dict]) -> tuple[str, str]:
     parts, final = [], ""
     for e in events:
+        if e.get("type") == "user_turn":
+            parts.append("USER " + e["text"])
         if e.get("type") == "user" and isinstance(e["message"].get("content"), list):
             for b in e["message"]["content"]:
                 if b.get("type") == "tool_result":
@@ -133,7 +175,7 @@ def score(check: dict, repo: Path, full: str, final: str) -> bool:
     elif "cmd" in check:
         got = subprocess.run(check["cmd"], shell=True, cwd=repo, capture_output=True).returncode == 0
     else:
-        q = (f"Transcript of an agent run (TEXT = what it wrote, TOOL = its tool calls, RESULT = their output):\n\n"
+        q = (f"Transcript of an agent run (USER = the user's messages, TEXT = what it wrote, TOOL = its tool calls, RESULT = their output):\n\n"
              f"{full[-60000:]}\n\nQuestion: {check['judge']}\nAnswer with exactly YES or NO.")
         got = claude(q, repo, ["--model", JUDGE_MODEL, "--tools", ""]).strip().upper().startswith("YES")
     return got == check.get("want", True)
@@ -142,14 +184,13 @@ def score(check: dict, repo: Path, full: str, final: str) -> bool:
 def run_one(case: dict, base: Path, skill: Path | None, model: str | None, out: Path, n: int) -> dict:
     repo = make_repo(case, base, skill)
     env = dict(os.environ, BENCH_REPO=str(repo))
+    env.update({k: v.replace("$BENCH_REPO", str(repo)) for k, v in case.get("env", {}).items()})
     if prefix := case.get("path_prefix"):
         env["PATH"] = f"{(base / prefix).resolve()}:{env['PATH']}"
-    flags = ["--output-format", "stream-json", "--verbose", "--permission-mode", "auto",
-             "--max-turns", str(case.get("max_turns", 30))]
+    flags = ["--permission-mode", "auto", "--max-turns", str(case.get("max_turns", 30))]
     if model:
         flags += ["--model", model]
-    raw = claude(case["prompt"], repo, flags, env)
-    events = [json.loads(line) for line in raw.splitlines() if line.startswith("{")]
+    events = converse(case.get("turns") or [case["prompt"]], repo, flags, env)
     full, final = transcript(events)
     run_dir = out / f"{case['id']}-{n}"
     run_dir.mkdir(parents=True, exist_ok=True)
