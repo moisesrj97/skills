@@ -16,7 +16,7 @@ SEAL = "END OF ROUND"
 HEADER = re.compile(r"^###\s+(\d+)\.\s+(?:`([^`]+)`|([^\s:`]+)):(\d+)(?:\s*[-–—]\s*\d+)?:?\s*(.*)$")
 FENCE = re.compile(r"^\s*(```|~~~)")
 ELISION = re.compile(r"^\s*(\.\.\.|…)\s*$")
-LINE_NUMBER = re.compile(r"^\s*\d+\s*[|:]\s?")
+LINE_NUMBER = re.compile(r"^\s*\d+(?:\s*[|:]\s?|\t)")
 
 
 def parse_round(text):

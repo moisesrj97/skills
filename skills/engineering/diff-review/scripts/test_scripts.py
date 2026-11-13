@@ -143,6 +143,14 @@ class CheckQuotes(unittest.TestCase):
         unparsed = [r for r in check_quotes.check(findings, "main", self.repo) if r[0] == "UNPARSED"]
         self.assertEqual(len(unparsed), 2)
 
+    def test_strips_tab_line_numbers_from_read_output(self):
+        round_text = ("### 1. src/cart.ts:3: quoted from Read output\n\n"
+                      "> 3\t  for (const item of items) {\n"
+                      ">     4\t    sum += item.price * item.qty;\n\nEND OF ROUND\n")
+        _, findings = check_quotes.parse_round(round_text)
+        [(verdict, _, reason)] = check_quotes.check(findings, "main", self.repo)
+        self.assertEqual((verdict, reason), ("CONFIRMED", ""))
+
     def test_worktree_mode_reads_disk(self):
         self.assertEqual(self.verdicts(None)["1"][0], "DISCARDED")
 
