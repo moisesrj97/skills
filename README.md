@@ -26,6 +26,7 @@ npx skills update                                  # pull new versions
 | engineering | `merge-risk` | Traffic-light rating of how risky a PR is to merge, by what users would suffer if it fails, with the reasons. |
 | engineering | `pr-review` | Reviews a teammate's PR with Opus, Sol and a security pass through `diff-review`, checks it against its ticket, verifies each finding against the wider code, the stack and the author's notes, and rates it with `merge-risk`. |
 | engineering | `pair-review` | Review → fix → re-review loop with a reviewer from another model family, through `diff-review`. |
+| engineering | `release-decide` | Turns post-release signals into one verb per finding group with cited evidence, checks the metric sees the real work, and brings the owner only their calls. |
 | engineering | `retro-digest` | Groups the open retro findings across projects, applies the approved ones and records each outcome. Manual only. |
 | engineering | `retro-with-docs` | Retro of an agent session: stoppers and environment fixes, written to `~/.skill-docs/retros/<project>/`. |
 | engineering | `review-comment` | Evaluates a PR review comment, fixes it and replies with the commit. Manual only. |
