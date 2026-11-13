@@ -6,18 +6,18 @@ disable-model-invocation: true
 
 # Retro digest
 
-Single retros are noisy. A stopper that shows up in several sessions, or in several projects, is the signal worth fixing. This pass turns the retros written by `retro-with-docs` into a short, ranked list of changes and records in the files what happened to each one.
+Single retros are noisy. Friction that shows up in several sessions, or in several projects, is the signal worth fixing, even when each retro skipped it as a one-off. This pass turns the retros written by `retro-with-docs` into a short, ranked list of changes and records in the files what happened to each finding.
 
 ## 1. Collect
 
-Run `python3 <skill-dir>/scripts/retros.py collect`. It reads every `~/.skill-docs/retros/<project>/*.md` and prints every `open` finding, plus the `rejected` ones so recurrences are visible, each with its ref (`<project>/<file>#R<n>`), date, fields and severity weight. If none is open, say so and stop.
+Run `python3 <skill-dir>/scripts/retros.py collect`. It reads every `~/.skill-docs/retros/<project>/*.md` and prints every `open` finding, plus the `rejected` ones so recurrences are visible and the `skipped` ones so recurring noise is, each with its ref (`<project>/<file>#R<n>`), date, fields and severity weight. If none is open and no skipped cluster reaches 3 members, say so and stop.
 
 ## 2. Cluster and rank
 
-A **cluster** is a set of findings with the same root cause and the same fix, even if worded differently, from any project. Its **canonical** member, the earliest finding by date, carries the cluster's status. For each cluster:
+A **cluster** is a set of findings with the same root cause and the same fix, even if worded differently, from any project. A `matches:` ref is the writer's claim that two findings are one; confirm it against both. Its **canonical** member, the earliest finding by date, carries the cluster's status. Skipped members count as occurrences. A cluster made only of skipped members goes forward once it has 3 members; a smaller one stays skipped and out of the digest. For each cluster:
 
 - **Scope** is **global** when the fix lands in shared setup (user-level steering files, skills, hooks, tooling) or when the same friction shows up in more than one project, which moves even a project-level fix there. It is **project** when the fix lands in one repo.
-- **Score** = occurrences × the highest `weight` among its members.
+- **Score** = occurrences × the highest `weight` among its members (1 for a skipped member without a severity).
 - **Already in place**: read its target. If the change is already there, mark the cluster resolved in step 5 without asking.
 - **Recurring after rejection**: a cluster with a `rejected` member is not proposed again. List it apart with its count and the rejection reason, for the user to reopen it or fold its open members into the rejected one.
 
@@ -27,7 +27,7 @@ The user decides each cluster on a standalone HTML page; everything else waits f
 
 Write the digest to `<scratchpad>/retro-digest.json`, shaped like [`scripts/example-digest.json`](scripts/example-digest.json):
 
-- `clusters`, highest score first, with ids `C1…`: members (the canonical one marked `*`), scope, projects, score, target and proposal, plus your `observation` (why apply or reject, what it overlaps, what a past attempt showed) and your `recommend`.
+- `clusters`, highest score first, with ids `C1…`: members (the canonical one marked `*`), scope, projects, score, target and proposal, plus your `observation` (why apply or reject, what it overlaps, what a past attempt showed) and your `recommend`. A cluster of skipped members needs the proposal its members never had: write it from their evidence. A proposal fixes the owner, correcting the step, rule or check that misled; recommend reject for one that adds a second way beside it (an exception paragraph, an alias, a fallback), and name the owner text to fix instead.
 - `recurring`, with ids `R-A…`: the open members, the rejected member with its reason, your observation, and `recommend` (`fold` unless you argue otherwise).
 - `legend` for the id prefixes, a `title` with today's date, and `reviewFile`: `retro-review-<date>.json`.
 
@@ -56,4 +56,4 @@ Then set the status of every member of every cluster you touched, in one call wi
 - `rejected (<reason>)`.
 - `duplicate of <project>/<file>#R<n>` for every non-canonical member, pointing at the canonical one.
 
-Done when every finding you collected has its new status or was left `open` by the user. Finish with what was applied, where, and what is still open.
+Done when every finding in a cluster you put on the page has its new status or was left `open` by the user; skipped findings left out of the digest keep theirs. Finish with what was applied, where, and what is still open.

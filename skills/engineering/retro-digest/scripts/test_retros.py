@@ -49,7 +49,10 @@ RETRO = textwrap.dedent("""\
     - evidence: [9] searched again
     - proposal: name it there too
 
-    Dismissed as noise: none
+    ## R3: A zsh glob with no match
+
+    - status: skipped (fixed in the next call)
+    - evidence: [4]
     """)
 
 
@@ -60,19 +63,21 @@ class Retros(unittest.TestCase):
         self.file = self.root / "shop" / "2026-11-10-cart.md"
         self.file.write_text(RETRO)
 
-    def test_collect_keeps_open_and_rejected_with_weights(self):
+    def test_collect_keeps_open_rejected_and_skipped_with_weights(self):
         found = {f["ref"]: f for f in retros.collect(self.root)}
-        self.assertEqual(set(found), {"shop/2026-11-10-cart.md#R1", "shop/2026-11-10-cart.md#R2b"})
+        self.assertEqual(set(found), {"shop/2026-11-10-cart.md#R1", "shop/2026-11-10-cart.md#R2b",
+                                      "shop/2026-11-10-cart.md#R3"})
         r1 = found["shop/2026-11-10-cart.md#R1"]
         self.assertEqual((r1["weight"], r1["date"], r1["evidence"]), (4, "2026-11-10", '- [12] "login failed"'))
-        self.assertEqual(len(retros.collect(self.root, everything=True)), 3)
+        self.assertEqual(found["shop/2026-11-10-cart.md#R3"]["weight"], 1)
+        self.assertEqual(len(retros.collect(self.root, everything=True)), 4)
 
     def test_set_rewrites_only_that_findings_status(self):
         retros.set_status(self.root, "shop/2026-11-10-cart.md#R2b", "duplicate of shop/2026-11-10-cart.md#R2")
         text = self.file.read_text()
         self.assertIn("- status: duplicate of shop/2026-11-10-cart.md#R2\n- severity: medium", text)
         self.assertIn("- status: applied (CLAUDE.md)", text)
-        self.assertEqual(text.count("- status:"), 3)
+        self.assertEqual(text.count("- status:"), 4)
 
     def test_set_replaces_a_multiline_status_whole(self):
         retros.set_status(self.root, "shop/2026-11-10-cart.md#R2b", "open")
@@ -88,6 +93,16 @@ class Retros(unittest.TestCase):
             with self.assertRaises(ValueError):
                 retros.set_status(self.root, ref, status)
         self.assertEqual(self.file.read_text(), RETRO)
+
+
+class SharedFormat(unittest.TestCase):
+    def test_both_skills_carry_the_same_retro_file_module(self):
+        here = Path(__file__).parent / "retro_file.py"
+        twin = Path(__file__).parents[2] / "retro-with-docs" / "scripts" / "retro_file.py"
+        if not twin.exists():
+            self.skipTest("retro-with-docs is not installed beside retro-digest")
+        self.assertEqual(here.read_text(), twin.read_text(),
+                         "copy retro-with-docs/scripts/retro_file.py over this one, or the other way round")
 
 
 if __name__ == "__main__":
