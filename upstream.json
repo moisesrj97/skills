@@ -90,15 +90,6 @@
       "ref": "main",
       "repo": "mattpocock/skills"
     },
-    "teach": {
-      "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
-      "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",
-      "license": "MIT",
-      "license_file": "licenses/mattpocock-skills",
-      "path": "skills/productivity/teach",
-      "ref": "main",
-      "repo": "mattpocock/skills"
-    },
     "to-spec": {
       "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
       "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",

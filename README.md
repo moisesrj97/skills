@@ -23,7 +23,6 @@ My personal and engineering skills for coding agents.
 | engineering | `pair-review` | Review → fix → re-review loop with a reviewer from another model family, through `diff-review`. | own |
 | engineering | `pr-review` | Reviews a teammate's PR with Opus, Sol and a security pass through `diff-review`, checks it against its ticket, verifies each finding against the wider code, the stack and the author's notes, and rates it with `merge-risk`. | own |
 | engineering | `prototype` | Throwaway prototype to answer a design question. | [mattpocock/skills](https://github.com/mattpocock/skills) |
-| engineering | `release-decide` | Turns post-release signals into one verb per finding group with cited evidence, checks the metric sees the real work, and brings the owner only their calls. | own |
 | engineering | `retro-digest` | Groups the open retro findings across projects, applies the approved ones and records each outcome. Manual only. | own |
 | engineering | `retro-sweep` | Daily sweep of the sessions with no retro: a cheap model triages them for friction, a stronger one runs `retro-with-docs` on those that had some. Manual only. | own |
 | engineering | `retro-with-docs` | Retro of an agent session: its friction, stoppers first, as open or skipped findings in `~/.skill-docs/retros/<project>/`. | own |
@@ -41,7 +40,6 @@ My personal and engineering skills for coding agents.
 | productivity | `pull-skill` | Copies a skill from another repo and records its source in `upstream.json`. Manual only. | own |
 | productivity | `skill-shaper` | Creates a skill or reshapes one that triggers on the wrong requests. | [overment/skills](https://github.com/overment/skills) |
 | productivity | `sync-upstream` | Checks pulled skills for upstream changes and offers to fold the useful ones in. Manual only. | own |
-| productivity | `teach` | Teaches you a new skill or concept, within the workspace. Manual only. | [mattpocock/skills](https://github.com/mattpocock/skills) |
 | productivity | `unslop` | Cuts AI tells from any writing. Manual only. | [cursor/plugins](https://github.com/cursor/plugins) |
 | productivity | `writing-for-agents` | Reference for writing skills, AGENTS.md and CLAUDE.md. | [mattpocock/skills](https://github.com/mattpocock/skills) |
 
