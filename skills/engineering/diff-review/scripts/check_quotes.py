@@ -17,6 +17,9 @@ HEADER = re.compile(r"^###\s+(\d+)\.\s+(?:`([^`]+)`|([^\s:`]+)):(\d+)(?:\s*[-–
 FENCE = re.compile(r"^\s*(```|~~~)")
 ELISION = re.compile(r"^\s*(\.\.\.|…)\s*$")
 LINE_NUMBER = re.compile(r"^\s*\d+(?:\s*[|:]\s?|\t)")
+BLOCKQUOTE = re.compile(r"^(?:>\s?)+")
+INLINE_ELISION = re.compile(r"\.\.\.|…")
+LOOSE = "matched after normalising whitespace"
 
 
 def parse_round(text):
@@ -41,7 +44,7 @@ def parse_round(text):
             }
             findings.append(current)
         elif current is not None and line.startswith(">"):
-            current["quote_lines"].append(line[2:] if line.startswith("> ") else line[1:])
+            current["quote_lines"].append(BLOCKQUOTE.sub("", line))
         elif current is not None and current["quote_lines"] and current["quote_lines"][-1] is not None:
             current["quote_lines"].append(None)
     for finding in findings:
@@ -93,6 +96,61 @@ def locate(segment, source_lines):
     return None
 
 
+def locate_loose(segment, source_lines):
+    """Like locate, ignoring all whitespace and treating `...`/`…` inside a line as a gap.
+
+    Catches statements a formatter split or joined, and quotes with inline elisions.
+    """
+    chars, line_of = [], []
+    for number, line in enumerate(source_lines, 1):
+        for ch in line:
+            if not ch.isspace():
+                chars.append(ch)
+                line_of.append(number)
+    haystack = "".join(chars)
+    for candidate in variants(segment):
+        parts = [p for p in (re.sub(r"\s+", "", part) for part in INLINE_ELISION.split("\n".join(candidate))) if p]
+        if not parts:
+            continue
+        start, end = None, 0
+        for part in parts:
+            at = haystack.find(part, end)
+            if at < 0:
+                break
+            start = at if start is None else start
+            end = at + len(part)
+        else:
+            return line_of[start], line_of[end - 1]
+    return None
+
+
+def find(segment, source_lines):
+    """(first, last, loose) for the segment in the source, or None."""
+    span = locate(segment, source_lines)
+    if span:
+        return (*span, False)
+    span = locate_loose(segment, source_lines)
+    return (*span, True) if span else None
+
+
+def find_elsewhere(segment, path, ref, repo):
+    """(path, first line) of another file holding the segment, or None."""
+    lines = [l.strip().lstrip("+-").strip() for l in segment if not FENCE.match(l)]
+    probe = max((INLINE_ELISION.split(l)[0].strip() for l in lines), key=len, default="")
+    if len(probe) < 8:
+        return None
+    command = ["git", "grep", "-F", "-l", "-e", probe] + ([ref] if ref else []) + ["--"]
+    result = subprocess.run(command, cwd=repo, capture_output=True, text=True, errors="replace")
+    for hit in result.stdout.splitlines()[:20]:
+        other = hit.removeprefix(f"{ref}:") if ref else hit
+        if other == path:
+            continue
+        span = find(segment, read_source(other, ref, repo) or [])
+        if span:
+            return other, span[0]
+    return None
+
+
 def read_source(path, ref, repo):
     if ref is None:
         file = Path(repo) / path
@@ -118,14 +176,20 @@ def check(findings, ref, repo):
         if not f["quotes"]:
             results.append(("DISCARDED", label, "no quote"))
             continue
-        spans = [locate(s, source) for s in f["quotes"]]
+        spans = [find(s, source) for s in f["quotes"]]
         found = [s for s in spans if s]
         missing = [str(i + 1) for i, s in enumerate(spans) if s is None]
         if not found:
-            results.append(("DISCARDED", label, f"quote matches nothing in {where}{f['path']}"))
+            elsewhere = next(filter(None, (find_elsewhere(s, f["path"], ref, repo) for s in f["quotes"])), None)
+            if elsewhere:
+                results.append(("CONFIRMED", label, f"quote found in {elsewhere[0]}:{elsewhere[1]}, not {f['path']}"))
+            else:
+                results.append(("DISCARDED", label, f"quote matches nothing in {where}{f['path']}"))
             continue
         notes = []
-        if not any(first <= f["line"] <= last for first, last in found):
+        if any(loose for _, _, loose in found):
+            notes.append(LOOSE)
+        if not any(first <= f["line"] <= last for first, last, _ in found):
             notes.append(f"quote found at line {found[0][0]}")
         if missing:
             notes.append(f"quote block {', '.join(missing)} of {len(spans)} is not in {f['path']}: "

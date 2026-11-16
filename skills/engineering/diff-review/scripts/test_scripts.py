@@ -137,7 +137,7 @@ class CheckQuotes(unittest.TestCase):
         self.assertEqual(v["9"], ("CONFIRMED", ""))
         self.assertEqual(v["UNPARSED"][0], "UNPARSED")
         self.assertEqual(v["11"], ("CONFIRMED", ""))
-        self.assertEqual(v["13"][0], "DISCARDED")
+        self.assertEqual(v["13"], ("CONFIRMED", "matched after normalising whitespace"))
         self.assertEqual(v["14"], ("CONFIRMED", ""))
         _, findings = check_quotes.parse_round(ROUND)
         unparsed = [r for r in check_quotes.check(findings, "main", self.repo) if r[0] == "UNPARSED"]
@@ -150,6 +150,32 @@ class CheckQuotes(unittest.TestCase):
         _, findings = check_quotes.parse_round(round_text)
         [(verdict, _, reason)] = check_quotes.check(findings, "main", self.repo)
         self.assertEqual((verdict, reason), ("CONFIRMED", ""))
+
+    def check_one(self, quote_block, header="src/cart.ts:4"):
+        round_text = f"### 1. {header}: x\n\n{quote_block}\n\nEND OF ROUND\n"
+        _, findings = check_quotes.parse_round(round_text)
+        [(verdict, _, reason)] = check_quotes.check(findings, "main", self.repo)
+        return verdict, reason
+
+    def test_confirms_a_statement_the_formatter_split_across_lines(self):
+        self.assertEqual(self.check_one("> for (const item of items) { sum += item.price * item.qty;"),
+                         ("CONFIRMED", "matched after normalising whitespace"))
+
+    def test_confirms_a_quote_nested_in_extra_blockquote_markers(self):
+        self.assertEqual(self.check_one("> > for (const item of items) {", header="src/cart.ts:3"), ("CONFIRMED", ""))
+        self.assertEqual(self.check_one(">> for (const item of items) {", header="src/cart.ts:3"), ("CONFIRMED", ""))
+
+    def test_confirms_an_inline_elision(self):
+        self.assertEqual(self.check_one("> export function total(…) {", header="src/cart.ts:1"),
+                         ("CONFIRMED", "matched after normalising whitespace"))
+
+    def test_finds_a_quote_from_another_file_under_the_header(self):
+        verdict, reason = self.check_one("> const spaced = true;")
+        self.assertEqual(verdict, "CONFIRMED")
+        self.assertIn("found in src/my file.ts:1, not src/cart.ts", reason)
+
+    def test_still_discards_code_that_exists_nowhere(self):
+        self.assertEqual(self.check_one("> sum -= item.discount;")[0], "DISCARDED")
 
     def test_worktree_mode_reads_disk(self):
         self.assertEqual(self.verdicts(None)["1"][0], "DISCARDED")
