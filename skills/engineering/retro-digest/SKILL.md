@@ -32,7 +32,7 @@ Each merged cluster's **canonical** member, the earliest finding by date, carrie
 
 - **Scope** is **global** when the fix lands in shared setup (user-level steering files, skills, hooks, tooling) or when the same friction shows up in more than one project, which moves even a project-level fix there. It is **project** when the fix lands in one repo.
 - **Score** is the occurrences times the highest `weight` among its members (blocker 4, high 3, medium 2, low 1; 1 for a skipped member without a severity).
-- **Already in place**: read its target. If the change is already there, mark the cluster resolved in step 6 without asking.
+- **Already in place**: read its target. If the change is already there, mark the cluster resolved in step 7 without asking.
 - **Recurring after rejection**: a cluster with a `rejected` member is not proposed again. List it apart with its count and the rejection reason, for the user to reopen it or fold its open members into the rejected one.
 
 ## 4. Decide
@@ -72,14 +72,22 @@ Before writing a group's ticket or brief, check every concrete claim its proposa
 
 Done when every group has its tickets and every rejection its reason.
 
-## 6. Apply and record
+## 6. Apply through agents
 
-Apply each approved cluster as its own change, in the repo that owns its target and following that repo's own workflow (branch, commit and PR rules). Implement a `mechanical` finding as a deterministic check (lint rule, hook, CI job) instead of prose.
+You are the orchestrator here: each group from step 5 goes to its own implementation agent, and only its report comes back, so the diffs stay out of this context and it keeps room for the record.
 
-Then set the status of every member of every cluster you touched, in one call with a JSON file of `{"<ref>": "<status>"}`: `python3 <skill-dir>/scripts/retros.py set --from <file>`. Each status is one of these, and the script refuses any other shape or a ref it can't find, naming each:
+Brief each agent with its group: the target repo's path, its ticket id, and per cluster the id, member refs, proposal with the user's adjustments and the verified claims with `file:line`. The agent applies each cluster as its own change, following that repo's own workflow (branch, commit and PR rules, ticket workflow), implements a `mechanical` finding as a deterministic check (lint rule, hook, CI job) instead of prose, and reports per cluster `applied (<commit, PR or file>)` or why it was not applied. A question only the user can settle comes back as its report; ask the user and resume that same agent with SendMessage.
 
-- `applied (<commit, PR or file>)`, including the already-in-place ones.
+Launch them with the Agent tool: groups in different repos in parallel, in one message; groups in the same repo one after another, in step 5's order, since they share a working tree.
+
+Done when every agent has reported each of its clusters.
+
+## 7. Record
+
+Set the status of every member of every cluster you touched, in one call with a JSON file of `{"<ref>": "<status>"}`: `python3 <skill-dir>/scripts/retros.py set --from <file>`. Each status is one of these, and the script refuses any other shape or a ref it can't find, naming each:
+
+- `applied (<commit, PR or file>)`, from the agents' reports and for the already-in-place ones.
 - `rejected (<reason>)`.
 - `duplicate of <project>/<file>#R<n>` for every non-canonical member, pointing at the canonical one.
 
-Done when every finding in a cluster you put on the page has its new status or was left `open` by the user; skipped findings left out of the digest keep theirs. Finish with what was applied, where, and what is still open.
+A cluster an agent did not apply keeps its members `open`. Done when every finding in a cluster you put on the page has its new status or was left `open`; skipped findings left out of the digest keep theirs. Finish with what was applied, where, and what is still open and why.
