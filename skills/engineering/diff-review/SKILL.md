@@ -22,14 +22,14 @@ A reviewer that shares the author's context shares its blind spots. The reviewer
 The round file is `<scratch>/review-round-<N>.md`, in the session scratchpad when the system prompt lists one, else a fresh `mktemp -d`. Write the reviewer's prompt to `<scratch>/review-prompt-<N>.md`, with every item below that applies:
 
 - First line: `You are the reviewer. Read <skill-dir>/references/reviewer.md and <skill-dir>/references/lenses/<lens>.md and follow them.`, with the absolute path of the folder this skill loaded from.
-- The scope and the exact command that shows the diff, with the range as given, since `a..b` and `a...b` differ.
+- The scope and the exact command that shows the diff, with the range as given, since `a..b` and `a...b` differ. Resolve a branch name in the range to its SHA first (`git rev-parse <branch>`), so a branch that moves mid-round doesn't change what is reviewed.
 - Which version of the code to read and quote. For a range, that is its head (`git show <head>:<file>`), since the checkout can hold other changes. For `diff`, it is the working tree.
 - Where the round goes: the round file, or, for a CLI reviewer (step 2), the final message and no file writes.
 - With `spec=` and `standards=`, their absolute paths, to read before reviewing.
 - The already-decided list, phrased as "do not reopen unless you find new evidence that changes its severity". A PLAUSIBLE finding the author declined belongs on it.
-- After round 1, the commits since (say if they are amended or unpushed, since the reviewer reads the local branch), which findings each resolves, and the findings not acted on with their reasons. Tell the reviewer to review the **whole** scope again, since fixes can break things elsewhere, and to write the new round file.
+- After round 1, the commits since (say if they are amended or unpushed, since the reviewer reads the local branch), which findings each resolves, and the findings not acted on with their reasons. Tell the reviewer to review the **whole** scope again, since fixes can break things elsewhere, and to write the new round where the fourth bullet says.
 
-A continued reviewer already holds its instructions, the scope, the spec, the standards and its earlier rounds, so its prompt from round 2 on carries only the round file path, the already-decided list and the items of the last bullet. A fresh reviewer gets every item, plus the previous round file.
+A continued reviewer already holds its instructions, the scope, the spec, the standards and its earlier rounds, so its prompt from round 2 on carries only where the round goes, the already-decided list and the items of the last bullet. A fresh reviewer gets every item, plus the previous round file.
 
 ## 2. Launch
 
@@ -42,7 +42,7 @@ Round 1, or a round with no handle, starts a fresh reviewer and records its **re
   python3 <skill-dir>/scripts/run_round.py --reviewer <model>:<effort> --prompt <prompt file> --round-file <round file> [--handle <handle>]
   ```
 
-  A `claude-*` model runs on `claude -p`, a `gpt-*` model on `codex exec`, both read-only, so the reviewer can't edit, commit or post whatever the prompt says. The script runs an unsealed round once more and prints `{"handle", ...}`: keep the handle. On exit 1 the round failed twice; return its log tail (on stderr) to the caller. A `gpt-*` reviewer that exits 1 or 5 (CLI not installed) means Codex can't run: take the fallback **reviewer** names. Its log is `<round file>` with `.log`; read only its tail, since the whole log floods the context.
+  A `claude-*` model runs on `claude -p`, a `gpt-*` model on `codex exec`, both read-only, so the reviewer can't edit, commit or post whatever the prompt says. The script runs an unsealed round once more and prints `{"handle", ...}`: keep the handle. On exit 1 the round failed twice; return its log tail (on stderr) to the caller. A `gpt-*` reviewer that exits 1 or 5 (CLI not installed) means Codex can't run: take the fallback **reviewer** names, and tell the caller the round ran on the fallback because Codex couldn't run, so a same-family review is never reported as cross-family. Exit 6 means the prompt names the round file: fix the prompt (step 1, fourth bullet) and run again. Its log is `<round file>` with `.log`; read only its tail, since the whole log floods the context.
 
 When a continue fails (the T3 thread is gone, or the script exits 3), start a fresh reviewer for this round with the full prompt, and return its new handle.
 

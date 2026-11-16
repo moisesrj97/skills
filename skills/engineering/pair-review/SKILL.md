@@ -39,7 +39,7 @@ Read the round file `diff-review` returns, with the findings it discarded. A PLA
 - **Needs the human (HITL)**: anything that is the user's call. It reverses a decision they made, needs an out-of-scope change for this change to be correct (a second concern in the PR), is a design alternative with real trade-offs, needs product or ops input, or new evidence makes a declined finding more severe. Stop the loop and ask, with your recommendation. Resume after they answer.
 - **Disagree**: you believe it's wrong. Verify before dismissing (read the code, run it). If it still looks wrong, say why in the next round's not-acted-on list. If the reviewer reports it again with a concrete scenario after reading your reason, treat it as HITL.
 
-Done when every finding sits in one bucket. Report each round to the user briefly: counts per bucket, what you fixed, what you skipped and why.
+Done when every finding sits in one bucket. Report each round to the user briefly: counts per bucket, what you fixed, what you skipped and why, and the reviewer model the round ran on, naming the fallback when diff-review reports one.
 
 ### Fix
 

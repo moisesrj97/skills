@@ -278,6 +278,18 @@ class RunRound(unittest.TestCase):
         out = self.run_script("--reviewer", "gpt-6.1-sol:high", DIFF_REVIEW_CODEX="/nonexistent/codex")
         self.assertEqual(out.returncode, 5)
 
+    def test_prompt_naming_the_round_file_exits_6_without_launching(self):
+        self.prompt.write_text(f"review this and write the round to {self.round}")
+        out = self.run_script("--reviewer", "claude-opus-5-5:high")
+        self.assertEqual(out.returncode, 6)
+        self.assertIn("final message", out.stderr)
+        self.assertFalse(self.calls.exists())
+
+    def test_prompt_naming_the_previous_round_file_still_runs(self):
+        self.prompt.write_text(f"previous round: {self.dir / 'review-round-0.md'}")
+        out = self.run_script("--reviewer", "claude-opus-5-5:high")
+        self.assertEqual(out.returncode, 0, out.stderr)
+
     def test_rejects_unknown_family_and_missing_effort(self):
         self.assertEqual(self.run_script("--reviewer", "llama-3:high").returncode, 2)
         self.assertEqual(self.run_script("--reviewer", "claude-opus-5-5").returncode, 2)

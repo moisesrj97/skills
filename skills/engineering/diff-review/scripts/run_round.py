@@ -9,6 +9,7 @@ An unsealed round is run once more. Prints a JSON line {"handle", "round_file", 
 Exit 1: still unsealed after the retry (stderr has the log tail).
 Exit 3: the continued reviewer is gone (the resume command failed); start a fresh one.
 Exit 5: the reviewer's CLI is not installed.
+Exit 6: the prompt names the round file; a CLI reviewer returns the round as its final message.
 The CLIs are looked up as `claude` and `codex`, or DIFF_REVIEW_CLAUDE / DIFF_REVIEW_CODEX.
 """
 import argparse
@@ -117,6 +118,12 @@ def main(argv=None):
         print(error, file=sys.stderr)
         return 2
     round_file = Path(args.round_file).resolve()
+    if round_file.name in Path(args.prompt).read_text():
+        print(f"the prompt names the round file {round_file.name}, but a CLI reviewer runs read-only and "
+              "returns the round as its final message, which this script writes to the round file. "
+              "Drop the round-file path from the prompt and say 'write the round as your final message'.",
+              file=sys.stderr)
+        return 6
     log = round_file.with_suffix(".log")
     events_file = round_file.with_name(round_file.stem + "-events.jsonl")
     repo = Path(args.repo).resolve()
