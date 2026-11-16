@@ -4,43 +4,43 @@ My personal and engineering skills for coding agents.
 
 ## Skills
 
-| Category | Skill | What it does | Source |
-|---|---|---|---|
-| engineering | `agent-byline` | Marks the PR comments, reviews and replies an agent posts on your behalf. | own |
-| engineering | `comment-cleanup` | Prunes the comments a change added down to the non-obvious "why". | own |
-| engineering | `craftsmanship` | Kent Beck's Tidy First (where each tidying goes by area of impact), the four rules of simple design, and Test Desiderata (the trade-offs between test properties). Tidies a diff through `diff-review`'s cleanup lens. | own |
-| engineering | `debug-trace` | Temporary tagged debug points dumped to an isolated trace file, then removed. | own |
-| engineering | `diff-review` | One review round in a separate reviewer agent of any model, through a lens (bugs, security or cleanup), continued across the rounds of a loop, with findings backed by quoted code and checked against a spec when given. | own |
-| engineering | `gh-attach` | Attaches local images and videos to GitHub issues, PRs and comments with `gh --attach`. | own |
-| engineering | `github-pr` | Draft PR with a Conventional Commits title and a "why"-first description. | own |
-| engineering | `megamoind` | Takes a ticket end to end: tidy first, TDD, reviews, real-app check, PR, CI loop. | own |
-| engineering | `megamoind-batch` | Takes a batch of tickets (a spec, a list, a label) to PRs, one async megamoind agent per ticket, stacked by dependency. | own |
-| engineering | `merge-risk` | Traffic-light rating of how risky a PR is to merge, by what users would suffer if it fails, with the reasons. | own |
-| engineering | `pair-review` | Review → fix → re-review loop with a reviewer from another model family, through `diff-review`. | own |
-| engineering | `pr-review` | Reviews a teammate's PR with Opus, Sol and a security pass through `diff-review`, checks it against its ticket, verifies each finding against the wider code, the stack and the author's notes, and rates it with `merge-risk`. | own |
-| engineering | `retro-digest` | Groups the open retro findings across projects, applies the approved ones and records each outcome. Manual only. | own |
-| engineering | `retro-sweep` | Daily sweep of the sessions with no retro: a cheap model triages them for friction, a stronger one runs `retro-with-docs` on those that had some. Manual only. | own |
-| engineering | `retro-with-docs` | Retro of an agent session: its friction, stoppers first, as open or skipped findings in `~/.skill-docs/retros/<project>/`. | own |
-| engineering | `review-comment` | Evaluates a PR review comment, fixes it and replies with the commit. Manual only. | own |
-| productivity | `pull-skill` | Copies a skill from another repo and records its source in `upstream.json`. Manual only. | own |
-| productivity | `sync-upstream` | Checks pulled skills for upstream changes and offers to fold the useful ones in. Manual only. | own |
-| upstream | `codebase-design` | Shared vocabulary for designing deep modules: interfaces, seams, testability. | [mattpocock/skills](https://github.com/mattpocock/skills) |
-| upstream | `diagnosing-bugs` | Diagnosis loop for hard bugs and performance regressions. | [mattpocock/skills](https://github.com/mattpocock/skills) |
-| upstream | `domain-modeling` | Builds and sharpens a project's domain model: glossary and ADRs. | [mattpocock/skills](https://github.com/mattpocock/skills) |
-| upstream | `grill-me` | Relentless interview to sharpen a plan or design. Manual only. | [mattpocock/skills](https://github.com/mattpocock/skills) |
-| upstream | `grilling` | Grills you about a plan, decision or idea. | [mattpocock/skills](https://github.com/mattpocock/skills) |
-| upstream | `improve-codebase-architecture` | Scans a codebase for deepening opportunities as an HTML report, then grills through the one you pick. Manual only. | [mattpocock/skills](https://github.com/mattpocock/skills) |
-| upstream | `prototype` | Throwaway prototype to answer a design question. | [mattpocock/skills](https://github.com/mattpocock/skills) |
-| upstream | `setup-repo` | Configures a repo's issue tracker, triage labels and domain docs for the tracker skills. Manual only. | [mattpocock/skills](https://github.com/mattpocock/skills) (`setup-matt-pocock-skills`) |
-| upstream | `skill-shaper` | Creates a skill or reshapes one that triggers on the wrong requests. | [overment/skills](https://github.com/overment/skills) |
-| upstream | `tdd` | Test-driven development, red-green at the agreed seams. | [mattpocock/skills](https://github.com/mattpocock/skills) |
-| upstream | `to-spec` | Turns the conversation into a spec on the issue tracker. Manual only. | [mattpocock/skills](https://github.com/mattpocock/skills) |
-| upstream | `to-tickets` | Breaks a plan or spec into tracer-bullet tickets with blocking edges. Manual only. | [mattpocock/skills](https://github.com/mattpocock/skills) |
-| upstream | `triage` | Moves issues and external PRs through triage roles and writes agent-ready briefs. Manual only. | [mattpocock/skills](https://github.com/mattpocock/skills) |
-| upstream | `unslop` | Cuts AI tells from any writing. Manual only. | [cursor/plugins](https://github.com/cursor/plugins) |
-| upstream | `walkthrough` | Throwaway HTML reading guide through a set of changes. Manual only. | [noel-lopez/skills](https://github.com/noel-lopez/skills) |
-| upstream | `wayfinder` | Plans work too big for one session as a map of decision tickets, resolved one at a time. Manual only. | [mattpocock/skills](https://github.com/mattpocock/skills) |
-| upstream | `writing-for-agents` | Reference for writing skills, AGENTS.md and CLAUDE.md. | [mattpocock/skills](https://github.com/mattpocock/skills) |
+| Skill | What it does | Source |
+|---|---|---|
+| `agent-byline` | Marks the PR comments, reviews and replies an agent posts on your behalf. | own |
+| `comment-cleanup` | Prunes the comments a change added down to the non-obvious "why". | own |
+| `craftsmanship` | Kent Beck's Tidy First (where each tidying goes by area of impact), the four rules of simple design, and Test Desiderata (the trade-offs between test properties). Tidies a diff through `diff-review`'s cleanup lens. | own |
+| `debug-trace` | Temporary tagged debug points dumped to an isolated trace file, then removed. | own |
+| `diff-review` | One review round in a separate reviewer agent of any model, through a lens (bugs, security or cleanup), continued across the rounds of a loop, with findings backed by quoted code and checked against a spec when given. | own |
+| `gh-attach` | Attaches local images and videos to GitHub issues, PRs and comments with `gh --attach`. | own |
+| `github-pr` | Draft PR with a Conventional Commits title and a "why"-first description. | own |
+| `megamoind` | Takes a ticket end to end: tidy first, TDD, reviews, real-app check, PR, CI loop. | own |
+| `megamoind-batch` | Takes a batch of tickets (a spec, a list, a label) to PRs, one async megamoind agent per ticket, stacked by dependency. | own |
+| `merge-risk` | Traffic-light rating of how risky a PR is to merge, by what users would suffer if it fails, with the reasons. | own |
+| `pair-review` | Review → fix → re-review loop with a reviewer from another model family, through `diff-review`. | own |
+| `pr-review` | Reviews a teammate's PR with Opus, Sol and a security pass through `diff-review`, checks it against its ticket, verifies each finding against the wider code, the stack and the author's notes, and rates it with `merge-risk`. | own |
+| `retro-digest` | Groups the open retro findings across projects, applies the approved ones and records each outcome. Manual only. | own |
+| `retro-sweep` | Daily sweep of the sessions with no retro: a cheap model triages them for friction, a stronger one runs `retro-with-docs` on those that had some. Manual only. | own |
+| `retro-with-docs` | Retro of an agent session: its friction, stoppers first, as open or skipped findings in `~/.skill-docs/retros/<project>/`. | own |
+| `review-comment` | Evaluates a PR review comment, fixes it and replies with the commit. Manual only. | own |
+| `pull-skill` | Copies a skill from another repo and records its source in `upstream.json`. Manual only. | own |
+| `sync-upstream` | Checks pulled skills for upstream changes and offers to fold the useful ones in. Manual only. | own |
+| `codebase-design` | Shared vocabulary for designing deep modules: interfaces, seams, testability. | [mattpocock/skills](https://github.com/mattpocock/skills) |
+| `diagnosing-bugs` | Diagnosis loop for hard bugs and performance regressions. | [mattpocock/skills](https://github.com/mattpocock/skills) |
+| `domain-modeling` | Builds and sharpens a project's domain model: glossary and ADRs. | [mattpocock/skills](https://github.com/mattpocock/skills) |
+| `grill-me` | Relentless interview to sharpen a plan or design. Manual only. | [mattpocock/skills](https://github.com/mattpocock/skills) |
+| `grilling` | Grills you about a plan, decision or idea. | [mattpocock/skills](https://github.com/mattpocock/skills) |
+| `improve-codebase-architecture` | Scans a codebase for deepening opportunities as an HTML report, then grills through the one you pick. Manual only. | [mattpocock/skills](https://github.com/mattpocock/skills) |
+| `prototype` | Throwaway prototype to answer a design question. | [mattpocock/skills](https://github.com/mattpocock/skills) |
+| `setup-repo` | Configures a repo's issue tracker, triage labels and domain docs for the tracker skills. Manual only. | [mattpocock/skills](https://github.com/mattpocock/skills) (`setup-matt-pocock-skills`) |
+| `skill-shaper` | Creates a skill or reshapes one that triggers on the wrong requests. | [overment/skills](https://github.com/overment/skills) |
+| `tdd` | Test-driven development, red-green at the agreed seams. | [mattpocock/skills](https://github.com/mattpocock/skills) |
+| `to-spec` | Turns the conversation into a spec on the issue tracker. Manual only. | [mattpocock/skills](https://github.com/mattpocock/skills) |
+| `to-tickets` | Breaks a plan or spec into tracer-bullet tickets with blocking edges. Manual only. | [mattpocock/skills](https://github.com/mattpocock/skills) |
+| `triage` | Moves issues and external PRs through triage roles and writes agent-ready briefs. Manual only. | [mattpocock/skills](https://github.com/mattpocock/skills) |
+| `unslop` | Cuts AI tells from any writing. Manual only. | [cursor/plugins](https://github.com/cursor/plugins) |
+| `walkthrough` | Throwaway HTML reading guide through a set of changes. Manual only. | [noel-lopez/skills](https://github.com/noel-lopez/skills) |
+| `wayfinder` | Plans work too big for one session as a map of decision tickets, resolved one at a time. Manual only. | [mattpocock/skills](https://github.com/mattpocock/skills) |
+| `writing-for-agents` | Reference for writing skills, AGENTS.md and CLAUDE.md. | [mattpocock/skills](https://github.com/mattpocock/skills) |
 
 Skills under `upstream/` were pulled from other authors with `pull-skill` and adapted; `upstream.json` records the commit each one came from and its license is in `licenses/`. `sync-upstream` checks them for upstream changes.
 
