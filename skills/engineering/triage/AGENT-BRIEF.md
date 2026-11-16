@@ -36,6 +36,8 @@ The agent needs to know when it's done. Every agent brief must have concrete, te
 
 State what is out of scope, so the agent builds no more than the job needs and makes no assumptions about adjacent features.
 
+A brief that says no migration or compatibility work is needed cites where the data is stored and what an existing record does under the new code, with `file:line`. Without that check, say it is unverified.
+
 ## Template
 
 ```markdown
