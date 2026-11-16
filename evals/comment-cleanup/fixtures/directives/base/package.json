@@ -1,1 +1,0 @@
-{ "name": "app", "type": "module", "scripts": { "test": "node --test" } }
