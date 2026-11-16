@@ -38,7 +38,7 @@ For every session with friction, earlier ones first, launch subagents with the A
 
 > Call the Skill tool with `retro-with-docs` on the session `<session path>`. It ran in `<cwd>`, so pass both to `locate.py` (`--session <session path> --cwd <cwd>`). The triage flagged `<why>`. Write the retro file even when it ends with no findings, because the file marks the session as reviewed. Reply with its path and its count of open and skipped findings.
 
-A retro with no findings is a valid result. A retro that fails stays pending for the next run, so note its error for the report.
+A retro that fails stays pending for the next run, so note its error for the report.
 
 Done when every session with friction has its retro or a noted failure.
 

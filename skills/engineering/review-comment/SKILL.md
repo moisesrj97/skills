@@ -20,18 +20,14 @@ For an inline comment, read the `context`, and further at the head when it isn't
 
 ## Step 3: Evaluate the suggestion
 
-- **Is the reviewer right?** Does the change improve correctness, safety, readability or maintainability?
 - **Is it already handled?** The concern may be addressed elsewhere, or the code may already handle the case the reviewer worries about.
 - **Style or substance?** A style disagreement that doesn't affect quality is a weaker reason to change.
-- **Does the change break anything?** Would it introduce regressions, violate project conventions or contradict other recent changes?
 
 Judge from the code and its intent. A reviewer asking is no reason to say yes, and extra work is no reason to say no.
 
 ## Step 4a: The change is needed, so make it
 
-When the change is clearly right, make it without hedging.
-
-1. Make the change on the PR's head branch. Under GitButler the branch must be applied (`but status`); otherwise check it out first (`gh pr checkout <number>`). Be surgical and touch only what the comment is about.
+1. Make the change on the PR's head branch. Under GitButler the branch must be applied (`but status`); otherwise check it out first (`gh pr checkout <number>`). Touch only what the comment is about.
 2. Run the project's lint, type-check and the tests covering the change, with the commands from its `CLAUDE.md` / `CLAUDE.local.md` or `package.json`. Fix anything red before going on.
 3. **Show the human the diff, the commit message and the reply you will post, and wait for one explicit approval** before committing. The commit message follows the project's convention, subject line only.
 4. Commit and push to the PR's head branch, before replying, so the hash in the reply is already on the remote. Under GitButler (`but status` works), run `but commit -b <branch> -m "<message>" <ids>` with the ids from `but diff`, then `but push <branch>`. A bare `but push` pushes every branch with unpushed commits, other agents' included. Otherwise `git add`, `git commit`, `git push`. Take the full hash of the pushed commit with `git rev-parse <branch>`; under GitButler `HEAD` is the workspace commit, which the reviewer can't open.
@@ -42,11 +38,11 @@ Done when the reply with the pushed hash is posted.
 
 ## Step 4b: The change is not needed, so brief the developer
 
-Post nothing. The developer replies in their own voice and with context you lack. Give them a direct brief:
+Post nothing. The developer replies in their own voice and with context you lack. Give them a brief:
 
 - What the reviewer was concerned about
 - Why the current code is correct, or why the change isn't warranted
-- A short, respectful reply they can post, in the reviewer's language
+- A short reply they can post, in the reviewer's language
 
 Example structure:
 ```

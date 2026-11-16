@@ -6,7 +6,7 @@ argument-hint: "[scope] [reviewer=<model>[:<effort>]] [spec=<file>] [standards=<
 
 # Pair review
 
-You are the **author**. A **reviewer**, by default from another model family, reviews your change through the `diff-review` skill. You triage what it finds, fix what deserves fixing, tell it what changed, and it reviews again. Its value is an independent read from an agent without your context or your blind spots. Every round goes to the **same reviewer**, so it remembers what it reported and judges your fixes against its own findings. Keep that read useful: fix real problems, leave settled ones settled, hold every round to the change's scope, and stop when the reviews stop paying off. Scope creep is what breaks the loop: every edit beyond a finding is new diff the reviewer re-reads and new findings it can raise, so the rounds stop converging.
+You are the **author**. A **reviewer**, by default from another model family, reviews your change through the `diff-review` skill. You triage what it finds, fix what deserves fixing, tell it what changed, and it reviews again. Its value is an independent read from an agent without your context or your blind spots. Every round goes to the **same reviewer**, so it remembers what it reported and judges your fixes against its own findings. Scope creep is what breaks the loop: every edit beyond a finding is new diff the reviewer re-reads and new findings it can raise, so the rounds stop converging.
 
 ## Arguments
 
@@ -44,7 +44,6 @@ Done when every finding sits in one bucket. Report each round to the user briefl
 ### Fix
 
 - Make the smallest fix that closes the finding. Refactors, renames and tidying the finding doesn't ask for wait for a follow-up, even when cheap. Before committing, read the fix's diff and revert every hunk no finding asks for.
-- Follow the project's own conventions (CLAUDE.md, lint, type-check, test commands) and the user's commit rules.
 - Write or adjust tests with each fix. When a fix is a test, **prove it can fail**. Break the code it guards (remove the middleware, corrupt the input) in a temporary copy, run the test, see red, and restore. A test that stays green under the mutation the reviewer described is the bug. Restore from a backup copy, and confirm with `git diff` that nothing leaked.
 - Run type-check, lint and the relevant tests, and the full suite before handing back.
 - Commit locally. You may amend your own unpushed commits from this loop, and pushed history stays as it is.
@@ -53,8 +52,8 @@ Done when every finding sits in one bucket. Report each round to the user briefl
 ## Stop conditions
 
 - **Done**: the reviewer writes `NO FINDINGS`, or what remains is only nits you'd decline anyway.
-- **HITL**: stop and ask (see triage). Keep the reviewer handle and continue the same reviewer when you resume.
-- **Not converging**: after about 5 rounds, or when two consecutive rounds only produce findings about your previous round's fixes without the count falling, stop and tell the user. Something structural is off, and more rounds won't fix it.
+- **HITL**: stop and ask (see triage).
+- **Not converging**: after 5 rounds, or when two consecutive rounds only produce findings about your previous round's fixes without the count falling, stop and tell the user.
 
 ## Recap
 

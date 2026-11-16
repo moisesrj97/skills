@@ -35,7 +35,7 @@ Tell the user both.
 | Who runs | Emit with | Why |
 |---|---|---|
 | **You** (a test, a script, a CLI you launch) | a plain print, piped through `grep` for the marker into the trace file | no imports, works in any language |
-| **The user** (a dev server, watch mode, a browser flow, anything e2e) | a **synchronous** append straight to the trace file | you can't capture their stdout, and a sync write lands each line even if the process dies |
+| **The user** (a dev server, watch mode, a browser flow, anything e2e) | a **synchronous** append straight to the trace file, never `fs.promises` or a dynamic `import()` | you can't capture their stdout, and a sync write lands each line even if the process dies |
 
 E2e checks are usually user-driven. Use the append there from the start, rather than print+grep followed by asking the user to pipe their server output.
 
@@ -63,7 +63,7 @@ require('node:fs').appendFileSync('/tmp/claude-debug-7c1a.log', `CLAUDE-DBG:7c1a
 open('/tmp/claude-debug-7c1a.log','a').write(f'CLAUDE-DBG:7c1a | after-fetch | {json.dumps(user, default=str)}\n')
 ```
 
-An import you add is a second marked line, so cleanup catches it too. This holds in any language, e.g. `"encoding/json" // CLAUDE-DBG:7c1a` in a Go import block. Leave an import the file already had unmarked, or cleanup deletes it. Write synchronously. Async writes (`fs.promises`, dynamic `import()`) may not land before exit.
+An import you add is a second marked line, so cleanup catches it too. This holds in any language, e.g. `"encoding/json" // CLAUDE-DBG:7c1a` in a Go import block. Leave an import the file already had unmarked, or cleanup deletes it.
 
 ## 4. Instrument
 

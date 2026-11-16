@@ -5,15 +5,13 @@ description: "Kent Beck's Tidy First, simple design and Test Desiderata as worki
 
 # Craftsmanship
 
-Three practices from Kent Beck: **Tidy First?** for the structure of the code a change touches, the **rules of simple design** for judging that structure, and **Test Desiderata** for the tests that guard it. Callers use the section their step needs. Reviewers get the reference files as standards.
+Three practices from Kent Beck: **Tidy First?** for the structure of the code a change touches, the **rules of simple design** for judging that structure, and **Test Desiderata** for the tests that guard it.
 
 ## Tidy First
 
 A **tidying** is a small structural change that preserves behaviour, committed apart from any behaviour change as a `refactor:`. Read the catalogue and its rules in [`tidy-first.md`](tidy-first.md) before tidying.
 
 ### When
-
-The title carries a question mark because tidying is a decision taken per change.
 
 - **First**: the tidying makes the behaviour change easier. Make the change easy, then make the easy change.
 - **After**: the behaviour change left the code harder to read than before. Polishing the change's own new code is the refactor step of red-green-refactor and always lands here.

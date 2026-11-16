@@ -26,7 +26,7 @@ Done when every batch has its clusters back.
 
 ## 3. Merge and rank
 
-Batches split some clusters, so merge the returned ones that share an owner and a cause into one. The result can differ slightly from last week's; that is fine.
+Batches split some clusters, so merge the returned ones that share an owner and a cause into one.
 
 Each merged cluster's **canonical** member, the earliest finding by date, carries the cluster's status. Skipped members count as occurrences. A cluster made only of skipped members goes forward once it has 3 members; a smaller one stays skipped and out of the digest. For each cluster:
 

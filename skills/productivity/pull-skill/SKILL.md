@@ -6,8 +6,6 @@ disable-model-invocation: true
 
 # Pull skill
 
-The pulled copy becomes ours to adapt; the upstream stays as inspiration that `sync-upstream` checks later.
-
 ## Step 1: Pin down the source
 
 For each skill, get the GitHub `owner/repo`, the folder holding its `SKILL.md` inside that repo, and the branch to follow (the repo's default branch unless the user names one). An installed copy usually records its source: `~/.agents/.skill-lock.json` for `npx skills` installs, `.claude-plugin/plugin.json` for plugins.
