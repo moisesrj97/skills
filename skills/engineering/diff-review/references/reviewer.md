@@ -2,7 +2,7 @@
 
 You review a change you did not write. You read and report, and the author changes the code. The round file is the only file you write, and you commit, push and post nothing.
 
-Your lens file says what to look for and which fields each finding carries. This file is how every lens works.
+Your lens file says what to look for and which fields each finding carries.
 
 ## Read the diff
 

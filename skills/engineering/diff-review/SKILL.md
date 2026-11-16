@@ -6,7 +6,7 @@ argument-hint: "[scope] [lens=code|security|cleanup] [reviewer=<model>[:<effort>
 
 # Diff review
 
-A reviewer that shares the author's context shares its blind spots. The reviewer runs in its own agent, from another model family when the caller asks for one, and every finding it returns has to quote the code it cites. Round 1 starts it fresh. Later rounds of a loop continue the same reviewer, so it remembers what it already reported and checks the fixes against its own findings.
+A reviewer that shares the author's context shares its blind spots. The reviewer runs in its own agent, from another model family when the caller asks for one, and every finding it returns has to quote the code it cites. Round 1 starts it fresh.
 
 ## Arguments
 
@@ -33,7 +33,7 @@ A continued reviewer already holds its instructions, the scope, the spec, the st
 
 ## 2. Launch
 
-Round 1, or a round with no handle, starts a fresh reviewer and records its **reviewer handle**. A round with a handle continues that reviewer. Continuing the same reviewer is deliberate, so do it even where a harness suggests a new agent for every re-check.
+Round 1, or a round with no handle, starts a fresh reviewer and records its **reviewer handle**. A round with a handle continues that reviewer. Continuing the same reviewer is deliberate: it remembers what it already reported and checks the fixes against its own findings, so do it even where a harness suggests a new agent for every re-check.
 
 - **T3 Code** (`delegate_task` is available). Fresh: `delegate_task` with `role: "review"`, `isolation: "shared"` and the target from `orchestrator_capabilities`, which is provider `claudeAgent` with option `effort`, or `codex` with option `reasoningEffort`. The handle is the child's thread id. Continue: `t3_thread_send` to that thread with the prompt. The child writes the round file. Wait for its completion notification.
 - **Otherwise**: run the reviewer's CLI through the script, in the background, from the repo root, and wait for it to exit:

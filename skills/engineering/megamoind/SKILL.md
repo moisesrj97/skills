@@ -6,7 +6,7 @@ argument-hint: "[ticket ID] [base=<branch>] [brief=<file>] [stop-at=draft]"
 
 # Megamoind
 
-The user delegates a whole ticket and walks away. They come back to a PR that is implemented, reviewed, verified in the real app and green in CI, plus a report that says exactly what was done and what wasn't. Every stop costs the user a context switch, so ask everything up front, then run on your own and stop only for **HITL**: a decision that is the user's (scope, product behaviour, a design trade-off, reversing something they decided) or a loop that isn't converging.
+The user delegates a whole ticket and walks away. They come back to a PR that is implemented, reviewed, verified in the real app and green in CI, plus a report that says what was done and what wasn't. Every stop costs the user a context switch, so ask everything up front, then run on your own and stop only for **HITL**: a decision that is the user's (scope, product behaviour, a design trade-off, reversing something they decided) or a loop that isn't converging.
 
 Invoking this skill is the user's approval to commit, push to the ticket's own branch and open the PR ready for review, each once the gates are green. Adding reviewers still waits for their explicit yes.
 
@@ -83,7 +83,7 @@ With a pre-PR, create `<name>-tidy-first` on `<base>` as above. Under GitButler,
 
 Under GitButler, other agents' branches may be applied in the same working directory, so their unfinished changes show up in your type-check, tests and dev server. Commit only your own hunks (`but commit -b <branch> <ids>`, ids from `but diff`) and edit only files your ticket needs. A red gate is **foreign** when every failure sits in a file outside your branch's diff that `but status` shows changed by another branch or uncommitted outside yours. A change you produced yourself, e.g. a formatter or codegen run, is never foreign, even uncommitted. Leave a foreign red alone (fixing it would mix two tickets in one branch), list it for the report and count the gate as green. Their edits also hot-reload into your dev server: a checker overlay naming files outside your diff is foreign, so remove it from the DOM and go on, and when the UI stops reacting after a burst of hot updates you didn't cause, reload the page before debugging.
 
-The inverse is a **borrowed green**: another applied branch supplies hunks yours lacks (an import, a type, a helper), so your gates pass locally and CI, which builds your branch alone, fails. Your code may depend only on `<base>` and your own commits. A branch still applied but marked `(merged upstream)` in `but status` means your base is stale, so update before implementing. When you can't update, check that each symbol you use from a file other branches touch exists in `<base>` (`git show <base>:<file>`). CI settles both doubts, but only after the push; this check comes before it.
+The inverse is a **borrowed green**: another applied branch supplies hunks yours lacks (an import, a type, a helper), so your gates pass locally and CI, which builds your branch alone, fails. Your code may depend only on `<base>` and your own commits. A branch still applied but marked `(merged upstream)` in `but status` means your base is stale, so update before implementing. When you can't update, check that each symbol you use from a file other branches touch exists in `<base>` (`git show <base>:<file>`).
 
 A change that belongs to the `<base>` branch's ticket goes on that branch. Stop and ask for it, naming the change. When told the base moved, re-run the gates and go on.
 
@@ -123,7 +123,7 @@ Start what the app needs as background subshells (`run_in_background`) with the 
   - **Screenshots**: capture each touched screen in its relevant states for the PR, following [`SCREENSHOTS.md`](SCREENSHOTS.md).
 - **Backend**: call the Skill tool with `debug-trace` and drive the changed paths through the running service, reading the trace to confirm the values the ticket expects.
 
-Fix what you find, then re-verify. If the environment won't come up after one honest attempt, that's HITL; if it still can't run, record what went unverified for the PR description and the report.
+If the environment won't come up after one attempt, that's HITL; if it still can't run, record what went unverified for the PR description and the report.
 
 Done when every flow from step 0 and every item of the failure-path checklist has been exercised and behaves as the ticket asks.
 
