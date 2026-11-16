@@ -14,17 +14,15 @@ For each skill, get the GitHub `owner/repo`, the folder holding its `SKILL.md` i
 
 When a repo holds two copies of a skill (a per-harness variant and a canonical one), take the one the user picked; ask when the choice is unclear.
 
-Pick the local category: one that already exists under `skills/`, or a new one only when at least two skills land in it.
-
 ## Step 2: Pull
 
 ```bash
-python3 <skill-dir>/scripts/pull.py <owner/repo> <path> [<path>…] --category <category> [--ref <branch>] [--as <new-name>]
+python3 <skill-dir>/scripts/pull.py <owner/repo> <path> [<path>…] [--ref <branch>] [--as <new-name>]
 ```
 
 Several paths from the same repo go in one call. `--as` renames a single skill and rewrites its frontmatter `name`.
 
-The script copies each skill folder at the branch's current commit, copies the license nearest to the skill into `licenses/`, and records the entry in `upstream.json`. It refuses, writing nothing, when:
+The script copies each skill folder at the branch's current commit into `skills/upstream/`, copies the license nearest to the skill into `licenses/`, and records the entry in `upstream.json`. It refuses, writing nothing, when:
 
 - a skill with that name already exists here: rerun with `--as`;
 - it finds no license: tell the user the skill may not allow redistribution. Pass `--license <SPDX id>` only after the user confirms they read a license that allows it.

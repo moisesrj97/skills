@@ -79,7 +79,7 @@ def rename_skill(skill_md, name):
     return renamed.encode()
 
 
-def pull(repo, paths, ref, category, as_name, license_override, root=ROOT):
+def pull(repo, paths, ref, as_name, license_override, root=ROOT):
     if as_name and len(paths) != 1:
         raise SystemExit("--as renames a single skill; pass one path")
     manifest = load_manifest(root)
@@ -107,7 +107,7 @@ def pull(repo, paths, ref, category, as_name, license_override, root=ROOT):
 
     summary = []
     for name, path, contents, license_rel, license_data, spdx in planned:
-        dest = root / "skills" / category / name
+        dest = root / "skills" / "upstream" / name
         for rel, data in contents.items():
             target = dest / rel
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -135,12 +135,11 @@ def main(argv=None):
     parser.add_argument("repo", help="owner/repo on GitHub")
     parser.add_argument("paths", nargs="+", help="skill folder inside the repo, e.g. skills/engineering/tdd")
     parser.add_argument("--ref", default="main")
-    parser.add_argument("--category", required=True, help="folder under skills/ to place them in")
     parser.add_argument("--as", dest="as_name", help="local name, for a single skill")
     parser.add_argument("--license", dest="license_override",
                         help="SPDX id, only when you checked the license by hand and the script can't find it")
     args = parser.parse_args(argv)
-    print(json.dumps(pull(args.repo, args.paths, args.ref, args.category, args.as_name, args.license_override),
+    print(json.dumps(pull(args.repo, args.paths, args.ref, args.as_name, args.license_override),
                      indent=2))
 
 
