@@ -1,0 +1,12 @@
+{
+ "unslop": [
+  {
+   "date": "2026-11-16",
+   "skill_commit": "5668e0f",
+   "models": ["opus", "sonnet", "haiku"],
+   "runs": 395,
+   "result": "Opus read the rule list as exhaustive: with the matching rules cut it left text untouched. A 'not every tell is listed' line fixed that and let Opus run on 519 of 908 words, but Sonnet and Haiku then missed tells from the cut rules (false ranges, inline-header lists, over-compression). The 'no parentheses' clause in rule 13 is missed in half the runs even with the full skill.",
+   "applied": "Added the not-exhaustive line to the intro; no rules cut."
+  }
+ ]
+}

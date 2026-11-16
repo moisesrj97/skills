@@ -8,11 +8,11 @@ disable-model-invocation: true
 
 Trimming a skill by feel keeps dead lines and cuts load-bearing ones. Whether a line changes behaviour depends on the model, and only a run settles it. This skill runs that test one unit at a time. Invoking it authorises the bench runs the user approves in step 1; changing the original skill needs a fresh yes.
 
-The body is in scope; the description routes the skill and belongs to `skill-shaper`. Cases persist in `evals/<name>/` at the root of the repo that holds the skill: `cases.json` with its fixtures and fakes beside it, so the next bench starts from them. Runs and variants go in `<scratchpad>/stress-<name>/`. `bench.py` is `<skill-dir>/scripts/bench.py`; its docstring has the `cases.json` format.
+The body is in scope; the description routes the skill and belongs to `skill-shaper`. Cases persist in `evals/<name>/` at the root of the repo that holds the skill: `cases.json` with its fixtures and fakes beside it, so the next bench starts from them. Beside them, `evals/stress-log.json` keeps one entry per bench under the skill's name. Runs and variants go in `<scratchpad>/stress-<name>/`. `bench.py` is `<skill-dir>/scripts/bench.py`; its docstring has the `cases.json` format.
 
 ## 1. Cases and checklist
 
-When `evals/<name>/cases.json` exists, start from it and add the cases this bench lacks. Otherwise take the user's evals: a project harness (e.g. `evals/<x>/run.py`) runs the installed skill, not a variant, so port its cases. With neither, draft one case per **branch** of the skill, a situation it handles differently from the others. Read the whole skill, its sibling files and scripts first: the branches, the skills it calls and the paths it writes live there.
+When `evals/stress-log.json` has entries for the skill, read the last one: `git log <skill_commit>..` on the skill shows what changed since, and its `result` names what that bench left open. When `evals/<name>/cases.json` exists, start from it and add the cases this bench lacks. Otherwise take the user's evals: a project harness (e.g. `evals/<x>/run.py`) runs the installed skill, not a variant, so port its cases. With neither, draft one case per **branch** of the skill, a situation it handles differently from the others. Read the whole skill, its sibling files and scripts first: the branches, the skills it calls and the paths it writes live there.
 
 Shape each case to where its branch's behaviour shows:
 
@@ -70,3 +70,15 @@ Drop every no-op at once and run the result with `--runs 3`. Cuts interact, and 
 - Limits: the model, the runs per arm, the unbenchable branches and the ones no case covers yet.
 
 Leave the original as it is. Offer to apply the trimmed version or to cut the uncovered units after a case covers them.
+
+## 6. Log
+
+Once the user has decided, append an entry under the skill's name in `evals/stress-log.json`, creating the file as `{}` when it is missing:
+
+```json
+{"date": "YYYY-MM-DD", "skill_commit": "<short hash of the last commit to the skill before the bench>",
+ "models": ["opus"], "runs": 0, "result": "<what the bench found, in two or three sentences>",
+ "applied": "<what changed in the skill, or null>"}
+```
+
+`runs` counts every child run of the bench, judge calls excluded. Commit the entry with the cases.
