@@ -1,0 +1,261 @@
+[
+ {
+  "id": "judge",
+  "fixture": "fixtures/judge",
+  "setup": "c=$(mktemp -d) && mv change \"$c/\" && cp -R base/. . && rm -rf base && git add -A && git -c user.name=b -c user.email=b@example.test commit -qm base && git update-ref refs/remotes/origin/main HEAD && git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/main && cp -R \"$c/change/.\" . && rm -rf \"$c\"",
+  "max_turns": 40,
+  "prompt": "/comment-cleanup on this branch's change, then report.",
+  "checks": [
+   {
+    "id": "restating-jsdoc",
+    "units": [
+     "U10",
+     "U13",
+     "U14"
+    ],
+    "cmd": "! grep -q 'The expiry timestamp' src/session.ts"
+   },
+   {
+    "id": "banner",
+    "units": [
+     "U13"
+    ],
+    "cmd": "! grep -q -- '--- Helpers' src/session.ts"
+   },
+   {
+    "id": "narration",
+    "units": [
+     "U10",
+     "U13"
+    ],
+    "cmd": "! grep -qi 'Check if the session has expired' src/session.ts"
+   },
+   {
+    "id": "changelog-note",
+    "units": [
+     "U13"
+    ],
+    "cmd": "! grep -qi 'Added this to fix' src/session.ts"
+   },
+   {
+    "id": "commented-out-code",
+    "units": [
+     "U13"
+    ],
+    "cmd": "! grep -q 'console.log(\"purging\"' src/session.ts"
+   },
+   {
+    "id": "trailing",
+    "units": [
+     "U7",
+     "U10"
+    ],
+    "cmd": "! grep -qi 'increment the counter' src/session.ts"
+   },
+   {
+    "id": "aaa",
+    "units": [
+     "U13"
+    ],
+    "cmd": "! grep -Eq '// (Arrange|Act|Assert)' test/session.test.ts"
+   },
+   {
+    "id": "py-narration",
+    "units": [
+     "U6",
+     "U10"
+    ],
+    "cmd": "! grep -qi 'loop over the paths' scripts/rotate.py"
+   },
+   {
+    "id": "why-condensed",
+    "units": [
+     "U11",
+     "U18",
+     "U20",
+     "U22"
+    ],
+    "cmd": "python3 -c \"import sys;t=open('src/session.ts').read();b=t[t.index('export function purge'):t.index('const expired')];n=sum(l.strip().startswith('//') for l in b.splitlines());sys.exit(not(1<=n<=2 and 'audit' in b.lower()))\""
+   },
+   {
+    "id": "py-why-kept",
+    "units": [
+     "U11"
+    ],
+    "cmd": "grep -qi 'vault' scripts/rotate.py"
+   },
+   {
+    "id": "uncertain-kept",
+    "units": [
+     "U15"
+    ],
+    "cmd": "grep -qi 'gateway' src/session.ts"
+   },
+   {
+    "id": "preexisting-ts",
+    "units": [
+     "U4"
+    ],
+    "cmd": "grep -q 'Sessions are keyed by id; the store is process-local.' src/session.ts"
+   },
+   {
+    "id": "preexisting-py",
+    "units": [
+     "U4"
+    ],
+    "cmd": "grep -q '# open the file and read every line' scripts/rotate.py"
+   },
+   {
+    "id": "report-lists-keepers",
+    "units": [
+     "U42",
+     "U44"
+    ],
+    "regex": "(?is)(?=.*gateway)(?=.*audit)(?=.*vault)",
+    "in": "final"
+   },
+   {
+    "id": "tests-pass",
+    "units": [],
+    "cmd": "node --test >/dev/null 2>&1"
+   }
+  ]
+ },
+ {
+  "id": "rewrite",
+  "fixture": "fixtures/rewrite",
+  "setup": "c=$(mktemp -d) && mv change \"$c/\" && cp -R base/. . && rm -rf base && git add -A && git -c user.name=b -c user.email=b@example.test commit -qm base && git update-ref refs/remotes/origin/main HEAD && git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/main && cp -R \"$c/change/.\" . && rm -rf \"$c\"",
+  "max_turns": 40,
+  "prompt": "/comment-cleanup on this branch's change, then report.",
+  "checks": [
+   {
+    "id": "constant",
+    "units": [
+     "U12",
+     "U24",
+     "U26"
+    ],
+    "cmd": "grep -Eq 'const [A-Z_]+ *(: *number)? *= *1_?500' src/docs.ts && ! grep -q 'base delay in ms' src/docs.ts"
+   },
+   {
+    "id": "helper",
+    "units": [
+     "U12",
+     "U24",
+     "U26",
+     "U27"
+    ],
+    "cmd": "! grep -qi 'one @ with a dot' src/docs.ts && ! grep -qF 'if (!/^' src/docs.ts && grep -qF '[^\\s@]+@' src/docs.ts"
+   },
+   {
+    "id": "rename",
+    "units": [
+     "U12",
+     "U24",
+     "U25",
+     "U41"
+    ],
+    "cmd": "! grep -rqw 'flag' src test && ! grep -qi 'Whether the user has admin rights' src/access.ts"
+   },
+   {
+    "id": "positional-bool",
+    "units": [
+     "U12",
+     "U28"
+    ],
+    "cmd": "! grep -q 'list(docs, true)' src/docs.ts && ! grep -q 'true includes drafts' src/docs.ts"
+   },
+   {
+    "id": "refactor-declined",
+    "units": [
+     "U30"
+    ],
+    "cmd": "grep -qi 'billing' src/docs.ts && grep -q 'export function store(doc: Doc, log: string\\[\\], index: Set<string>): void' src/docs.ts"
+   },
+   {
+    "id": "ran-tests",
+    "units": [
+     "U41"
+    ],
+    "regex": "node --test|npm (run )?test|yarn test",
+    "in": "transcript"
+   },
+   {
+    "id": "tests-pass",
+    "units": [],
+    "cmd": "node --test >/dev/null 2>&1"
+   }
+  ]
+ },
+ {
+  "id": "directives",
+  "fixture": "fixtures/directives",
+  "setup": "c=$(mktemp -d) && mv change \"$c/\" && cp -R base/. . && rm -rf base && git add -A && git -c user.name=b -c user.email=b@example.test commit -qm base && git update-ref refs/remotes/origin/main HEAD && git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/main && cp -R \"$c/change/.\" . && rm -rf \"$c\"",
+  "max_turns": 30,
+  "prompt": "/comment-cleanup on this branch's change, then report.",
+  "checks": [
+   {
+    "id": "license",
+    "units": [
+     "U36"
+    ],
+    "cmd": "grep -q 'Copyright (c) 2026 Example Corp' src/loader.ts"
+   },
+   {
+    "id": "eslint",
+    "units": [
+     "U33"
+    ],
+    "cmd": "grep -q 'eslint-disable-next-line' src/loader.ts"
+   },
+   {
+    "id": "chunk-name",
+    "units": [
+     "U35"
+    ],
+    "cmd": "grep -q 'webpackChunkName' src/loader.ts"
+   },
+   {
+    "id": "pure",
+    "units": [
+     "U35"
+    ],
+    "cmd": "grep -q '#__PURE__' src/loader.ts"
+   },
+   {
+    "id": "istanbul",
+    "units": [
+     "U34"
+    ],
+    "cmd": "grep -q 'istanbul ignore next' src/loader.ts"
+   },
+   {
+    "id": "deprecated",
+    "units": [
+     "U38"
+    ],
+    "cmd": "grep -q '@deprecated' src/loader.ts && grep -q '@see' src/loader.ts"
+   },
+   {
+    "id": "ts-expect-reason",
+    "units": [
+     "U39"
+    ],
+    "cmd": "grep -Eq '@ts-expect-error.*[A-Za-z]{3,}' src/loader.ts"
+   },
+   {
+    "id": "junk-cut",
+    "units": [
+     "U10",
+     "U13"
+    ],
+    "cmd": "! grep -qiE 'The cache of loaded modules|Load the chart module lazily|Dump the cache size' src/loader.ts"
+   },
+   {
+    "id": "tests-pass",
+    "units": [],
+    "cmd": "node --test >/dev/null 2>&1"
+   }
+  ]
+ }
+]

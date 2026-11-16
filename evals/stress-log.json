@@ -8,5 +8,15 @@
    "result": "Opus read the rule list as exhaustive: with the matching rules cut it left text untouched. A 'not every tell is listed' line fixed that and let Opus run on 519 of 908 words, but Sonnet and Haiku then missed tells from the cut rules (false ranges, inline-header lists, over-compression). The 'no parentheses' clause in rule 13 is missed in half the runs even with the full skill.",
    "applied": "Added the not-exhaustive line to the intro; no rules cut."
   }
+ ],
+ "comment-cleanup": [
+  {
+   "date": "2026-11-16",
+   "skill_commit": "99046e4",
+   "models": ["opus", "sonnet", "haiku"],
+   "runs": 168,
+   "result": "Opus does almost everything bare; the body only adds the @ts-expect-error reason, extracting an opaque regex and listing survivors, while Sonnet and Haiku lean on it heavily. Sonnet deleted pre-existing comments in 2/2 runs with the skill (1/4 after the scope fix); Haiku ignores the @ts-expect-error rule. Intro and step 2 drop with every check green, but step 2's keep-why, uncertainty and siblings rules have no case that bare fails, and the self-cleanup-at-end-of-task use has no case yet.",
+   "applied": "Step 1 scope rule reworded to name the diff's lines as scope and the rest of the file as context; no units cut."
+  }
  ]
 }

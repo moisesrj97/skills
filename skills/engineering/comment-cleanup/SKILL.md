@@ -13,7 +13,7 @@ First drafts narrate, especially ones written while reasoning out loud. Comments
 
 ## 1. Find the comments in scope
 
-Scope is the comments this change added or modified. Leave pre-existing ones unless the user asks for a wider sweep.
+Scope is the comments on lines this change added or modified, the ones the script below lists. Every other comment stays as it is, however much it reads like narration, unless the user asks for a wider sweep.
 
 ```bash
 base=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null) \
@@ -26,7 +26,7 @@ git diff --merge-base "$base" -U0 -- . ':!*.md' ':!*.lock' ':!*-lock.*' | awk '
 
 It covers every language whose comments start with `//`, `/*`, `#`, `--` or `<!--`, and skips Markdown and lockfiles. For a language with another marker, add it to the pattern.
 
-Swap the base for whatever the change is measured against (`HEAD`, `--staged`, a commit). The script catches comment-only lines, so also skim the diff for trailing comments (`doThing(); // why`) and doc blocks an edit shifted. Then open each file, because a comment can only be judged next to its code.
+Swap the base for whatever the change is measured against (`HEAD`, `--staged`, a commit). The script catches comment-only lines, so also skim the diff for trailing comments (`doThing(); // why`) and doc blocks an edit shifted. Then open each file, because a comment can only be judged next to its code; the rest of the file is context, not scope.
 
 Done when you have every in-scope comment and have read each one beside its code.
 

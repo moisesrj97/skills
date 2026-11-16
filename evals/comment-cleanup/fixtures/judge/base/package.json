@@ -1,0 +1,1 @@
+{ "name": "sessions", "type": "module", "scripts": { "test": "node --test" } }
