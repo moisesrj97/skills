@@ -33,6 +33,8 @@ Use the lightest steering that works.
 - **Fragile work** (deploys, migrations, exact formats): exact steps, commands and scripts.
 - **Every skill:** at most one opening sentence on what goes wrong without it, then the local facts. No section that restates the tool's documentation.
 
+Load `writing-for-agents` before drafting the body and description. Its pass comes before the hand-off tests, so they run on the final text.
+
 ## Facts to get right
 
 - **Description:** one or two sentences, about 250 characters at most: what the skill does and when to use it, third person, in the words a user would type. No lists of examples, file types or features; the model generalizes from one clear phrase. Add "Not for X" only for a near miss the wording would otherwise catch, and name the skill that should take it. It's the only text an agent sees when choosing a skill.
