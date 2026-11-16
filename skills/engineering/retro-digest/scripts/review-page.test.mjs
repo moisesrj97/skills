@@ -49,3 +49,30 @@ test('text in the digest cannot close the page script', () => {
   assert.match(script, /\$& \$1/);
   assert.doesNotThrow(() => new vm.Script(script));
 });
+
+function fakeDocument() {
+  const byId = new Map();
+  class Node {
+    constructor(tag) { this.tag = tag; this.children = []; this.attrs = {}; this.textContent = ''; this.value = ''; this.checked = false; }
+    setAttribute(k, v) { this.attrs[k] = v; }
+    append(...kids) { this.children.push(...kids); }
+    replaceChildren(...kids) { this.children = kids; }
+    addEventListener() {}
+    get classList() { return { toggle: () => {} }; }
+    get text() { return this.children.map((k) => (typeof k === 'string' ? k : k.text)).join(''); }
+  }
+  return {
+    createElement: (tag) => new Node(tag),
+    getElementById: (id) => byId.get(id) ?? byId.set(id, new Node('div')).get(id),
+  };
+}
+
+test('the page renders a theme digest whose members are one string with line breaks', () => {
+  const themes = structuredClone(digest);
+  themes.clusters[0].members = '3 clusters, 7 findings';
+  themes.clusters[0].proposal = 'First fix (4)\nLeave open: second\nReject: third';
+  const document = fakeDocument();
+  vm.runInNewContext(pageScript(buildReviewPage(themes)), { document, localStorage: { getItem: () => null, setItem() {} } });
+  assert.match(document.getElementById('clusters').text, /3 clusters, 7 findings/);
+  assert.match(buildReviewPage(themes), /dd \{[^}]*white-space: pre-line/);
+});

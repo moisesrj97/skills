@@ -45,9 +45,21 @@ Write the digest to `<scratchpad>/retro-digest.json`, shaped like [`scripts/exam
 - `recurring`, with ids `R-A…`: the open members, the rejected member with its reason, your observation, and `recommend` (`fold` unless you argue otherwise).
 - `legend` for the id prefixes, a `title` with today's date, and `reviewFile`: `retro-review-<date>.json`.
 
-Build the page with `node <skill-dir>/scripts/build-review-page.mjs <scratchpad>/retro-digest.json <scratchpad>/retro-digest.html` and open it in the browser (`open` on macOS). Every row starts on your `recommend`; the user changes what they disagree with and saves `reviewFile` to the browser's downloads folder, or copies it for the chat. Send one self-contained message, since the user may read it hours later in a scheduled thread: the page's path, the cluster count, the top three by score, the clusters already marked resolved, and that answering in chat works too. Wait.
+Build the page with `node <skill-dir>/scripts/build-review-page.mjs <scratchpad>/retro-digest.json <scratchpad>/retro-digest.html`.
 
-Done when the user says they're done or answers in chat. Read `decisions` from the newest `~/Downloads/retro-review-<date>*.json` (the browser appends ` (1)` to a repeat save); if there is none, ask where it was saved.
+**Themes.** With more than 15 clusters, the user decides by theme, and the cluster page stays as reference for looking into one. Group every cluster into 10–15 themes: a theme holds the clusters whose change lands in the same place (one skill, repo, hook or steering file). Noise (harness behaviour, guards working as intended, guessed owners) is a theme of its own, recommended reject. Check that every cluster sits in exactly one theme, none left out or repeated, before going on. Write `<scratchpad>/retro-themes.json`, shaped like the digest with the themes as `clusters`, ids `T1…` highest score first, and `recurring` copied as is:
+
+- `title`: the change and the friction it removes, one line. `target`: the owning repo or file. `scope` and `projects`: the union of its clusters'.
+- `members`: one string, `"N clusters, M findings"`. `score`: the sum of its clusters' scores.
+- `proposal`: one line per cluster you recommend applying (title and occurrences), then `Leave open: …` and `Reject: …` with the rest, lines separated by `\n`.
+- `observation`: why the theme is worth it, which items weigh most, what you drop and why, ending with: "apply" accepts your recommendation on each line, "reject" drops the whole theme, "open" defers it.
+- `recommend`: `apply` when any line is to apply, else `reject`.
+
+Write `<scratchpad>/retro-themes-map.json`, `{"T1": {"apply": ["C3", …], "open": […], "reject": […]}}` from your recommendations, and build `retro-themes.html` from the themes digest.
+
+Open the page the user decides on in the browser (`open` on macOS). Every row starts on your `recommend`; the user changes what they disagree with and saves `reviewFile` to the browser's downloads folder, or copies it for the chat. Send one self-contained message, since the user may read it hours later in a scheduled thread: the page's path (and the cluster page's, with themes), the cluster count, the top three by score or, with themes, a table of every theme (id, theme, clusters and findings, your recommendation), the clusters already marked resolved, the recurring ones, and that answering in chat works too. Wait.
+
+Done when the user says they're done or answers in chat. Read `decisions` from the newest `~/Downloads/retro-review-<date>*.json` (the browser appends ` (1)` to a repeat save); if there is none, ask where it was saved. With themes, turn each theme's decision into its clusters' through the map: `apply` takes the map's split, `reject` rejects every cluster in it, `open` leaves every one open.
 
 ## 5. Plan the changes
 

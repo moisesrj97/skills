@@ -35,7 +35,7 @@
   .members { font-size: 12px; color: var(--muted); word-break: break-word; }
   dl { margin: 6px 0 0; display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 2px 10px; }
   dt { color: var(--muted); }
-  dd { margin: 0; }
+  dd { margin: 0; white-space: pre-line; }
   .take { margin-top: 8px; background: var(--take); border: 1px solid var(--take-line); border-radius: 6px; padding: 6px 9px; }
   .take b { font-size: 12px; }
   .choices { display: flex; gap: 4px; align-self: start; }
@@ -130,7 +130,7 @@ function clusterCard(c) {
         el('span', { class: `badge ${c.scope}` }, c.scope),
         el('span', { class: 'badge' }, (c.projects ?? []).join(', ')),
         el('span', { class: 'score', title: 'occurrences × highest severity' }, String(c.score))),
-      el('div', { class: 'members' }, c.members.join(' · ')),
+      el('div', { class: 'members' }, [c.members].flat().join(' · ')),
       el('dl', {}, el('dt', {}, 'Target'), el('dd', {}, c.target), el('dt', {}, 'Proposal'), el('dd', {}, c.proposal)),
       take(c.observation)),
     choices(c, ['apply', 'reject', 'open']));
