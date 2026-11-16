@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Unslop
 
-Edit text to remove AI patterns. Scan for the patterns below, then rewrite. Preserve meaning and match the intended tone.
+Edit text to remove AI patterns. Scan for the patterns below, then rewrite. The list holds common tells, not every one: rewrite any AI tell you find, listed or not. Preserve meaning and match the intended tone.
 
 ## Patterns to detect and fix
 
