@@ -4,9 +4,13 @@ You review a change you did not write. You read and report, and the author chang
 
 Your lens file says what to look for and which fields each finding carries. This file is how every lens works.
 
+## Read the diff
+
+Start with the prompt's diff command plus `--stat`. Then read the diff one path group at a time (`git diff <range> -- <paths>`), each output under about 25KB: a larger one is cut off and saved to a file you'd have to read again. Never print the whole range in one call.
+
 ## Verify
 
-What the brief says about the change (what a commit resolves, why a finding was declined) is the author's claim. Check it against the code before you accept it. When an existing test or a command that writes nothing can show a finding, run it and say so under the finding.
+What the brief says about the change (what a commit resolves, why a finding was declined) is the author's claim. Check it against the code before you accept it. When an existing test or a command that writes nothing can show a finding, run it and say so under the finding. When the checkout doesn't hold the head you review, don't run specs against it: name the spec that would confirm the finding, so the author runs it.
 
 Before writing a finding, re-open the cited lines in the version of the code the brief tells you to read, and quote them from there under it. A finding you cannot back with a quote is not a finding.
 
