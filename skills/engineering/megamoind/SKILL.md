@@ -44,6 +44,7 @@ When the diff holds no code (a README, a skill, a recipe), the steps keep their 
 - **Gates**: links and anchors resolve.
 - **Step 2**: the test is each claim the doc makes, checked against the code it documents and cited with `file:line`, plus its code snippets type-checked against the real types. A skill with a `benchmark/evals.json` gets one new eval per behaviour change, with the opposite case as a control.
 - **Step 5**: run every command or snippet the doc adds exactly as written, in the real app. For a skill, run each new eval prompt in a fresh agent that reads only the skill.
+- **Step 3** runs only when the diff adds a command, script or snippet that runs code or touches credentials. Otherwise skip it and say so in the report.
 - **Step 6** is skipped.
 
 ## Steps
@@ -55,7 +56,7 @@ With no ticket in the request, get one before anything else, in one question wit
 - **Give the ID**: the user writes it.
 - **Create it**: a ticket in the tracker, titled and described from the user's request, in the in-progress status, assigned to the user running this skill (GitHub: `gh issue create --assignee @me`). It goes where the `## Ticket tracker` section says new tickets go; when it names no place, ask for one. Its new ID is the ticket from here on.
 
-Fetch the ticket (`gh issue view` for a GitHub issue, the tracker's tools otherwise); a tracker you can't reach is HITL. Read the ticket and the code it touches, and look for what the change can **reuse**: helpers, a similar feature, how the neighbouring tests are written. Call the Skill tool with `craftsmanship`. For a bug, call the Skill tool with `diagnosing-bugs` and take it through phase 4, so the plan names the confirmed cause; its fix waits for step 2.
+Fetch the ticket (`gh issue view` for a GitHub issue, the tracker's tools otherwise); a tracker you can't reach is HITL. Read the ticket and the code it touches, and look for what the change can **reuse**: helpers, a similar feature, how the neighbouring tests are written. When the ticket relies on how a third-party service behaves (an embed, a player, an API), read that service's terms or policy for the behaviour and cite it in the plan: a design its terms forbid is HITL before any code. Call the Skill tool with `craftsmanship`. For a bug, call the Skill tool with `diagnosing-bugs` and take it through phase 4, so the plan names the confirmed cause; its fix waits for step 2.
 
 Run `python3 <skill-dir>/scripts/preflight.py` once for the repo facts below (default branch, GitButler, CODEOWNERS, required checks, gh version, the sections of each steering file).
 
@@ -148,7 +149,7 @@ Loop until every check is green:
    python3 <skill-dir>/scripts/ci.py wait <number> --required "<name>" … [--skip "<name>" …]   # one flag per check
    ```
 
-   It exits 0 once every check on the PR is green, required or not, and every required check has reported (some appear minutes after the others, and `gh pr checks --required` can't show one missing), or once a PR with no checks at all has had 5 minutes to get some and requires none; 1 with the red checks named; 4 after an hour with what is still pending or missing; 2 when `gh` failed three polls in a row. With `stop-at=draft`, pass the ready-only checks in `--skip` and list them in the report as pending for the caller. A layer stacked on another gets the checks that run only on PRs based on the default branch once the layer below merges: pass those in `--skip` too and list them as "pending retarget". When T3 Code delegated the ticket, wait inside the turn (`t3_background_wait` on that task) rather than ending it.
+   It exits 0 once every check on the PR is green, required or not, and every required check has reported (some appear minutes after the others, and `gh pr checks --required` can't show one missing), or once a PR with no checks at all has had 5 minutes to get some and requires none; 1 with the red checks named; 4 after an hour with what is still pending or missing; 2 when `gh` failed three polls in a row. With `stop-at=draft`, pass the ready-only checks in `--skip` and list them in the report as pending for the caller. A layer stacked on another gets the checks that run only on PRs based on the default branch once the layer below merges: pass those in `--skip` too and list them as "pending retarget". When T3 Code delegated the ticket, wait inside the turn (`t3_background_wait({"taskIds": ["<task id>"]})`) rather than ending it.
 2. On any red check, required or not, diagnose with the tools at hand: a CI skill the project or the user has installed, `gh pr checks`, the job logs. Classify it:
    - **caused by this change**: fix it, run the gates, push;
    - **flaky or infrastructure**: re-run it once; red again is HITL;
