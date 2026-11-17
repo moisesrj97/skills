@@ -86,6 +86,8 @@ Under GitButler, other agents' branches may be applied in the same working direc
 
 The inverse is a **borrowed green**: another applied branch supplies hunks yours lacks (an import, a type, a helper), so your gates pass locally and CI, which builds your branch alone, fails. Your code may depend only on `<base>` and your own commits. A branch still applied but marked `(merged upstream)` in `but status` means your base is stale, so update before implementing. When you can't update, check that each symbol you use from a file other branches touch exists in `<base>` (`git show <base>:<file>`).
 
+Before pushing, whenever other branches are applied, run the gates on your branch alone: `git archive <branch> | tar -x -C <scratchpad>/<new-dir>`, symlink the root's and each touched package's `node_modules` into it, copy the untracked env files the tests read (e.g. `.env.test`), `git init -q` there when a tool reads the VCS (biome's `vcs.useIgnoreFile`), and run the type-check and tests in that copy.
+
 A change that belongs to the `<base>` branch's ticket goes on that branch. Stop and ask for it, naming the change. When told the base moved, re-run the gates and go on.
 
 ### 2. Implement
