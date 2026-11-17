@@ -10,6 +10,8 @@ The user delegates a whole ticket and walks away. They come back to a PR that is
 
 Invoking this skill is the user's approval to commit, push to the ticket's own branch and open the PR ready for review, each once the gates are green. Adding reviewers still waits for their explicit yes.
 
+You are the **orchestrator**: you hold the brief, the branch, the PR and the CI, and two agents do the turn-heavy work in their own contexts (see "Agents"). Every turn re-reads your whole context, so what runs here stays small: you read their reports, not their work, and every code change goes through the implementer.
+
 **One ticket per run.** More than one (a list, a label or other tracker query, a spec) is a **batch**: call the Skill tool with `megamoind-batch`, passing the user's request, and follow it instead of this skill.
 
 ## Arguments
@@ -22,6 +24,21 @@ Invoking this skill is the user's approval to commit, push to the ticket's own b
 ## When a skill is not available
 
 This skill hands off to `megamoind-batch`, `craftsmanship`, `diagnosing-bugs`, `tdd`, `diff-review`, `debug-trace`, `merge-risk`, `github-pr`, `pair-review` and `comment-cleanup`, called by these exact names. If the Skill tool reports one as not available, stop and ask. An improvised copy silently skips whatever the real skill enforces.
+
+## Agents
+
+- **Implementer**: owns steps 2, 3, 4 and 6, and every later code change (a verification failure, a red CI check). Start it after step 1 and keep it alive until step 9, so each fix lands with the context that wrote the code.
+- **Verifier**: owns step 5. Start it fresh once step 4 is done; it changes no code and reports per flow.
+
+Start each with the Agent tool (`run_in_background: false`, model `opus`), and send it later work with SendMessage to the id it returns. Its prompt holds, in this order:
+
+1. The tag line `megamoind-run: <run> role=implementer` (or `role=verifier`), from step 0's `metrics.py start`.
+2. The brief's path, the ticket, the branch, `<base>` and this skill's folder.
+3. What to follow: this file's "Gates", "Docs or skill changes" and "Sharing the workspace" sections and its own steps, read from `<skill-dir>/SKILL.md`. The implementer passes `tag=megamoind-run: <run> role=review-<lens>` to every `diff-review` it runs, directly or through `pair-review` or `craftsmanship`.
+4. Where its report goes: `<scratchpad>/<ticket>-implement.md` or `<scratchpad>/<ticket>-verify.md`, rewritten after each piece of work, ending in `END OF REPORT`.
+5. That a HITL question goes into the report and ends its turn instead of being asked. Relay it to the user, then send the answer back.
+
+Each report carries what step 9 needs: the implementer's commits, review passes (findings fixed, discarded and why), Later tidyings and failure-path checklist; the verifier's flows with pass or fail, the evidence, what went unverified and why, and each screenshot's path with its one-line source.
 
 ## Gates
 
@@ -42,15 +59,18 @@ Push only with every gate green or **foreign** (see "Sharing the workspace").
 When the diff holds no code (a README, a skill, a recipe), the steps keep their shape and change what they test:
 
 - **Gates**: links and anchors resolve.
-- **Step 2**: the test is each claim the doc makes, checked against the code it documents and cited with `file:line`, plus its code snippets type-checked against the real types. A skill with a `benchmark/evals.json` gets one new eval per behaviour change, with the opposite case as a control. When the project defines a check its evals must pass, run it in a fresh agent on the first draft, before committing, and again after each fix until it passes. Tidy after runs over prose a reader maintains (a SKILL.md, a README) and skips data files such as `evals.json`.
+- **Step 2**: the test is each claim the doc makes, checked against the code it documents and cited with `file:line`, plus its code snippets type-checked against the real types. A skill with a `benchmark/evals.json` gets one new eval per behaviour change, with the opposite case as a control. When the project defines a check its evals must pass, run it in a fresh agent on the first draft, before committing, and again after each fix until it passes.
+- **Step 3**: tidy after runs over prose a reader maintains (a SKILL.md, a README) and skips data files such as `evals.json`.
+- **Step 4** runs only when the diff adds a command, script or snippet that runs code or touches credentials. Otherwise skip it and say so in the report.
 - **Step 5**: run every command or snippet the doc adds exactly as written, in the real app. For a skill, run each new eval prompt in a fresh agent that reads only the skill.
-- **Step 3** runs only when the diff adds a command, script or snippet that runs code or touches credentials. Otherwise skip it and say so in the report.
 - **Step 6** is skipped.
 - **Step 7**: with no such command, script or snippet, the `## Merge risk` section is one green line ("Docs only, no code runs") instead of a `merge-risk` run.
 
 ## Steps
 
 ### 0. Brief and HITL check
+
+Each step starts with `python3 <skill-dir>/scripts/metrics.py mark <state> "<n> <name>"` (e.g. `"5 verify"`), so the run's time and tokens split by step. Step 0 starts it instead, as soon as the ticket ID is known: `python3 <skill-dir>/scripts/metrics.py start <ticket> --dir <scratchpad>` prints the run's tag line and its state file.
 
 With no ticket in the request, get one before anything else, in one question with two options:
 
@@ -80,6 +100,8 @@ If the repo uses GitButler (`but status` works), create the branch with `but bra
 
 With a pre-PR, create `<name>-tidy-first` on `<base>` as above. Under GitButler, create the ticket's branch on top of it now (`--above <name>-tidy-first`), so commits to the lower branch restack it. With plain git, create it once the pre-PR's commits are in (`git switch -c <name> <name>-tidy-first`, end of step 2's first pass), since a branch created earlier stays on the old commit. These branches, plus a post-PR's, are the ticket's **layers**, bottom to top; `HEAD` in the ranges below is the top layer. With plain git, after any later commit on a lower layer (a review fix, a CI fix), rebase each layer above onto it, bottom up (`git rebase <lower> <upper>`), then switch back to the top layer; once they are pushed, push them with `--force-with-lease`.
 
+Done when the branch exists. Then start the implementer (see "Agents") and wait for its report of steps 2 to 4.
+
 ### Sharing the workspace
 
 Under GitButler, other agents' branches may be applied in the same working directory, so their unfinished changes show up in your type-check, tests and dev server. Commit only your own hunks (`but commit -b <branch> <ids>`, ids from `but diff`) and edit only files your ticket needs. A red gate is **foreign** when every failure sits in a file outside your branch's diff that `but status` shows changed by another branch or uncommitted outside yours. A change you produced yourself, e.g. a formatter or codegen run, is never foreign, even uncommitted. Leave a foreign red alone (fixing it would mix two tickets in one branch), list it for the report and count the gate as green. Their edits also hot-reload into your dev server: a checker overlay naming files outside your diff is foreign, so remove it from the DOM and go on, and when the UI stops reacting after a burst of hot updates you didn't cause, reload the page before debugging.
@@ -90,13 +112,12 @@ Before pushing, whenever other branches are applied, run the gates on your branc
 
 A change that belongs to the `<base>` branch's ticket goes on that branch. Stop and ask for it, naming the change. When told the base moved, re-run the gates and go on.
 
-### 2. Implement
+### 2. Implement (implementer)
 
-Three passes, with structure and behaviour always in separate commits:
+Two passes, with structure and behaviour always in separate commits:
 
 1. **Tidy first**: the plan's first tidyings, as the PR's first `refactor:` commit or on the pre-PR branch, following `craftsmanship`.
 2. **Behaviour**: call the Skill tool with `tdd` and build the ticket at the seams agreed in step 0, reusing what step 0 found. For a bug, the diagnosis loop from step 0 is the first red test; once it is green, run `diagnosing-bugs` phase 6 (its instrumentation and throwaway harnesses removed, the original reproduction rerun) before committing.
-3. **Tidy after**: run `craftsmanship`'s *Tidy a diff* over `<base>...HEAD`. It places each tidying by area of impact: a `refactor:` commit on the ticket's branch, or the post-PR branch `<name>-tidy-after` on top of it. One that is Later goes on a list for the report.
 
 Run type-check and the single test files you are touching as you go, and the gates once at the end. Commit locally at each working checkpoint.
 
@@ -104,21 +125,30 @@ When the brief rules out tests, write a **failure-path checklist** to the scratc
 
 When the ticket adds or ports an LLM prompt, run it 5 times on a real input before step 5, even when the brief rules out a bench, plus once on an opposite case as a control. Score each sample against a per-case checklist written before the run.
 
-Done when every point of the ticket is implemented, every planned tidying has landed or moved to Later, every checklist item is handled or accepted, and the gates are green.
+Done when every point of the ticket is implemented, every planned tidying first has landed, every checklist item is handled or accepted, and the gates are green.
 
-### 3. Security review
+### 3. Tidy after and pair review (implementer)
 
-Call the Skill tool with `diff-review` with `lens=security` over `<base>...HEAD`. One round, with no loop: step 4 reviews the whole change again, these fixes included.
+Two reviews of the same commit, launched together so neither waits for the other:
 
-Done when every finding it returns is fixed with a test that fails without the fix, or discarded with a one-line reason for the report, and the gates are green.
+- **Tidy after**: `craftsmanship`'s *Tidy a diff* over `<base>...HEAD`. It places each tidying by area of impact: a `refactor:` commit on the ticket's branch, or the post-PR branch `<name>-tidy-after` on top of it. One that is Later goes on a list for the report.
+- **Pair review**: call the Skill tool with `pair-review` with args `<base>...HEAD spec=<scratchpad>/<ticket>-brief.md standards=<absolute path of the test-desiderata.md beside craftsmanship's SKILL.md>`, passing the user's decisions from step 0 and any HITL answers as its already-decided list. It fixes and re-reviews until done; its HITL stops are this skill's HITL stops.
 
-### 4. Pair review
+Land the tidyings before pair-review's round 2, so that round reviews them too. A tidying that lands after pair-review's last round, a clean round 1 included, gets one more round over the new tip. A finding fixed by a tidying goes on the layer its area of impact picks.
 
-Call the Skill tool with `pair-review` with args `<base>...HEAD spec=<scratchpad>/<ticket>-brief.md standards=<absolute path of the test-desiderata.md beside craftsmanship's SKILL.md>`, passing the user's decisions from step 0 and any HITL answers as its already-decided list. A finding fixed by a tidying goes on the layer its area of impact picks. It fixes and re-reviews until done; its HITL stops are this skill's HITL stops.
+Done when pair-review ends Done, every tidying has landed or moved to Later, and the gates are green.
 
-### 5. Verify in the real app
+### 4. Security review (implementer)
 
-Start what the app needs as background subshells (`run_in_background`) with the commands from step 0, and stop every one you started when done. When the brief says the servers are already running, use them, since a second copy fights for the same ports.
+Call the Skill tool with `diff-review` with `lens=security` over `<base>...HEAD`, now that the code has settled. One round, with no loop: no review follows it, so each fix stays within its finding.
+
+Done when every finding it returns is fixed with a test that fails without the fix, or discarded with a one-line reason for the report, and the gates are green. Then the implementer reports and waits.
+
+### 5. Verify in the real app (verifier)
+
+Start the verifier (see "Agents"), adding the implementer's report path to its prompt for the failure-path checklist. A flow that fails goes to the implementer as a fix; once its report says the fix is in and the gates are green, send the verifier back to that flow and to the flows the fix's files reach.
+
+The rest of this step is the verifier's. Start what the app needs as background subshells (`run_in_background`) with the commands from step 0, and stop every one you started when done. When the brief says the servers are already running, use them, since a second copy fights for the same ports.
 
 - **Frontend or fullstack**: drive the dev server in a real browser with whatever browser tooling this harness gives you (a browser-control skill, extension or MCP server; Playwright when there is nothing else). No way to drive a browser counts as an environment that won't come up. This step is an explicit request for browser verification, so tools a harness keeps for user-requested browser work (T3 Code's `preview_*`) apply here. Other agents may share the browser, so open a tab of your own, act only in it and close it when done.
   - Walk every flow the ticket touches and check each touched screen at 375, 900 and 1440 px for overlaps, clipped or mixed-language copy, and anything the ticket didn't ask for. Compare each screen against the visual reference from step 0 as well as the ticket's text.
@@ -130,9 +160,9 @@ Start what the app needs as background subshells (`run_in_background`) with the 
 
 If the environment won't come up after one attempt, that's HITL; if it still can't run, record what went unverified for the PR description and the report.
 
-Done when every flow from step 0 and every item of the failure-path checklist has been exercised and behaves as the ticket asks.
+Done when every flow from step 0 and every item of the failure-path checklist has been exercised and behaves as the ticket asks. Then send the implementer step 6.
 
-### 6. Comment cleanup
+### 6. Comment cleanup (implementer)
 
 Call the Skill tool with `comment-cleanup` over the whole branch diff (`<base>...HEAD`). Done when its result is committed and the gates are green.
 
@@ -141,6 +171,8 @@ Call the Skill tool with `comment-cleanup` over the whole branch diff (`<base>..
 Open one PR per layer, bottom first. For each, call the Skill tool with `merge-risk` over the layer's range (`<layer below or base>...<layer>`), then with `github-pr`, handing it the merge-risk report for its `## Merge risk` section, anything left unverified in step 5, and any screenshots from step 5, each file with its one-line source.
 
 `github-pr` writes the title and description and opens the PR **ready for review**, so the full CI runs (some checks skip drafts); with `stop-at=draft`, open it as a draft. Its approval is already given, so print the title, description and files and go on without waiting for `approve`. Under GitButler, create the PR with `but pr new <branch> -F <file>` (first line title, rest description; add `--draft` with `stop-at=draft`) instead of `gh`, because it pushes the branch and its ancestors and sets the right base in a stack. Run `but status` right before it: a `<base>` marked `(merged upstream)` merged during the run, and `but pr new` fails on its deleted head. Update (`but pull`, under step 1's conditions) and open the PR against the default branch, saying so in the description and the report. `but pr new` also force-pushes every ancestor whose local tip GitButler rebased, so compare each branch below yours that isn't one of your layers (`git rev-parse <b> origin/<b>`). When one differs and has an open PR, push your branch alone: `git replay --onto origin/<base> <base>..<branch>` prints the rebased tip's SHA, then `git push origin <sha>:refs/heads/<branch>` and `gh pr create --base <base>`. A tidy PR's description says it changes structure only and names the ticket's PR it serves.
+
+Then write the step 9 report as `STATUS: interim — CI pending`, to the caller's report path or else `<scratchpad>/<ticket>-report.md`, and, unless a caller passed a path, tell the user with `PushNotification` that the PR is ready to look at. Most runs need no CI fix, so the user can start reviewing while CI runs. Notify again only when the run stops on a HITL; a green CI ends quietly in the final report.
 
 Done when every layer has its PR. Keep each one current through steps 6 and 8: a fix that changes a captured screen means capturing it again and re-attaching it, and a step 8 fix that changes exposed code means rerunning `merge-risk` and updating the section (`gh pr edit <number> --body-file <file>`).
 
@@ -156,7 +188,7 @@ Loop until every check is green:
 
    It exits 0 once every check on the PR is green, required or not, and every required check has reported (some appear minutes after the others, and `gh pr checks --required` can't show one missing), or once a PR with no checks at all has had 5 minutes to get some and requires none; 1 with the red checks named; 4 after an hour with what is still pending or missing; 2 when `gh` failed three polls in a row. With `stop-at=draft`, pass the ready-only checks in `--skip` and list them in the report as pending for the caller. A layer stacked on another gets the checks that run only on PRs based on the default branch once the layer below merges: pass those in `--skip` too and list them as "pending retarget". When T3 Code delegated the ticket, wait inside the turn (`t3_background_wait({"taskIds": ["<task id>"]})`) rather than ending it.
 2. On any red check, required or not, diagnose with the tools at hand: a CI skill the project or the user has installed, `gh pr checks`, the job logs. Classify it:
-   - **caused by this change**: fix it, run the gates, push;
+   - **caused by this change**: send it to the implementer; once its report says the fix is committed and the gates are green, push;
    - **flaky or infrastructure**: re-run it once; red again is HITL;
    - **also red on `<base>`**: HITL, leave it alone;
    - **base staleness** (foreign): a scan that compares against a default branch newer than `<base>`, on a PR that touches no lockfile. Leave it and list it for the report; updating the base is the caller's.
@@ -168,15 +200,16 @@ Stop with HITL after 3 fix pushes that haven't turned CI green: the loop isn't c
 
 When a caller passed a report path, write the report there before ending any turn, even with checks still pending (list them as open). Its first line is `STATUS: final` once every earlier step and the retro are done, else `STATUS: interim — <what is pending>`, and its last line is `END OF REPORT` either way. End a turn only once every action you announced has run.
 
-First call the Skill tool with `retro-with-docs` on this session; if it is not available, skip it and say so in the report. Then write the report:
+Close the implementer and the verifier. Run `python3 <skill-dir>/scripts/metrics.py collect <state>`, which appends the run to the metrics log and prints its time, tokens and peak context per agent and per step. Then call the Skill tool with `retro-with-docs` on this session; if it is not available, skip it and say so in the report. Then write the report from the agents' reports and your own steps:
 
 - Each layer bottom to top: PR URL, branch, merge-risk color, final CI state.
 - The Later tidyings, each with its files and why it waits.
-- Each review pass (tidy after, security review, pair-review rounds): findings, what was fixed, what was discarded and why.
+- Each review pass (tidy after, pair-review rounds, security review): findings, what was fixed, what was discarded and why.
 - What was verified in the real app and how; what wasn't, and why.
 - CI failures met and how each was resolved.
 - Open HITL questions.
 - The retro file and its blockers.
+- The metrics `collect` printed.
 
 ### 10. Reviewers (optional, skipped with `stop-at=draft`)
 
