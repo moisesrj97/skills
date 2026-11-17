@@ -166,7 +166,7 @@ Stop with HITL after 3 fix pushes that haven't turned CI green: the loop isn't c
 
 ### 9. Report
 
-When a caller passed a report path, write the report there before ending any turn, even with checks still pending (list them as open). End a turn only once every action you announced has run.
+When a caller passed a report path, write the report there before ending any turn, even with checks still pending (list them as open). Its first line is `STATUS: final` once every earlier step and the retro are done, else `STATUS: interim — <what is pending>`, and its last line is `END OF REPORT` either way. End a turn only once every action you announced has run.
 
 First call the Skill tool with `retro-with-docs` on this session; if it is not available, skip it and say so in the report. Then write the report:
 
