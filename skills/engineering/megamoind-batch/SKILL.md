@@ -37,7 +37,7 @@ Keep each agent alive until step 4 ends, since CI failures after ready go back t
 All agents write to the same working directory, so each one's type-check, tests and dev server see the others' unfinished changes. `megamoind` already commits only its own hunks and leaves a red gate in another branch's files to its PR's CI. What you control is how much the agents collide:
 
 - Tickets likely to touch the same files go in the **same chain**, one after the other: two agents editing one file fight over its hunks.
-- Run at most **3 agents** at once; more chains wait their turn. One workspace, one dev server and one browser don't scale past that.
+- Run at most **3 agents** at once; more chains wait their turn. One workspace, one dev server and one browser don't scale past that. Of those, at most one **heavy** ticket (one that runs the local stack or a heavy build, marked as such in the plan) at a time. When two heavy ones must overlap, each brief names the services that agent owns and forbids `--down` or restarts of the others'.
 - **Push the batch** branch by branch, bottom to top: `but push <branch>` for each of its branches. A bare `but push` publishes every applied branch with unpushed commits, other sessions' included.
 - While agents run, the workspace is theirs. Run `but pull` or move branches only for a lower-layer change (step 3), with the agent above stopped, and for step 4's update, with every agent idle.
 
