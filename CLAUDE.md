@@ -23,7 +23,13 @@ Before committing, grep the diff for URLs, IDs and absolute home paths.
 ## Shipping a change
 
 1. `npx skills add . --list` lists every skill with its description: the discovery check.
-2. Commit with `but` (subject line only) and push straight to `main`, without asking. No branch or PR needed.
+2. Ship straight to `main`, without asking and without a PR. In the GitButler workspace every commit lands on a branch, so commit to a session branch (subject line only), push that branch's tip onto `main`, then integrate it:
+   ```sh
+   but commit -b <short-kebab-description> -m "<subject>" <ids>
+   git push origin <short-kebab-description>:main
+   but pull
+   ```
+   `but push` publishes the branch itself, not `main`.
 3. Only when the user asks for a PR: a GitButler branch (`but branch new <short-kebab-description>`, no `PD-` prefix, never a `/`) and a draft PR with `but pr new <branch> -F <file> --draft`. Ask before marking it ready or merging.
 
 `~/dot-files/claude/install.sh` symlinks every skill in this checkout into `~/.claude/skills`, so edits are live as soon as they are on disk, in every session, before any merge. Don't install these skills with `npx skills add`: a copy in its lock gets rewritten through the symlink by `npx skills update`. A **new** or renamed skill needs one run of `install.sh` to get its link.
