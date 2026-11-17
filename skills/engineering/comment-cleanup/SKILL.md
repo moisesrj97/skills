@@ -16,17 +16,12 @@ First drafts narrate, especially ones written while reasoning out loud. Comments
 Scope is the comments on lines this change added or modified, the ones the script below lists. Every other comment stays as it is, however much it reads like narration, unless the user asks for a wider sweep.
 
 ```bash
-base=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null) \
-  || base="origin/$(gh repo view --json defaultBranchRef -q .defaultBranchRef.name)"
-git diff --merge-base "$base" -U0 -- . ':!*.md' ':!*.lock' ':!*-lock.*' | awk '
-/^\+\+\+ b\// { file=substr($0,7) }
-/^@@/ { match($0, /\+[0-9]+/); n=substr($0, RSTART+1, RLENGTH-1) }
-/^\+/ && !/^\+\+\+/ { l=$0; sub(/^\+/,"",l); if (l ~ /^[ \t]*(\/\/|\/\*|\*|#|--|<!--)/) print file":"n": "l; n++ }'
+<skill-dir>/scripts/find_comments.sh [<git diff args>]
 ```
 
-It covers every language whose comments start with `//`, `/*`, `#`, `--` or `<!--`, and skips Markdown and lockfiles. For a language with another marker, add it to the pattern.
+It covers every language whose comments start with `//`, `/*`, `#`, `--` or `<!--`, and skips Markdown and lockfiles. For a language with another marker, also grep the diff for it.
 
-Swap the base for whatever the change is measured against (`HEAD`, `--staged`, a commit). The script catches comment-only lines, so also skim the diff for trailing comments (`doThing(); // why`) and doc blocks an edit shifted. Then open each file, because a comment can only be judged next to its code; the rest of the file is context, not scope.
+With no arguments it diffs against the merge base with the default branch; pass whatever else the change is measured against (`HEAD`, `--staged`, a commit). The script catches comment-only lines, so also skim the diff for trailing comments (`doThing(); // why`) and doc blocks an edit shifted. Then open each file, because a comment can only be judged next to its code; the rest of the file is context, not scope.
 
 Done when you have every in-scope comment and have read each one beside its code.
 
