@@ -26,7 +26,7 @@ Before committing, grep the diff for URLs, IDs and absolute home paths.
 2. Ship straight to `main`, without asking and without a PR. In the GitButler workspace every commit lands on a branch, so commit to a session branch (subject line only), push that branch's tip onto `main`, then integrate it:
    ```sh
    but commit -b <short-kebab-description> -m "<subject>" <ids>
-   git push origin <short-kebab-description>:main
+   git -C /Users/moises/skills push origin <short-kebab-description>:main
    but pull
    ```
    `but push` publishes the branch itself, not `main`.
