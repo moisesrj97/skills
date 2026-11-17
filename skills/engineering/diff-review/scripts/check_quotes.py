@@ -19,11 +19,17 @@ ELISION = re.compile(r"^\s*(\.\.\.|…)\s*$")
 LINE_NUMBER = re.compile(r"^\s*\d+(?:\s*[|:]\s?|\t)")
 BLOCKQUOTE = re.compile(r"^(?:>\s?)+")
 INLINE_ELISION = re.compile(r"\.\.\.|…")
+LABEL = re.compile(r"^\s*[`*]*(?P<path>[\w@.-]*[./][\w@./-]*):\d+(?:\s*[-–—]\s*\d+)?[`*]*:?\s*$")
+LABEL_PREFIX = re.compile(r"^\s*[\w@./-]+:\d+(?:-\d+)?[\t ]+")
 LOOSE = "matched after normalising whitespace"
 
 
 def parse_round(text):
-    """Return (sealed, findings). Each finding: {n, path, line, title, quotes: [segment, ...]}."""
+    """Return (sealed, findings). Each finding: {n, path, line, title, quotes: [(label, segment), ...]}.
+
+    A label is the `<path>:<line>` a reviewer wrote on its own line before a quote block, inside the
+    quote or out; it names the file that block quotes, until the next label.
+    """
     lines = text.rstrip().splitlines()
     sealed = bool(lines) and lines[-1].strip() == SEAL
     findings = []
@@ -43,9 +49,15 @@ def parse_round(text):
                 "quote_lines": [],
             }
             findings.append(current)
-        elif current is not None and line.startswith(">"):
-            current["quote_lines"].append(BLOCKQUOTE.sub("", line))
-        elif current is not None and current["quote_lines"] and current["quote_lines"][-1] is not None:
+        elif current is None:
+            continue
+        elif line.startswith(">"):
+            quoted = BLOCKQUOTE.sub("", line)
+            label = LABEL.match(quoted)
+            current["quote_lines"].append(("label", label["path"]) if label else quoted)
+        elif label := LABEL.match(line):
+            current["quote_lines"].append(("label", label["path"]))
+        elif current["quote_lines"] and current["quote_lines"][-1] is not None:
             current["quote_lines"].append(None)
     for finding in findings:
         finding["quotes"] = segments(finding.pop("quote_lines"))
@@ -53,18 +65,20 @@ def parse_round(text):
 
 
 def segments(quote_lines):
-    """Split a finding's quoted lines on elisions and on gaps between quote blocks."""
-    out, current = [], []
+    """Split a finding's quoted lines on elisions, labels and gaps between quote blocks."""
+    out, current, label = [], [], None
     for line in quote_lines:
-        if line is None or ELISION.match(line):
+        if line is None or isinstance(line, tuple) or ELISION.match(line):
             if current:
-                out.append(current)
+                out.append((label, current))
             current = []
+            if isinstance(line, tuple):
+                label = line[1].removeprefix("./")
         else:
             current.append(line)
     if current:
-        out.append(current)
-    return [s for s in out if any(l.strip() for l in s)]
+        out.append((label, current))
+    return [(label, s) for label, s in out if any(l.strip() for l in s)]
 
 
 def normalize(lines):
@@ -78,6 +92,7 @@ def variants(segment):
         yield unfenced
         segment = unfenced
     yield [LINE_NUMBER.sub("", l) for l in segment]
+    yield [LABEL_PREFIX.sub("", l) for l in segment]
     if all(l[:1] in "+- " for l in segment if l):
         yield [l[1:] for l in segment]
 
@@ -161,6 +176,16 @@ def read_source(path, ref, repo):
     return result.stdout.splitlines() if result.returncode == 0 else None
 
 
+def resolve_label(label, ref, repo):
+    """The tracked path a label names, exactly or as a unique path suffix, else None."""
+    command = ["git", "ls-tree", "-r", "--name-only", ref] if ref else ["git", "ls-files"]
+    tracked = subprocess.run(command, cwd=repo, capture_output=True, text=True, errors="replace").stdout.splitlines()
+    if label in tracked:
+        return label
+    matches = [path for path in tracked if path.endswith("/" + label)]
+    return matches[0] if len(matches) == 1 else None
+
+
 def check(findings, ref, repo):
     where = f"{ref}:" if ref else "the working tree: "
     results = []
@@ -176,24 +201,31 @@ def check(findings, ref, repo):
         if not f["quotes"]:
             results.append(("DISCARDED", label, "no quote"))
             continue
-        spans = [find(s, source) for s in f["quotes"]]
-        found = [s for s in spans if s]
-        missing = [str(i + 1) for i, s in enumerate(spans) if s is None]
-        if not found:
-            elsewhere = next(filter(None, (find_elsewhere(s, f["path"], ref, repo) for s in f["quotes"])), None)
+        in_header, in_labelled, missing = [], 0, []
+        for i, (quote_label, segment) in enumerate(f["quotes"]):
+            home = resolve_label(quote_label, ref, repo) if quote_label else None
+            if home and home != f["path"] and find(segment, read_source(home, ref, repo) or []):
+                in_labelled += 1
+                continue
+            span = find(segment, source)
+            if span:
+                in_header.append(span)
+            else:
+                missing.append((i + 1, home or f["path"]))
+        if not in_header and not in_labelled:
+            elsewhere = next(filter(None, (find_elsewhere(s, f["path"], ref, repo) for _, s in f["quotes"])), None)
             if elsewhere:
                 results.append(("CONFIRMED", label, f"quote found in {elsewhere[0]}:{elsewhere[1]}, not {f['path']}"))
             else:
                 results.append(("DISCARDED", label, f"quote matches nothing in {where}{f['path']}"))
             continue
         notes = []
-        if any(loose for _, _, loose in found):
+        if any(loose for _, _, loose in in_header):
             notes.append(LOOSE)
-        if not any(first <= f["line"] <= last for first, last, _ in found):
-            notes.append(f"quote found at line {found[0][0]}")
-        if missing:
-            notes.append(f"quote block {', '.join(missing)} of {len(spans)} is not in {f['path']}: "
-                         "check it quotes another file")
+        if in_header and not any(first <= f["line"] <= last for first, last, _ in in_header):
+            notes.append(f"quote found at line {in_header[0][0]}")
+        for n, path in missing:
+            notes.append(f"quote block {n} of {len(f['quotes'])} is not in {path}: check it quotes another file")
         results.append(("CONFIRMED", label, "; ".join(notes)))
     return results
 

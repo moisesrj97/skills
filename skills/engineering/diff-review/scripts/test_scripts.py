@@ -111,6 +111,7 @@ class CheckQuotes(unittest.TestCase):
         (Path(self.repo) / "src").mkdir()
         (Path(self.repo) / "src/cart.ts").write_text(SOURCE)
         (Path(self.repo) / "src/my file.ts").write_text("const spaced = true;\n")
+        (Path(self.repo) / "src/state.ts").write_text("export const state = 'idle';\n")
         (Path(self.repo) / "README.md").write_text("```bash\nnpm test\n```\n")
         git(self.repo, "add", "-A")
         git(self.repo, "commit", "-qm", "head")
@@ -173,6 +174,30 @@ class CheckQuotes(unittest.TestCase):
         verdict, reason = self.check_one("> const spaced = true;")
         self.assertEqual(verdict, "CONFIRMED")
         self.assertIn("found in src/my file.ts:1, not src/cart.ts", reason)
+
+    def test_strips_a_path_line_label_from_each_quoted_line(self):
+        self.assertEqual(self.check_one("> cart.ts:4    sum += item.price * item.qty;"), ("CONFIRMED", ""))
+        self.assertEqual(self.check_one("> src/cart.ts:3-4\tfor (const item of items) {", header="src/cart.ts:3"),
+                         ("CONFIRMED", ""))
+
+    def test_a_label_line_inside_the_quote_is_not_code(self):
+        self.assertEqual(self.check_one("> src/cart.ts:3-4\n> for (const item of items) {\n>     sum += item.price * item.qty;"),
+                         ("CONFIRMED", ""))
+
+    def test_checks_each_labelled_block_against_its_own_file(self):
+        quote = ("> cart.ts:4\n> sum += item.price * item.qty;\n>\n"
+                 "> state.ts:1\n> export const state = 'idle';")
+        self.assertEqual(self.check_one(quote), ("CONFIRMED", ""))
+
+    def test_a_label_line_before_the_quote_points_at_its_file(self):
+        quote = "> sum += item.price * item.qty;\n\n`src/state.ts:1`:\n\n> export const state = 'idle';"
+        self.assertEqual(self.check_one(quote), ("CONFIRMED", ""))
+
+    def test_a_block_missing_from_its_labelled_file_is_flagged(self):
+        quote = "> sum += item.price * item.qty;\n\nstate.ts:1\n\n> export const state = 'busy';"
+        verdict, reason = self.check_one(quote)
+        self.assertEqual(verdict, "CONFIRMED")
+        self.assertIn("quote block 2 of 2 is not in src/state.ts", reason)
 
     def test_still_discards_code_that_exists_nowhere(self):
         self.assertEqual(self.check_one("> sum -= item.discount;")[0], "DISCARDED")
