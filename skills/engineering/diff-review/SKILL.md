@@ -1,7 +1,7 @@
 ---
 name: diff-review
 description: Runs one review round of a diff in a separate reviewer agent of the chosen model and returns quote-backed findings without fixing. Use to find bugs in a diff, for a security review of a diff, a review by another model, or when a skill calls for one.
-argument-hint: "[scope] [lens=code|security|cleanup] [reviewer=<model>[:<effort>]] [spec=<file>] [standards=<file>,…]"
+argument-hint: "[scope] [lens=code|security|cleanup] [reviewer=<model>[:<effort>]] [spec=<file>] [standards=<file>,…] [tag=<line>]"
 ---
 
 # Diff review
@@ -12,9 +12,10 @@ A reviewer that shares the author's context shares its blind spots. The reviewer
 
 - **scope**: a PR number, a ref range (`base...head`) or `diff` (uncommitted work). When omitted, the current branch's PR (`gh pr view --json number`), else the diff against its base. For a stacked PR the meaningful diff is `<parent-branch>...<branch>`.
 - **lens**: what the reviewer looks for, from `references/lenses/<lens>.md`. `code` (default): bugs, each with a failure scenario. `security`: exploitable vulnerabilities, filtered by numbered exclusions and precedents. `cleanup`: code that works but costs, each with that cost.
-- **reviewer**: `<model id>[:<effort>]`. Default `claude-opus-5-5:high`; `gpt-6.1-sol:high` for `security`, so another model family checks what the reviewer finds, falling back to `claude-opus-5-5:high` when Codex can't run; `claude-opus-5-5:medium` for `cleanup`. A `claude-*` model runs on Claude, a `gpt-*` model on Codex, e.g. `gpt-6.1-sol:medium`.
+- **reviewer**: `<model id>[:<effort>]`. Default `claude-opus-5-5:high`, for `security` too; `claude-opus-5-5:medium` for `cleanup`. A `claude-*` model runs on Claude, a `gpt-*` model on Codex, e.g. `gpt-6.1-sol:medium`.
 - **spec**: a file with what the change must do (a ticket, a brief). The `code` lens checks the change against it.
 - **standards**: files of rules the change is held to, on top of the project's own.
+- **tag**: a line that marks the reviewer's session as part of a caller's run, e.g. `megamoind-run: <run> role=review-security`.
 - From a calling skill: the round number, the already-decided list and, after round 1, the **reviewer handle** this skill returned in round 1, what changed since and the findings not acted on with their reasons.
 
 ## 1. Brief
@@ -25,6 +26,7 @@ The round file is `<scratch>/review-round-<N>.md`, in the session scratchpad whe
 - The scope and the exact command that shows the diff, with the range as given, since `a..b` and `a...b` differ. Resolve a branch name in the range to its SHA first (`git rev-parse <branch>`), so a branch that moves mid-round doesn't change what is reviewed.
 - Which version of the code to read and quote. For a range, that is its head (`git show <head>:<file>`), since the checkout can hold other changes. For `diff`, it is the working tree.
 - Where the round goes: the round file, or, for a CLI reviewer (step 2), the final message and no file writes.
+- With `tag=`, the tag as the prompt's last line, in every round.
 - With `spec=` and `standards=`, each file's contents pasted under its own heading. A file you can't read ends the round before launch: return the missing path to the caller.
 - The already-decided list, phrased as "do not reopen unless you find new evidence that changes its severity". A PLAUSIBLE finding the author declined belongs on it.
 - After round 1, the commits since (say if they are amended or unpushed, since the reviewer reads the local branch), which findings each resolves, and the findings not acted on with their reasons. Tell the reviewer to review the **whole** scope again, since fixes can break things elsewhere, and to write the new round where the fourth bullet says.
@@ -42,7 +44,7 @@ Round 1, or a round with no handle, starts a fresh reviewer and records its **re
   python3 <skill-dir>/scripts/run_round.py --reviewer <model>:<effort> --prompt <prompt file> --round-file <round file> [--handle <handle>]
   ```
 
-  A `claude-*` model runs on `claude -p`, a `gpt-*` model on `codex exec`, both read-only, so the reviewer can't edit, commit or post whatever the prompt says. The script runs an unsealed round once more and prints `{"handle", ...}`: keep the handle. On exit 1 the round failed twice; return its log tail (on stderr) to the caller. A `gpt-*` reviewer that exits 1 or 5 (CLI not installed) means Codex can't run: take the fallback **reviewer** names, and tell the caller the round ran on the fallback because Codex couldn't run, so a same-family review is never reported as cross-family. Exit 6 means the prompt names the round file: fix the prompt (step 1, fourth bullet) and run again. Its log is `<round file>` with `.log`; read only its tail, since the whole log floods the context.
+  A `claude-*` model runs on `claude -p`, a `gpt-*` model on `codex exec`, both read-only, so the reviewer can't edit, commit or post whatever the prompt says. The script runs an unsealed round once more and prints `{"handle", ...}`: keep the handle. On exit 1 the round failed twice; return its log tail (on stderr) to the caller. A `gpt-*` reviewer that exits 1 or 5 (CLI not installed) means Codex can't run, and a `claude-*` one that exits 5 means Claude can't: rerun the round on the other family, the lens's default reviewer from **reviewer** for a `gpt-*` one and `gpt-6.1-sol` at the same effort for a `claude-*` one, and tell the caller the round ran on the fallback and why, so a same-family review is never reported as cross-family. Exit 6 means the prompt names the round file: fix the prompt (step 1, fourth bullet) and run again. Its log is `<round file>` with `.log`; read only its tail, since the whole log floods the context.
 
 When a continue fails (the T3 thread is gone, or the script exits 3), start a fresh reviewer for this round with the full prompt, and return its new handle.
 
