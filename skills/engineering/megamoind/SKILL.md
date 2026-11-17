@@ -32,7 +32,7 @@ The checks that must be green before any push: type-check, lint and tests for **
 - If preflight reports `dev_doctor`, run `yarn dev:doctor --flow <flow> --no-services` before the first type-check and after any pull that touches `packages/`. It rebuilds stale workspace builds, which otherwise read as a red gate.
 - A heavy spec that times out under full-suite load counts as red only after it fails again in isolation.
 - Run checks as wide as the project's scripts do, but point every auto-fix (`--write`, `--fix`, a formatter) at the files of your branch's diff only. One aimed at a whole folder rewrites files outside the ticket and can break them, e.g. by dropping a `@ts-expect-error`.
-- Before each commit, check it holds only your ticket's files (`but diff` under GitButler, `git diff --stat` otherwise).
+- Before each commit, check it holds only your ticket's files (`but diff` under GitButler, `git diff --stat` otherwise). Under GitButler, other agents keep editing the same files after that check, so right after each commit read `git diff <base>...<branch>` for hunks that aren't your ticket's and take them out (`but uncommit <hunk ids>`).
 - A commit hook that runs lint-staged reads the config in the working tree. When one change both adds a lint or format rule and fixes the files it flags, commit in the order fixes, then pure formatting, then the config, adding the new rule to the working tree only for that last commit.
 
 Push only with every gate green or **foreign** (see "Sharing the workspace").
