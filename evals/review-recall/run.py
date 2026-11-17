@@ -105,7 +105,7 @@ def blocks(text: str):
 def locations(text: str, only=None):
     found = []
     for heading, body in blocks(text):
-        if only and not heading.startswith(only):
+        if only and not re.match(only, heading.lstrip()):
             continue
         for m in LOCATION.finditer(heading):
             start = int(m.group(2))
@@ -177,7 +177,7 @@ def found_in(fixture_name, arm, text):
     if EDITS in text:
         return edited_locations(text.split(EDITS, 1)[1])
     if FILTERED in text:
-        return locations(text.split(FILTERED, 1)[1], only="### ")
+        return locations(text.split(FILTERED, 1)[1], only=r"#{3,} ")
     return locations(text)
 
 
