@@ -70,7 +70,7 @@ Show it all in **one** round: the tickets the batch resolved to, the chains bott
 
 ### 2. Prepare
 
-Update the workspace from the target once (`but pull`), before any agent starts. When that changed a lockfile, reinstall dependencies with the project's package manager. Start the shared dev servers as background subshells, and add to every brief that they are already running.
+Update the workspace from the target once (`but pull`), before any agent starts. When that changed a lockfile, **reinstall**: run the install-and-rebuild `megamoind`'s Gates names when its preflight reports `dev_doctor` (`yarn dev:doctor --flow <flow> --no-services`), else the package manager's install. A bare install leaves workspace package builds stale. Start the shared dev servers as background subshells, and add to every brief that they are already running.
 
 ### 3. Run the chains
 
@@ -80,7 +80,7 @@ If a ticket turns out to need a change in a lower layer of its chain, the change
 
 ### 4. All ready
 
-Once every ticket's draft PR is green, bring the stacks up to date while the agents are idle: `but pull --check`, then `but pull`, reinstall dependencies if the lockfile changed, and push the batch. Then ask the user **once** whether to mark all the PRs ready, listing them, and send a `PushNotification` as the question goes out, because a question waiting in a thread goes unnoticed. On a yes, `gh pr ready <number>` each, tidy layers included, bottom of each chain first.
+Once every ticket's draft PR is green, bring the stacks up to date while the agents are idle: `but pull --check`, then `but pull`, reinstall if the lockfile changed, and push the batch. Then ask the user **once** whether to mark all the PRs ready, listing them, and send a `PushNotification` as the question goes out, because a question waiting in a thread goes unnoticed. On a yes, `gh pr ready <number>` each, tidy layers included, bottom of each chain first.
 
 Some checks only run on ready PRs, and some only on PRs whose base is the default branch (e.g. Jenkins): a stacked layer gets those only once the layer below merges and GitHub retargets it. Report such layers as "pending retarget" and leave them out of every wait's exit condition. Loop until every other check of every PR is green, required or not:
 
