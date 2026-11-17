@@ -38,6 +38,7 @@ All agents write to the same working directory, so each one's type-check, tests 
 
 - Tickets likely to touch the same files go in the **same chain**, one after the other: two agents editing one file fight over its hunks.
 - Run at most **3 agents** at once; more chains wait their turn. One workspace, one dev server and one browser don't scale past that.
+- **Push the batch** branch by branch, bottom to top: `but push <branch>` for each of its branches. A bare `but push` publishes every applied branch with unpushed commits, other sessions' included.
 - While agents run, the workspace is theirs. Run `but pull` or move branches only for a lower-layer change (step 3), with the agent above stopped, and for step 4's update, with every agent idle.
 
 ## Steps
@@ -50,7 +51,7 @@ Resolve the batch through GitHub (`gh issue view`, `gh issue list --label …`) 
 - a list: those tickets;
 - a query (a label, a status): the tickets it returns.
 
-Read each ticket with its comments, where blocking relations are often written ("blocked by #195"). A tracker you can't reach is HITL. Check the repo uses GitButler (`but status` works) and the workspace has no uncommitted changes; if not, stop and ask. GitButler-managed hook files (`.githook/*` marked `GITBUTLER_MANAGED_HOOK`) and installed-skill dirs (`.agents/`) don't count. Before deleting any untracked dir, check for inbound symlinks (`find . -maxdepth 4 -type l -lname '*<dir>*'`) and references under `.claude/`.
+Read each ticket with its comments, where blocking relations are often written ("blocked by #195"). A tracker you can't reach is HITL. Check the repo uses GitButler (`but status` works) and the workspace has no uncommitted changes; if not, stop and ask. Branches already applied belong to other sessions: name them in the plan and leave them alone. GitButler-managed hook files (`.githook/*` marked `GITBUTLER_MANAGED_HOOK`) and installed-skill dirs (`.agents/`) don't count. Before deleting any untracked dir, check for inbound symlinks (`find . -maxdepth 4 -type l -lname '*<dir>*'`) and references under `.claude/`.
 
 Done when you have read every ticket in the batch with its comments and the workspace is clean.
 
@@ -75,18 +76,18 @@ Update the workspace from the target once (`but pull`), before any agent starts.
 
 Start the bottom ticket of each chain, up to 3 agents, with `base=` the default branch. When an agent's report is final, read it and start the next ticket of that chain with `base=` the top layer it lists, or the next waiting chain if a slot is free. A report with an open HITL question stops that chain until the user answers; the other chains keep running. Done when every ticket's report is final.
 
-If a ticket turns out to need a change in a lower layer of its chain, the change belongs there. The ticket's agent stops and asks for it; leave it stopped until the change lands. Send the change to that layer's agent, which commits it on its own branch and runs its gates; GitButler restacks the branches above. Push the stack (`but push`), then tell the waiting agent its base moved. No one has reviewed the drafts yet, so rewriting them is fine.
+If a ticket turns out to need a change in a lower layer of its chain, the change belongs there. The ticket's agent stops and asks for it; leave it stopped until the change lands. Send the change to that layer's agent, which commits it on its own branch and runs its gates; GitButler restacks the branches above. Push the batch, then tell the waiting agent its base moved. No one has reviewed the drafts yet, so rewriting them is fine.
 
 ### 4. All ready
 
-Once every ticket's draft PR is green, bring the stacks up to date while the agents are idle: `but pull --check`, then `but pull`, reinstall dependencies if the lockfile changed, and `but push`. Then ask the user **once** whether to mark all the PRs ready, listing them, and send a `PushNotification` as the question goes out, because a question waiting in a thread goes unnoticed. On a yes, `gh pr ready <number>` each, tidy layers included, bottom of each chain first.
+Once every ticket's draft PR is green, bring the stacks up to date while the agents are idle: `but pull --check`, then `but pull`, reinstall dependencies if the lockfile changed, and push the batch. Then ask the user **once** whether to mark all the PRs ready, listing them, and send a `PushNotification` as the question goes out, because a question waiting in a thread goes unnoticed. On a yes, `gh pr ready <number>` each, tidy layers included, bottom of each chain first.
 
 Some checks only run on ready PRs, and some only on PRs whose base is the default branch (e.g. Jenkins): a stacked layer gets those only once the layer below merges and GitHub retargets it. Report such layers as "pending retarget" and leave them out of every wait's exit condition. Loop until every other check of every PR is green, required or not:
 
 1. Wait with `ci.py wait` from the `megamoind` skill's `scripts/` (the folder next to this skill's), one per PR in the background, as `megamoind` step 8 does: one `--required` per required check (the project's `CLAUDE.md` / `CLAUDE.local.md`, else `ci.py required <default branch>`), one `--skip` per pending-retarget check of the PR.
 2. Diagnose each red check enough to classify it as in `megamoind` step 8.
-   - **Base staleness** (a scan comparing against a default branch newer than the PR's base): yours. Update the stacks as at the start of this step (`but pull --check`, `but pull`, reinstall if the lockfile changed, `but push`).
-   - **Anything else**: send it to the agent that owns the branch, which handles it as its step 8 says and pushes a fix. A fix in a lower layer restacks the layers above; push the stack.
+   - **Base staleness** (a scan comparing against a default branch newer than the PR's base): yours. Update the stacks as at the start of this step (`but pull --check`, `but pull`, reinstall if the lockfile changed, push the batch).
+   - **Anything else**: send it to the agent that owns the branch, which handles it as its step 8 says and pushes a fix. A fix in a lower layer restacks the layers above; push the batch.
 
 Stop with HITL after 3 fix rounds that haven't turned CI green.
 
