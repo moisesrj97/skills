@@ -22,6 +22,7 @@ My personal and engineering skills for coding agents.
 | `retro-sweep` | Daily sweep of the sessions with no retro: a cheap model triages them for friction, a stronger one runs `retro-with-docs` on those that had some. Manual only. | own |
 | `retro-with-docs` | Retro of an agent session: its friction, stoppers first, as open or skipped findings in `~/.skill-docs/retros/<project>/`. | own |
 | `review-comment` | Evaluates a PR review comment, fixes it and replies with the commit. Manual only. | own |
+| `dream` | Consolidates a project's auto-memory from its recent sessions, sharing the lock with Claude Code's auto-dream so it also works under `claude -p`. Manual only. | own |
 | `pull-skill` | Copies a skill from another repo and records its source in `upstream.json`. Manual only. | own |
 | `sync-upstream` | Checks pulled skills for upstream changes and offers to fold the useful ones in. Manual only. | own |
 | `codebase-design` | Shared vocabulary for designing deep modules: interfaces, seams, testability. | [mattpocock/skills](https://github.com/mattpocock/skills) |
