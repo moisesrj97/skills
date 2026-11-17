@@ -43,7 +43,7 @@ This PR resolves <ticket URL>
 - The ticket line appears only with a ticket link.
 - Add `## Next steps` for follow-ups or stacked PRs, and `## Related` for issue or PR references other than the ticket.
 - The reviewer has the diff, so the description carries the *why*, not a restated diff, file lists or code blocks.
-- Testing lists only checks that actually ran, in this session or reported by the caller or the commits.
+- Testing lists only checks that actually ran on the branch's final head, in this session or reported by the caller or the commits. The same holds for each box ticked in the repo's PR template: run the command a box names, or leave it unticked.
 - `## Merge risk` goes after How to revert, only with a `merge-risk` report the caller provides, pasted as given.
 - `## Screenshots` goes last, only with screenshots the caller or the user provides: each image as `![<what it shows>](./<file>)` under its one-line source (local data, injected in the browser…).
 
