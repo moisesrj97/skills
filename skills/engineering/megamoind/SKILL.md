@@ -99,6 +99,8 @@ Run type-check and the single test files you are touching as you go, and the gat
 
 When the brief rules out tests, write a **failure-path checklist** to the scratchpad before step 3: for every async call or batch, its partial failure, total failure and empty result, plus the id types that cross a `String()`/`Number()` conversion. Each item is handled in code or marked accepted.
 
+When the ticket adds or ports an LLM prompt, run it 5 times on a real input before step 5, even when the brief rules out a bench, plus once on an opposite case as a control. Score each sample against a per-case checklist written before the run.
+
 Done when every point of the ticket is implemented, every planned tidying has landed or moved to Later, every checklist item is handled or accepted, and the gates are green.
 
 ### 3. Security review
