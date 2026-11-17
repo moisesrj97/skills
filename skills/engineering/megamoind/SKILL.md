@@ -114,7 +114,7 @@ Done when every finding it returns is fixed with a test that fails without the f
 
 ### 4. Pair review
 
-Call the Skill tool with `pair-review` with args `<base>...HEAD spec=<scratchpad>/<ticket>-brief.md standards=<craftsmanship's test-desiderata.md, absolute path>`, passing the user's decisions from step 0 and any HITL answers as its already-decided list. A finding fixed by a tidying goes on the layer its area of impact picks. It fixes and re-reviews until done; its HITL stops are this skill's HITL stops.
+Call the Skill tool with `pair-review` with args `<base>...HEAD spec=<scratchpad>/<ticket>-brief.md standards=<absolute path of the test-desiderata.md beside craftsmanship's SKILL.md>`, passing the user's decisions from step 0 and any HITL answers as its already-decided list. A finding fixed by a tidying goes on the layer its area of impact picks. It fixes and re-reviews until done; its HITL stops are this skill's HITL stops.
 
 ### 5. Verify in the real app
 

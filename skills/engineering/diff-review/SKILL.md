@@ -25,7 +25,7 @@ The round file is `<scratch>/review-round-<N>.md`, in the session scratchpad whe
 - The scope and the exact command that shows the diff, with the range as given, since `a..b` and `a...b` differ. Resolve a branch name in the range to its SHA first (`git rev-parse <branch>`), so a branch that moves mid-round doesn't change what is reviewed.
 - Which version of the code to read and quote. For a range, that is its head (`git show <head>:<file>`), since the checkout can hold other changes. For `diff`, it is the working tree.
 - Where the round goes: the round file, or, for a CLI reviewer (step 2), the final message and no file writes.
-- With `spec=` and `standards=`, their absolute paths, to read before reviewing.
+- With `spec=` and `standards=`, each file's contents pasted under its own heading. A file you can't read ends the round before launch: return the missing path to the caller.
 - The already-decided list, phrased as "do not reopen unless you find new evidence that changes its severity". A PLAUSIBLE finding the author declined belongs on it.
 - After round 1, the commits since (say if they are amended or unpushed, since the reviewer reads the local branch), which findings each resolves, and the findings not acted on with their reasons. Tell the reviewer to review the **whole** scope again, since fixes can break things elsewhere, and to write the new round where the fourth bullet says.
 
