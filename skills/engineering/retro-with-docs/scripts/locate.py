@@ -3,7 +3,8 @@
 
 Usage: locate.py [--session <id or .jsonl path>] [--cwd <dir>]
 
-Prints JSON: session (the newest transcript of the cwd's project unless --session names one),
+Prints JSON: session (--session, else this session's transcript from $CLAUDE_CODE_SESSION_ID when
+it lives in the cwd's project, else that project's newest transcript),
 subagents (its subagent transcripts), project (the main checkout's name, so a linked worktree
 files under its repo) and retro_dir (~/.skill-docs/retros/<project>).
 """
@@ -47,7 +48,7 @@ def newest(paths):
     return max(paths, key=lambda p: p.stat().st_mtime, default=None)
 
 
-def locate(cwd, session=None, projects=PROJECTS):
+def locate(cwd, session=None, projects=PROJECTS, current=os.environ.get("CLAUDE_CODE_SESSION_ID")):
     cwd = Path(cwd).resolve()
     if session and session.endswith(".jsonl"):
         transcript = Path(session).expanduser()
@@ -55,6 +56,9 @@ def locate(cwd, session=None, projects=PROJECTS):
         folder = transcripts_dir(cwd, projects)
         if session:
             transcript = folder / f"{session}.jsonl"
+        elif current and (folder / f"{current}.jsonl").exists():
+            # Batch agents share a project folder, so the newest transcript is often a sibling's.
+            transcript = folder / f"{current}.jsonl"
         else:
             transcript = newest(folder.glob("*.jsonl"))
     if transcript is None or not transcript.exists():

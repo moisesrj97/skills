@@ -136,11 +136,14 @@ class Locate(unittest.TestCase):
         (folder / "new" / "subagents").mkdir(parents=True)
         (folder / "new" / "subagents" / "a.jsonl").write_text("{}")
 
-        found = locate.locate(repo, projects=projects)
+        found = locate.locate(repo, projects=projects, current=None)
         self.assertEqual(found["session"], str(new))
         self.assertEqual(found["subagents"], [str(folder / "new" / "subagents" / "a.jsonl")])
         self.assertEqual(found["project"], "shop")
         self.assertEqual(locate.locate(repo, "old", projects=projects)["session"], str(old))
+        self.assertEqual(locate.locate(repo, projects=projects, current="old")["session"], str(old))
+        self.assertEqual(locate.locate(repo, projects=projects, current="elsewhere")["session"], str(new))
+        self.assertEqual(locate.locate(repo, "new", projects=projects, current="old")["session"], str(new))
 
     def test_project_of_a_gone_t3_worktree_and_of_scratch(self):
         t3 = Path(tempfile.mkdtemp())
