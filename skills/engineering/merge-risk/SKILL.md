@@ -35,7 +35,7 @@ Tests on the exposed path and a green CI make a failure less likely. List them a
 
 ## 4. Report
 
-The PR takes the color of its worst exposed change. Reply with this shape and nothing else:
+The PR takes the color of its worst exposed change. Write the report in this shape. Called by the user, it is your whole reply; called by another skill, hand it back and carry on with that skill's next step in the same turn:
 
 ```markdown
 **Merge risk: 🟡 Medium**
