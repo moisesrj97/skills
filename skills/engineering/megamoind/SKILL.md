@@ -46,6 +46,7 @@ When the diff holds no code (a README, a skill, a recipe), the steps keep their 
 - **Step 5**: run every command or snippet the doc adds exactly as written, in the real app. For a skill, run each new eval prompt in a fresh agent that reads only the skill.
 - **Step 3** runs only when the diff adds a command, script or snippet that runs code or touches credentials. Otherwise skip it and say so in the report.
 - **Step 6** is skipped.
+- **Step 7**: with no such command, script or snippet, the `## Merge risk` section is one green line ("Docs only, no code runs") instead of a `merge-risk` run.
 
 ## Steps
 
