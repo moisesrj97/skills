@@ -1,7 +1,6 @@
 ---
 name: unslop
-description: Cut AI tells from any writing.
-disable-model-invocation: true
+description: Rewrites prose to cut AI tells (inflated wording, filler, formulaic structure, chatbot artifacts). Use when asked to unslop, humanize or de-AI a text, or to make writing sound less like AI.
 ---
 
 # Unslop

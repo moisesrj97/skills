@@ -38,7 +38,7 @@ My personal and engineering skills for coding agents.
 | `to-spec` | Turns the conversation into a spec on the issue tracker. Manual only. | [mattpocock/skills](https://github.com/mattpocock/skills) |
 | `to-tickets` | Breaks a plan or spec into tracer-bullet tickets with blocking edges. Manual only. | [mattpocock/skills](https://github.com/mattpocock/skills) |
 | `triage` | Moves issues and external PRs through triage roles and writes agent-ready briefs. Manual only. | [mattpocock/skills](https://github.com/mattpocock/skills) |
-| `unslop` | Cuts AI tells from any writing. Manual only. | [cursor/plugins](https://github.com/cursor/plugins) |
+| `unslop` | Cuts AI tells from any writing. | [cursor/plugins](https://github.com/cursor/plugins) |
 | `walkthrough` | Throwaway HTML reading guide through a set of changes. Manual only. | [noel-lopez/skills](https://github.com/noel-lopez/skills) |
 | `wayfinder` | Plans work too big for one session as a map of decision tickets, resolved one at a time. Manual only. | [mattpocock/skills](https://github.com/mattpocock/skills) |
 | `writing-for-agents` | Reference for writing skills, AGENTS.md and CLAUDE.md. | [mattpocock/skills](https://github.com/mattpocock/skills) |
