@@ -2,16 +2,17 @@
 """Time, tokens and context of a megamoind run, logged for later comparison.
 
 Usage:
-  metrics.py start <ticket> --dir <scratchpad>
+  metrics.py start <ticket> --dir <scratchpad> [--skill megamoind|minimoi]
       Writes <scratchpad>/<ticket>-metrics.json and prints the run tag line. Every agent the
       run starts carries that line in its prompt, with its role (`role=implementer`).
-  metrics.py mark <state file> <phase>
+  metrics.py mark <state file> <phase> [--skill <name>]
+      --skill relabels the run, e.g. when megamoind hands off to minimoi.
   metrics.py collect <state file> [--log <file>]
       Finds every Claude transcript and Codex session carrying the tag, measures each one and
       the main agent's phases, and appends the run as one line to the log.
-  metrics.py report [--log <file>] [--baseline <file>] [--min-runs N]
-      Summarises the runs logged since the last report; prints nothing and exits 3 while
-      there are fewer than N.
+  metrics.py report [--log <file>] [--baseline <file>] [--min-runs N] [--skill <name>]
+      Summarises the skill's runs (default megamoind) logged since the last report; prints
+      nothing and exits 3 while there are fewer than N. A run logged without a skill is megamoind.
 """
 import argparse
 import json
@@ -30,6 +31,7 @@ CODEX = HOME / ".codex/sessions"
 TAG = re.compile(r"megamoind-run: ([\w.-]+)(?: role=([\w-]+))?")
 NOTICES = ("Delegated task node", "Another Claude session sent", "<task-notification", "Update on pull request")
 TOKENS = ("cache_read", "cache_write", "input", "output")
+DEFAULT_SKILL = "megamoind"
 
 
 def parse_time(stamp):
@@ -175,7 +177,7 @@ def collect(state_file, projects=PROJECTS, codex=CODEX, now=None):
         turns += codex_turns
     agents.sort(key=lambda a: (a["role"] != "main", a["role"]))
     phases = phases_of(state["marks"], parse_time(stamp), turns, human)
-    return {"run": run, "ticket": state["ticket"], "repo": state.get("repo"), "start": state["marks"][0]["t"],
+    return {"run": run, "ticket": state["ticket"], "skill": state.get("skill", DEFAULT_SKILL), "repo": state.get("repo"), "start": state["marks"][0]["t"],
             "end": stamp, "phases": phases, "agents": agents}
 
 
@@ -201,15 +203,15 @@ def summarise(runs):
     return {k: quantiles(v) for k, v in rows.items()}
 
 
-def report(log=LOG, baseline=BASELINE, seen=SEEN, min_runs=10):
+def report(log=LOG, baseline=BASELINE, seen=SEEN, min_runs=10, skill=DEFAULT_SKILL):
     log, seen = Path(log), Path(seen)
     done = set(json.loads(seen.read_text())) if seen.exists() else set()
     latest = {r["run"]: r for r in read_jsonl(log)} if log.exists() else {}
-    runs = [r for run, r in latest.items() if run not in done]
+    runs = [r for run, r in latest.items() if run not in done and r.get("skill", DEFAULT_SKILL) == skill]
     if not runs or len(runs) < min_runs:
         return None
     base = json.loads(Path(baseline).read_text()) if baseline and Path(baseline).exists() else {}
-    lines = [f"megamoind metrics: {len(runs)} runs since the last report (p25 / median / p75)"]
+    lines = [f"{skill} metrics: {len(runs)} runs since the last report (p25 / median / p75)"]
     for name, (lo, mid, hi) in summarise(runs).items():
         ref = f"   baseline {base[name][1]:.0f}" if name in base else ""
         lines.append(f"  {name}: median {mid:.0f}  ({lo:.0f}–{hi:.0f}){ref}")
@@ -232,9 +234,11 @@ def main(argv):
     s = sub.add_parser("start")
     s.add_argument("ticket")
     s.add_argument("--dir", required=True)
+    s.add_argument("--skill", default=DEFAULT_SKILL)
     m = sub.add_parser("mark")
     m.add_argument("state")
     m.add_argument("phase")
+    m.add_argument("--skill")
     c = sub.add_parser("collect")
     c.add_argument("state")
     c.add_argument("--log", default=LOG)
@@ -242,17 +246,20 @@ def main(argv):
     r.add_argument("--log", default=LOG)
     r.add_argument("--baseline", default=BASELINE)
     r.add_argument("--min-runs", type=int, default=10)
+    r.add_argument("--skill", default=DEFAULT_SKILL)
     args = parser.parse_args(argv)
 
     if args.cmd == "start":
         run = f"{args.ticket}-{datetime.now(timezone.utc):%Y%m%d%H%M%S}"
         state = Path(args.dir) / f"{args.ticket}-metrics.json"
-        state.write_text(json.dumps({"run": run, "ticket": args.ticket, "repo": str(Path.cwd()),
+        state.write_text(json.dumps({"run": run, "ticket": args.ticket, "skill": args.skill, "repo": str(Path.cwd()),
                                      "marks": [{"phase": "0 brief", "t": now_iso()}]}))
         print(f"megamoind-run: {run} role=main\nstate: {state}")
     elif args.cmd == "mark":
         state = json.loads(Path(args.state).read_text())
         state["marks"].append({"phase": args.phase, "t": now_iso()})
+        if args.skill:
+            state["skill"] = args.skill
         Path(args.state).write_text(json.dumps(state))
     elif args.cmd == "collect":
         run = collect(args.state)
@@ -266,7 +273,7 @@ def main(argv):
         for p in run["phases"]:
             print(f"  {p['phase']:12} {working_seconds(p) / 60:5.1f} min  cache read {p['cache_read'] / 1e6:5.1f}M")
     else:
-        text = report(args.log, args.baseline, min_runs=args.min_runs)
+        text = report(args.log, args.baseline, min_runs=args.min_runs, skill=args.skill)
         if text is None:
             return 3
         print(text)

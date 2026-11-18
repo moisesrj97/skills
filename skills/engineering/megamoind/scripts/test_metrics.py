@@ -1,3 +1,5 @@
+import contextlib
+import io
 import json
 import sys
 import tempfile
@@ -174,6 +176,43 @@ class Collect(unittest.TestCase):
         self.assertEqual(agents["verifier"]["cache_read"], 700)
 
 
+class Skill(unittest.TestCase):
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        self.state = self.root / "PD-1-metrics.json"
+
+    def state_after(self, *argv):
+        with contextlib.redirect_stdout(io.StringIO()):
+            metrics.main(list(argv))
+        return json.loads(self.state.read_text())
+
+    def test_a_direct_minimoi_run_starts_with_its_skill(self):
+        state = self.state_after("start", "PD-1", "--dir", str(self.root), "--skill", "minimoi")
+        self.assertEqual(state["skill"], "minimoi")
+
+    def test_a_run_started_without_a_skill_is_megamoind(self):
+        self.assertEqual(self.state_after("start", "PD-1", "--dir", str(self.root))["skill"], "megamoind")
+
+    def test_a_handoff_marks_the_run_as_minimoi_from_then_on(self):
+        self.state_after("start", "PD-1", "--dir", str(self.root))
+        state = self.state_after("mark", str(self.state), "0 handoff", "--skill", "minimoi")
+        self.assertEqual((state["skill"], state["marks"][-1]["phase"]), ("minimoi", "0 handoff"))
+
+    def test_a_plain_mark_keeps_the_skill(self):
+        self.state_after("start", "PD-1", "--dir", str(self.root), "--skill", "minimoi")
+        self.assertEqual(self.state_after("mark", str(self.state), "2 implement")["skill"], "minimoi")
+
+    def test_collect_copies_the_skill_into_the_record(self):
+        self.state.write_text(json.dumps({"run": "PD-1-20261117100000", "ticket": "PD-1", "skill": "minimoi",
+                                          "marks": [{"phase": "0 brief", "t": at(0)}]}))
+        self.assertEqual(metrics.collect(self.state, self.root / "p", self.root / "c", now=at(10))["skill"], "minimoi")
+
+    def test_collect_reads_a_state_from_before_the_field_as_megamoind(self):
+        self.state.write_text(json.dumps({"run": "PD-1-20261117100000", "ticket": "PD-1",
+                                          "marks": [{"phase": "0 brief", "t": at(0)}]}))
+        self.assertEqual(metrics.collect(self.state, self.root / "p", self.root / "c", now=at(10))["skill"], "megamoind")
+
+
 class Report(unittest.TestCase):
     def setUp(self):
         self.root = Path(tempfile.mkdtemp())
@@ -201,6 +240,16 @@ class Report(unittest.TestCase):
         text = metrics.report(self.log, None, self.seen, min_runs=1)
         self.assertIn("1 runs", text)
         self.assertIn("run minutes: median 20", text)
+
+    def test_reports_only_the_runs_of_the_skill_asked_for(self):
+        runs = [self.run_with(10), {**self.run_with(20), "skill": "megamoind"}, {**self.run_with(40), "skill": "minimoi"}]
+        self.log.write_text("".join(json.dumps(r) + "\n" for r in runs))
+        text = metrics.report(self.log, None, self.seen, min_runs=1)
+        self.assertIn("megamoind metrics: 2 runs", text)
+        self.assertIn("run minutes: median 15", text)
+        text = metrics.report(self.log, None, self.seen, min_runs=1, skill="minimoi")
+        self.assertIn("minimoi metrics: 1 runs", text)
+        self.assertIn("run minutes: median 40", text)
 
     def test_an_empty_log_says_nothing_whatever_the_threshold(self):
         self.log.write_text("")
