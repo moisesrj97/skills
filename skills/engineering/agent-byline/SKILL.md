@@ -19,6 +19,14 @@ Every body you post to a pull request under the user's account opens with the by
 
 Write the byline in the comment's language (`🤖 **Claude Opus 5.5 respondiendo en nombre de <name>**`). A fresh review, or an approval with no text, takes the language of the PR description; an approval with no text gets the byline as its whole body.
 
+## The comment
+
+A finding the user approved for posting is written for the author, who knows the code, so the review report's version doesn't go out as is. Before posting, rework it in this order:
+
+1. **Synthesize.** The cause in one sentence, each case in one line with what the user sees, and one fix. Leave out the trace through the code (which call sets what, which component unmounts), the test that would cover it and alternative fixes; the author asks if they want them.
+2. **Humanize.** Write it the way a teammate would: plain sentences in the comment's language, no bold labels, no headers. A short list is fine when there are several cases.
+3. **Unslop.** Run the `unslop` skill on the result.
+
 ## Posting
 
 Write the body to a file and pass the file: `gh pr comment --body-file`, `gh pr review --body-file`, `gh api … -F body=@<file>`, or `gh api … --input <file>.json` for a review with inline comments. Through `-f body="…"`, a `\n` reaches GitHub as a literal backslash-n and breaks the callout.
