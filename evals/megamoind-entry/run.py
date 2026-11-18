@@ -2,7 +2,8 @@
 """Regression check for megamoind's entry rule and its routing to megamoind-batch.
 
 Runs each prompt in cases.json through `claude -p` inside a throwaway git repo and
-checks the routing decision in the transcript. It exercises what is installed:
+checks the routing decision in the transcript, including megamoind's hand-off to
+minimoi and the eligibility check of a direct /minimoi. It exercises what is installed:
 the skill under ~/.claude/skills (a symlink to this checkout) and the rule in
 ~/.claude/CLAUDE.md.
 
@@ -32,9 +33,20 @@ BRIEF = """# ABC-123 brief
 - Verification: `python cli.py --version` prints the version.
 """
 
+MINIMOI_BRIEF = """# ABC-124 brief
+
+mode: minimoi
+
+- Plan: fix the typo "recieve" in README.md.
+- Branch: ABC-124-readme-typo
+- Verification: README.md reads "receive".
+"""
+
 ASKS_ABOUT_MEGAMOIND = re.compile(r"megamoind[^\n]*\?|\?[^\n]*megamoind|(without|sin) megamoind", re.I)
+ASKS_ABOUT_MINIMOI = re.compile(r"minimoi[^\n.!?]*\?|¿[^?\n]*minimoi", re.I)
 ASKS_FOR_ID = re.compile(r"\bID\b")
 OFFERS_CREATION = re.compile(r"\b(cre[aoé]\w*|create)\b", re.I)
+POINTS_TO_MEGAMOIND = re.compile(r"/megamoind\b")
 
 
 def make_fixture() -> Path:
@@ -42,6 +54,7 @@ def make_fixture() -> Path:
     (root / "README.md").write_text("# demo\n\nThis tool will recieve a file and print it.\n")
     (root / "cli.py").write_text("import sys\nprint(open(sys.argv[1]).read())\n")
     (root / "ABC-123-brief.md").write_text(BRIEF)
+    (root / "ABC-124-brief.md").write_text(MINIMOI_BRIEF)
     git = ["git", "-C", str(root), "-c", "user.name=eval", "-c", "user.email=eval@example.com"]
     subprocess.run([*git, "init", "-q", "-b", "main"], check=True)
     subprocess.run([*git, "add", "."], check=True)
@@ -56,6 +69,8 @@ def run_claude(prompt: str, cwd: Path, max_turns: str) -> list[dict]:
         "--max-turns", max_turns,
         "--permission-mode", "acceptEdits",
         "--strict-mcp-config",
+        # acceptEdits denies reads outside the cwd, and a skill's sibling files (MINIMOI.md) are outside it.
+        "--add-dir", str(Path.home() / ".claude/skills"), str(HERE.resolve().parent.parent / "skills"),
         "--disallowedTools", *DISALLOWED,
     ]
     if model := os.environ.get("MODEL"):
@@ -87,12 +102,23 @@ def skills_invoked(events: list[dict]) -> list[str]:
     return [u["input"].get("skill", "") for u in tool_uses(events) if u["name"] == "Skill"]
 
 
+def files_read(events: list[dict]) -> list[str]:
+    failed = {
+        block.get("tool_use_id")
+        for e in events if e.get("type") == "user"
+        for block in e.get("message", {}).get("content", [])
+        if isinstance(block, dict) and block.get("type") == "tool_result" and block.get("is_error")
+    }
+    return [u["input"].get("file_path", "") for u in tool_uses(events) if u["name"] == "Read" and u["id"] not in failed]
+
+
 def skill_name(name: str) -> str:
     return name.split(":")[-1]
 
 
 def observe(events: list[dict], fixture: Path) -> dict:
     uses = tool_uses(events)
+    read = files_read(events)
     text = final_text(events)
     asked_tool = [u for u in uses if u["name"] == "AskUserQuestion"]
     asked_text = text + json.dumps([u["input"] for u in asked_tool])
@@ -101,14 +127,15 @@ def observe(events: list[dict], fixture: Path) -> dict:
         "batch_invoked": any(skill_name(s) == "megamoind-batch" for s in skills_invoked(events)),
         "review_skill_invoked": any("review" in s for s in skills_invoked(events)),
         "asks_about_megamoind": bool(ASKS_ABOUT_MEGAMOIND.search(asked_text)),
+        "asks_about_minimoi": bool(ASKS_ABOUT_MINIMOI.search(asked_text)),
         "asks_user": bool(asked_tool) or text.rstrip().endswith("?"),
         "offers_ticket_creation": bool(ASKS_FOR_ID.search(asked_text) and OFFERS_CREATION.search(asked_text)),
         "edits": any(u["name"] in ("Edit", "Write", "NotebookEdit") for u in uses),
         "readme_fixed": "receive" in (fixture / "README.md").read_text(),
-        "brief_read": any(
-            u["name"] == "Read" and u["input"].get("file_path", "").endswith("ABC-123-brief.md")
-            for u in uses
-        ),
+        "brief_read": any(path.endswith("-brief.md") for path in read),
+        "minimoi_read": any(path.endswith("MINIMOI.md") for path in read),
+        "minimoi_refuses": bool(POINTS_TO_MEGAMOIND.search(text)),
+        "megamoind_read": any(path.endswith("megamoind/SKILL.md") for path in read),
     }
 
 

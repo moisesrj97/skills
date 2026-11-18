@@ -18,7 +18,7 @@ You are the **orchestrator**: you hold the brief, the branch, the PR and the CI,
 
 - `<ticket>`: a GitHub issue or an ID from the tracker the project's `## Ticket tracker` section names (e.g. ClickUp). Missing, step 0 gets one first.
 - `base=<branch>`: the branch to build on, e.g. the ticket below in a stack. Default: the default branch (`git symbolic-ref --short refs/remotes/origin/HEAD`). Every `<base>` below means this.
-- `brief=<file>`: step 0 already answered by whoever delegated the ticket. Read it instead of asking; only what it leaves open is HITL.
+- `brief=<file>`: step 0 already answered by whoever delegated the ticket. Read it instead of asking; only what it leaves open is HITL. A brief that says `mode: minimoi` runs the reduced flow (see step 0's "Minimoi").
 - `stop-at=draft`: the caller owns ready-for-review and reviewers. Step 7 opens the PR as a draft, step 8 loops on the checks that run on drafts, and step 10 is skipped.
 
 ## When a skill is not available
@@ -81,7 +81,7 @@ Fetch the ticket (`gh issue view` for a GitHub issue, the tracker's tools otherw
 
 Run `python3 <skill-dir>/scripts/preflight.py` once for the repo facts below (default branch, GitButler, CODEOWNERS, required checks, gh version, the sections of each steering file).
 
-With `brief=`, read it, settle on your own whatever of the plan below it leaves open (only the user's decisions are HITL), and go to step 1. Otherwise ask everything in **one** round, with your proposal for each. When the ticket already states the approach, files and validation, the plan is one short question that restates it and names only where you deviate, with no fallbacks or conditional plans. Each option states only consequences you checked in code or data this session: grep the consumer before claiming "with X, Y happens", and mark anything unchecked "unverified: …". An option that extends scope to a sibling case ("X has the same bug") quotes the routing line that sends the user's action into that code, found by tracing every call site.
+With `brief=`, read it, settle on your own whatever of the plan below it leaves open (only the user's decisions are HITL), and go to step 1, or hand off when it says `mode: minimoi`. Otherwise ask everything in **one** round, with your proposal for each. When the ticket already states the approach, files and validation, the plan is one short question that restates it and names only where you deviate, with no fallbacks or conditional plans. Each option states only consequences you checked in code or data this session: grep the consumer before claiming "with X, Y happens", and mark anything unchecked "unverified: …". An option that extends scope to a sibling case ("X has the same bug") quotes the routing line that sends the user's action into that code, found by tracing every call site.
 
 - **Plan**: the approach in a few lines, what it reuses, the seams where tests go with what each buys and sells (Test Desiderata), the tidyings worth doing first or after and where each goes by area of impact (Tidy First), and anything ambiguous in the ticket. When the ticket replaces or reproduces something already visible in the product, the plan keeps its current look, cites the **visual reference** (the screenshot, the live screen), and checks that the shape of the data (copy keys, props) can carry that look, e.g. one copy key can't style half its text.
 - **Branch name**: the format in the project's `## Ticket tracker` section, else `<ticket-id>-<short-kebab-description>`, with no `/`. A pre-PR or post-PR from the plan adds `<name>-tidy-first` or `<name>-tidy-after`.
@@ -93,6 +93,8 @@ With `brief=`, read it, settle on your own whatever of the plan below it leaves 
 - **Ticket description**: ask whether to copy the brief's product decisions (what changes, UI choices, acceptance criteria) into the ticket's description. On a yes, write them into the description, keeping its existing content, never as a comment.
 
 Done when the user has confirmed the plan and you have everything needed to reach step 8 without asking again. Write the confirmed brief to `<scratchpad>/<ticket>-brief.md`, and re-read it whenever a later step needs a decision from step 0.
+
+**Minimoi**: a trivial change runs the reduced flow in [`MINIMOI.md`](MINIMOI.md), inline, with no agents. Without `brief=`, once the brief is written and the ticket meets every condition in MINIMOI.md's "Eligibility", ask in a round of its own whether to hand off to minimoi, naming the conditions it meets; on a yes, add `mode: minimoi` to the brief. To hand off, run `metrics.py mark <state> "0 handoff" --skill minimoi` and follow MINIMOI.md from its step 1 instead of this file's.
 
 ### 1. Branch
 

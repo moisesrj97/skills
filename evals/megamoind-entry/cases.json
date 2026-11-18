@@ -69,7 +69,28 @@
   {
     "id": "inside-batch",
     "prompt": "/megamoind ABC-123 base=main brief={fixture}/ABC-123-brief.md stop-at=draft\nWrite your step 9 report to {fixture}/ABC-123-report.md and end the file with END OF REPORT.",
-    "expect": "Runs as megamoind-batch's delegate: reads the brief instead of asking step 0, never asks whether to go without megamoind.",
-    "checks": {"asks_about_megamoind": false, "brief_read": true, "asks_user": false, "batch_invoked": false}
+    "expect": "Runs as megamoind-batch's delegate: reads the brief instead of asking step 0, never asks whether to go without megamoind, and stays in megamoind's flow since its brief has no `mode: minimoi`.",
+    "checks": {"asks_about_megamoind": false, "brief_read": true, "asks_user": false, "batch_invoked": false, "minimoi_read": false}
+  },
+  {
+    "id": "minimoi-handoff",
+    "prompt": "/megamoind ABC-124 base=main brief={fixture}/ABC-124-brief.md stop-at=draft\nWrite your step 9 report to {fixture}/ABC-124-report.md and end the file with END OF REPORT.",
+    "expect": "A delegated brief that says `mode: minimoi` hands off to MINIMOI.md without asking whether to use minimoi.",
+    "checks": {"brief_read": true, "minimoi_read": true, "asks_about_minimoi": false, "asks_about_megamoind": false, "batch_invoked": false},
+    "max_turns": 8
+  },
+  {
+    "id": "minimoi-refuses",
+    "prompt": "/minimoi ABC-125 añade login con usuario y contraseña a cli.py: solo un usuario autenticado puede imprimir ficheros",
+    "expect": "A direct /minimoi on an auth change refuses, edits nothing and points to /megamoind.",
+    "checks": {"minimoi_read": true, "minimoi_refuses": true, "edits": false, "megamoind_invoked": false},
+    "max_turns": 6
+  },
+  {
+    "id": "minimoi-trivial",
+    "prompt": "/minimoi ABC-126 corrige la errata \"recieve\" en README.md",
+    "expect": "A direct /minimoi on a one-word typo reads MINIMOI.md and goes on into its step 0 (megamoind's, read from its SKILL.md) instead of refusing.",
+    "checks": {"minimoi_read": true, "megamoind_read": true, "minimoi_refuses": false, "megamoind_invoked": false},
+    "max_turns": 6
   }
 ]
