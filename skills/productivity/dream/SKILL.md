@@ -10,6 +10,8 @@ A dream folds what recent sessions learned into the memory files and trims the i
 
 Write only inside the memory directory. Leave CLAUDE.md files and code untouched.
 
+A dream runs unattended, end to end. Settle every conflict yourself with the rule in **Conflicts**, and report each decision as made.
+
 ## Step 0: Take the lock
 
 Pass the memory directory that your system prompt's auto-memory section names. Without `--memory-dir`, the script derives it from the repo.
@@ -41,23 +43,34 @@ Write or update memory files at the top level of the memory directory. Follow th
 
 - Merge new information into the existing topic file instead of adding a near-duplicate.
 - Turn relative dates ("yesterday", "last week") into absolute ones.
-- When a newer fact contradicts a memory, edit or delete that memory's file.
+- When a newer statement contradicts a memory, resolve it with **Conflicts**.
 
 ## Step 4: Prune and index
 
+Delete a memory that a future session wouldn't act on differently: one that repeats a CLAUDE.md, AGENTS.md, skill or repo doc; records ticket status or finished work; describes code that no longer exists; or captures a one-off. Merge files on the same topic, and cut narrative down to the fact, its **Why:** and its **How to apply:**.
+
 `MEMORY.md` is an index with one line per memory, `- [Title](file.md) — hook`, each under ~150 characters. The whole file stays under 200 lines and ~25 KB.
 
-- Remove pointers to stale, wrong or superseded memories, and add pointers for new ones.
+- Remove pointers to deleted or merged memories, and add pointers for new ones.
 - Shorten any line over ~200 characters and move the detail into its topic file.
-- When two files disagree, fix the wrong one.
 
-**Compare memories against CLAUDE.md.** Check each `feedback` or `project` memory that covers the same topic as an instruction in the global or project CLAUDE.md or AGENTS.md.
+Check each `feedback` or `project` memory against the global and project CLAUDE.md, AGENTS.md and the skills it touches, and against the other memories. Where two say different things for the same case, resolve it with **Conflicts**. A memory that adds detail, or narrows a rule with a stated reason, is no conflict: leave it.
 
-- **The memory is stale** when it describes a different procedure for the same task. CLAUDE.md is the maintained source, so delete the memory, or rewrite it to agree when its *why* is still worth keeping.
-- **CLAUDE.md may be stale** when the memory is clearly dated after it and corrects it explicitly. Annotate the memory with "contradicts CLAUDE.md, verify which is current" and list it in your summary.
-- **There is no conflict** when the memory adds detail, or narrows a rule with a stated reason. Leave it.
+## Conflicts
 
-A memory that says "the user corrected me" isn't necessarily newer than CLAUDE.md, which may have changed since.
+The latest statement wins: the user can change their mind. Date each side:
+
+- A session statement: the session's date.
+- A memory: the date in its body, else its file's mtime.
+- A line of CLAUDE.md, AGENTS.md or a skill: `git blame -L <n>,<n> --date=short <file>`. When the file is generated or symlinked from another, blame the source. Outside git, use the file's mtime.
+
+Then:
+
+- **The memory is older:** delete it, or rewrite it to agree when its *why* still adds something.
+- **The memory is newer than an instruction file:** keep it, and open its body with "Supersedes <file>: \"<quoted line>\" since <date>", so the next session follows the memory. The instruction file stays untouched.
+- **Two memories, or two sessions:** keep the newer meaning in one file and delete the other.
+
+**Outlier.** When the newest statement goes against a rule the user stated in 3 or more earlier sessions, and it carries no sign of a change of mind ("from now on", "no longer", "I changed my mind", or a reason that applies beyond the case at hand), it is an exception, not a reversal. Keep the rule and add the exception to the same file, scoped to the context it came from. With such a sign, the newest statement wins outright.
 
 ## Team memory
 
@@ -65,4 +78,4 @@ When a `team/` subdirectory exists, teammates' sessions write to it too. Skim it
 
 ## Report
 
-You are done when you have considered every listed session and `MEMORY.md` points at exactly the files that exist. Reply with a short summary of what you consolidated, updated or pruned, and list any memory you annotated against CLAUDE.md. If nothing changed, say so.
+You are done when you have considered every listed session and `MEMORY.md` points at exactly the files that exist. Reply with a short summary of what you created, updated, merged and deleted, and each conflict you settled: which side won and why. Every item is a decision already applied; the report is complete without any reply from the user. If nothing changed, say so.
