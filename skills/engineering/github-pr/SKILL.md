@@ -42,10 +42,10 @@ This PR resolves <ticket URL>
 
 - The ticket line appears only with a ticket link.
 - Add `## Next steps` for follow-ups or stacked PRs, and `## Related` for issue or PR references other than the ticket.
-- The reviewer has the diff, so the description carries the *why*, not a restated diff, file lists or code blocks.
+- The reviewer has the diff, so the description carries the *why*, not a restated diff, file lists or code blocks (trace excerpts under `## Evidence` aside).
 - Testing lists only checks that actually ran on the branch's final head, in this session or reported by the caller or the commits. The same holds for each box ticked in the repo's PR template: run the command a box names, or leave it unticked.
 - `## Merge risk` goes after How to revert, only with a `merge-risk` report the caller provides, pasted as given.
-- `## Screenshots` goes last, only with screenshots the caller or the user provides: each image as `![<what it shows>](./<file>)` under its one-line source (local data, injected in the browser…).
+- `## Evidence` goes last, only with evidence the caller or the user provides, each item under its one-line source (local data, injected in the browser…): an image or video as `![<what it shows>](./<file>)` (a video alone in its paragraph), a trace as a fenced code block with the file's contents, inside `<details><summary><flow></summary>` when it runs past 10 lines.
 
 ## 3. Preview
 
@@ -58,6 +58,6 @@ Pass the description through a file; a shell-quoted body mangles backticks and n
 - GitButler repo (`but status` works): `but pr new <branch> -F <file> --draft`, with the title on the file's first line and the description below it. It pushes the branch and its ancestors and sets the right base in a stack. Then `gh pr edit <number> --add-assignee @me`.
 - Otherwise: push the branch, then `gh pr create --draft --assignee @me --base <base> --title "<title>" --body-file <file>`, with the description alone in the file.
 
-With screenshots, save the description file in the screenshots' folder and call the Skill tool with `gh-attach`. `gh pr create` takes the `--attach` flags directly. `but pr new` has no `--attach`, so open the PR with the description minus `## Screenshots`, then `gh pr edit <number> --body-file <file> --attach …` with the full description alone in the file.
+With images or videos, save the description file in their folder and call the Skill tool with `gh-attach`. `gh pr create` takes the `--attach` flags directly. `but pr new` has no `--attach`, so open the PR with the description minus `## Evidence`, then `gh pr edit <number> --body-file <file> --attach …` with the full description alone in the file.
 
 Drop `--draft` only when the user says the PR is ready for review. Print the PR URL.

@@ -38,7 +38,7 @@ Start each with the Agent tool (`run_in_background: false`, model `opus`), and s
 4. Where its report goes: `<scratchpad>/<ticket>-implement.md` or `<scratchpad>/<ticket>-verify.md`, rewritten after each piece of work, ending in `END OF REPORT`.
 5. That a HITL question goes into the report and ends its turn instead of being asked. Relay it to the user, then send the answer back.
 
-Each report carries what step 9 needs: the implementer's commits, review passes (findings fixed, discarded and why), Later tidyings and failure-path checklist; the verifier's flows with pass or fail, the evidence, what went unverified and why, and each screenshot's path with its one-line source.
+Each report carries what step 9 needs: the implementer's commits, review passes (findings fixed, discarded and why), Later tidyings and failure-path checklist; the verifier's flows with pass or fail, each with its evidence files (paths and one-line sources, see [`EVIDENCE.md`](EVIDENCE.md)), and what went unverified and why.
 
 ## Gates
 
@@ -62,7 +62,7 @@ When the diff holds no code (a README, a skill, a recipe), the steps keep their 
 - **Step 2**: the test is each claim the doc makes, checked against the code it documents and cited with `file:line`, plus its code snippets type-checked against the real types. A skill with a `benchmark/evals.json` gets one new eval per behaviour change, with the opposite case as a control. When the project defines a check its evals must pass, run it in a fresh agent on the first draft, before committing, and again after each fix until it passes.
 - **Step 3**: tidy after runs over prose a reader maintains (a SKILL.md, a README) and skips data files such as `evals.json`.
 - **Step 4** runs only when the diff adds a command, script or snippet that runs code or touches credentials. Otherwise skip it and say so in the report.
-- **Step 5**: run every command or snippet the doc adds exactly as written, in the real app. For a skill, run each new eval prompt in a fresh agent that reads only the skill.
+- **Step 5**: run every command or snippet the doc adds exactly as written, in the real app. For a skill, run each new eval prompt in a fresh agent that reads only the skill. The evidence is each one's trace: the command or prompt and the output that proves it.
 - **Step 6** is skipped.
 - **Step 7**: with no such command, script or snippet, the `## Merge risk` section is one green line ("Docs only, no code runs") instead of a `merge-risk` run.
 
@@ -89,7 +89,7 @@ With `brief=`, read it, settle on your own whatever of the plan below it leaves 
 - **Verification**: how to run the app or service (the dev commands, required env, data or login, ports), and which flows prove the change works. Each observable named as proof (a status, a field, an endpoint's answer, an eval's expected output) cites the handler that produces it (`file:line`) and, when the app runs, has been seen once.
 - **CODEOWNERS**: if preflight names one, opening the PR ready for review requests those reviewers automatically. Say so, since it defeats waiting to add reviewers.
 - **Required checks**: the names CI must turn green, from the project's `CLAUDE.md` / `CLAUDE.local.md`, else preflight's `required_checks` (the base's rulesets and branch protection; pass `--base <base>` when it isn't the default branch). If neither gives them, or preflight reports `required_checks_error`, ask. Split them into checks that run on drafts and ready-only ones (e.g. a Jenkins job that builds only non-draft PRs whose base is the default branch).
-- **Screenshots** (frontend changes): the PR gets them through `gh-attach`, which needs gh ≥ 2.99. When preflight reports `gh_attach_ok: false`, ask the user to upgrade.
+- **Evidence media** (screenshots, recordings): the PR gets them through `gh-attach`, which needs gh ≥ 2.99. When preflight reports `gh_attach_ok: false`, ask the user to upgrade.
 - **Ticket description**: ask whether to copy the brief's product decisions (what changes, UI choices, acceptance criteria) into the ticket's description. On a yes, write them into the description, keeping its existing content, never as a comment.
 
 Done when the user has confirmed the plan and you have everything needed to reach step 8 without asking again. Write the confirmed brief to `<scratchpad>/<ticket>-brief.md`, and re-read it whenever a later step needs a decision from step 0.
@@ -155,12 +155,13 @@ The rest of this step is the verifier's. Start what the app needs as background 
   - To measure (bounding boxes, computed styles, visibility) or read text, evaluate a script in the page (`preview_evaluate`). A snapshot carries console, network and the accessibility tree, 10 to 20 KB each, so take one only for a capture you keep (`save: true`).
   - **States local data can't produce** (in progress, queued, failed): inject them in the page by intercepting `fetch` and rewriting the response. Keep the datastore to states the app produced itself: background jobs act on what it holds, so a stuck-job cron picks up a fake running job and a fake queue entry can start real work.
   - **Async or time-based UI** (polling, timers, text that may never appear): have the page record what happens (patch `fetch` or add a `MutationObserver` that pushes `{t, what}` into `window.__log`), then read it back with short `preview_evaluate` calls, each well under its 15 s timeout, returning what the page actually shows. `preview_wait_for` on exact text that never appears fails only after 60 s and tells you nothing, so read state this way instead of chaining it.
-  - **Screenshots**: capture each touched screen in its relevant states for the PR, following [`SCREENSHOTS.md`](SCREENSHOTS.md).
 - **Backend**: call the Skill tool with `debug-trace` and drive the changed paths through the running service, reading the trace to confirm the values the ticket expects.
+
+Each flow leaves evidence (a screenshot, a recording or a trace excerpt) following [`EVIDENCE.md`](EVIDENCE.md), failing flows too, so the implementer sees what broke.
 
 If the environment won't come up after one attempt, that's HITL; if it still can't run, record what went unverified for the PR description and the report.
 
-Done when every flow from step 0 and every item of the failure-path checklist has been exercised and behaves as the ticket asks. Then send the implementer step 6.
+Done when every flow from step 0 and every item of the failure-path checklist has been exercised, behaves as the ticket asks and has its evidence file, re-captured after any fix it went through. Then send the implementer step 6.
 
 ### 6. Comment cleanup (implementer)
 
@@ -168,13 +169,13 @@ Call the Skill tool with `comment-cleanup` over the whole branch diff (`<base>..
 
 ### 7. PR
 
-Open one PR per layer, bottom first. For each, call the Skill tool with `merge-risk` over the layer's range (`<layer below or base>...<layer>`), then with `github-pr`, handing it the merge-risk report for its `## Merge risk` section, anything left unverified in step 5, and any screenshots from step 5, each file with its one-line source.
+Open one PR per layer, bottom first. For each, call the Skill tool with `merge-risk` over the layer's range (`<layer below or base>...<layer>`), then with `github-pr`, handing it the merge-risk report for its `## Merge risk` section, anything left unverified in step 5, and step 5's evidence for the passing flows, each file with its one-line source.
 
 `github-pr` writes the title and description and opens the PR **ready for review**, so the full CI runs (some checks skip drafts); with `stop-at=draft`, open it as a draft. Its approval is already given, so print the title, description and files and go on without waiting for `approve`. Under GitButler, create the PR with `but pr new <branch> -F <file>` (first line title, rest description; add `--draft` with `stop-at=draft`) instead of `gh`, because it pushes the branch and its ancestors and sets the right base in a stack. Run `but status` right before it: a `<base>` marked `(merged upstream)` merged during the run, and `but pr new` fails on its deleted head. Update (`but pull`, under step 1's conditions) and open the PR against the default branch, saying so in the description and the report. `but pr new` also force-pushes every ancestor whose local tip GitButler rebased, so compare each branch below yours that isn't one of your layers (`git rev-parse <b> origin/<b>`). When one differs and has an open PR, push your branch alone: `git replay --onto origin/<base> <base>..<branch>` prints the rebased tip's SHA, then `git push origin <sha>:refs/heads/<branch>` and `gh pr create --base <base>`. A tidy PR's description says it changes structure only and names the ticket's PR it serves.
 
 Then write the step 9 report as `STATUS: interim — CI pending`, to the caller's report path or else `<scratchpad>/<ticket>-report.md`, and, unless a caller passed a path, tell the user with `PushNotification` that the PR is ready to look at. Most runs need no CI fix, so the user can start reviewing while CI runs. Notify again only when the run stops on a HITL; a green CI ends quietly in the final report.
 
-Done when every layer has its PR. Keep each one current through steps 6 and 8: a fix that changes a captured screen means capturing it again and re-attaching it, and a step 8 fix that changes exposed code means rerunning `merge-risk` and updating the section (`gh pr edit <number> --body-file <file>`).
+Done when every layer has its PR. Keep each one current through steps 6 and 8: a fix that changes what an evidence file shows means capturing it again and re-attaching it, and a step 8 fix that changes exposed code means rerunning `merge-risk` and updating the section (`gh pr edit <number> --body-file <file>`).
 
 ### 8. CI loop
 
@@ -205,7 +206,7 @@ Close the implementer and the verifier. Run `python3 <skill-dir>/scripts/metrics
 - Each layer bottom to top: PR URL, branch, merge-risk color, final CI state.
 - The Later tidyings, each with its files and why it waits.
 - Each review pass (tidy after, pair-review rounds, security review): findings, what was fixed, what was discarded and why.
-- What was verified in the real app and how; what wasn't, and why.
+- What was verified in the real app and how, with each flow's evidence files; what wasn't, and why.
 - CI failures met and how each was resolved.
 - Open HITL questions.
 - The retro file and its blockers.
