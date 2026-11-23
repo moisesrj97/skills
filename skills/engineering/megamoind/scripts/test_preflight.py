@@ -68,6 +68,22 @@ class FilesInOtherBranches(unittest.TestCase):
                                     "d.ts": []})
 
 
+class MergedUpstream(unittest.TestCase):
+    def test_reads_the_branches_but_status_marks_merged_upstream(self):
+        status = """\
+╭┄ @ [uncommitted] (no changes)
+┊
+┊╭┄ at [PD-1-feat] (merged upstream)
+┊●   lwpp a
+├╯
+┊
+┊╭┄ eat [PD-2-other]
+┊●   uyvp b
+├╯
+"""
+        self.assertEqual(preflight.merged_upstream(status), ["PD-1-feat"])
+
+
 class IsGate(unittest.TestCase):
     def test_reading_scripts_are_gates_and_writing_ones_are_not(self):
         gates = ["ci", "ci:build", "lint", "test", "test-unit", "e2e", "check-types", "type-check", "typecheck", "tsc",

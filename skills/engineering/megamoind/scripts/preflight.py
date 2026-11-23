@@ -4,7 +4,8 @@
 Usage: preflight.py [--base <ref> [--head <branch>]] [--files <path>...] [--repo <dir>]
 
 Keys: default_branch, gitbutler, gh_version, gh_attach_ok, codeowners, package_manager,
-dev_doctor, steering (files and their sections), required_checks (of --base, else of the
+dev_doctor, steering (files and their sections), merged_upstream (applied GitButler branches already
+merged upstream: update with `but pull` before implementing, or commits on files they touch fail), required_checks (of --base, else of the
 default branch; null with required_checks_error when a lookup failed), and with --base, touched_packages: each package.json directory the
 <base>...<head> diff touches, with the gate scripts it defines. Under GitButler HEAD merges
 every applied branch, so pass your branch as --head. With --files, files_in_other_branches: per path,
@@ -94,6 +95,13 @@ def touched_packages(root, base, head):
     }
 
 
+MERGED_UPSTREAM = re.compile(r"\[([^\]]+)\] \(merged upstream\)")
+
+
+def merged_upstream(status_text):
+    return MERGED_UPSTREAM.findall(status_text)
+
+
 def applied_branches(root):
     code, out = run(["but", "status", "--json"], root)
     if code != 0:
@@ -128,9 +136,11 @@ def collect(root, base=None, head="HEAD", files=()):
         root = Path(toplevel)
     branch = default_branch(root)
     version = gh_version(root)
+    but_code, but_status = run(["but", "status"], root)
     facts = {
         "default_branch": branch,
-        "gitbutler": run(["but", "status"], root)[0] == 0,
+        "gitbutler": but_code == 0,
+        "merged_upstream": merged_upstream(but_status) if but_code == 0 else [],
         "gh_version": ".".join(map(str, version)) if version else None,
         "gh_attach_ok": bool(version and version[:2] >= GH_ATTACH_MIN),
         "codeowners": next((p for p in CODEOWNERS if (root / p).exists()), None),
