@@ -36,7 +36,7 @@ Done when every new session has its verdict recorded.
 
 For every session with friction, earlier ones first, launch subagents with the Agent tool, `model: "sonnet"`, one session each, with this brief:
 
-> Call the Skill tool with `retro-with-docs` on the session `<session path>`. It ran in `<cwd>`, so pass both to `locate.py` (`--session <session path> --cwd <cwd>`). The triage flagged `<why>`. Write the retro file even when it ends with no findings, because the file marks the session as reviewed. Reply with its path and its count of open and skipped findings.
+> Call the Skill tool with `retro-with-docs` on the session `<session path>`. It ran in `<cwd>`, so pass both to `locate.py` (`--session <session path> --cwd <cwd>`). The triage flagged `<why>`: a lead to check, not a finding. Record it only if a transcript entry you can quote shows friction; leave it out, not even as skipped, when none does or when it is user steering the work called for (a design change, a stop the user chose). Write the retro file even when it ends with no findings, because the file marks the session as reviewed. Reply with its path and its count of open and skipped findings.
 
 A retro that fails stays pending for the next run, so note its error for the report.
 
