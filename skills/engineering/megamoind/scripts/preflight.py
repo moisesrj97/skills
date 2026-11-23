@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """Collect the repo facts megamoind's step 0 and gates need, as one JSON object.
 
-Usage: preflight.py [--base <ref> [--head <branch>]] [--repo <dir>]
+Usage: preflight.py [--base <ref> [--head <branch>]] [--files <path>...] [--repo <dir>]
 
 Keys: default_branch, gitbutler, gh_version, gh_attach_ok, codeowners, package_manager,
 dev_doctor, steering (files and their sections), required_checks (of --base, else of the
 default branch; null with required_checks_error when a lookup failed), and with --base, touched_packages: each package.json directory the
 <base>...<head> diff touches, with the gate scripts it defines. Under GitButler HEAD merges
-every applied branch, so pass your branch as --head.
+every applied branch, so pass your branch as --head. With --files, files_in_other_branches: per path,
+the other applied GitButler branches (all but --head) whose diff from the target touches it, plus
+"(uncommitted)" when an uncommitted change does.
 """
 import argparse
 import json
@@ -92,7 +94,34 @@ def touched_packages(root, base, head):
     }
 
 
-def collect(root, base=None, head="HEAD"):
+def applied_branches(root):
+    code, out = run(["but", "status", "--json"], root)
+    if code != 0:
+        return None
+    return json.loads(out)
+
+
+def files_in_other_branches(root, status, files, head=None):
+    target = status["mergeBase"]["commitId"]
+    touching = {file: [] for file in files}
+    for stack in status["stacks"]:
+        for branch in stack["branches"]:
+            if branch["name"] == head:
+                continue
+            code, out = run(["git", "diff", "--name-only", "--no-renames", "-z", f"{target}...{branch['name']}"], root)
+            changed = set(filter(None, out.split("\0"))) if code == 0 else set()
+            for file in files:
+                if file in changed:
+                    touching[file].append(branch["name"])
+    uncommitted = {c["filePath"] for c in status["uncommittedChanges"]}
+    uncommitted |= {c["filePath"] for stack in status["stacks"] for c in stack.get("assignedChanges") or []}
+    for file in files:
+        if file in uncommitted:
+            touching[file].append("(uncommitted)")
+    return touching
+
+
+def collect(root, base=None, head="HEAD", files=()):
     root = Path(root).resolve()
     code, toplevel = run(["git", "rev-parse", "--show-toplevel"], root)
     if code == 0:
@@ -116,6 +145,9 @@ def collect(root, base=None, head="HEAD"):
         facts["required_checks_error"] = str(error)
     if base:
         facts["touched_packages"] = touched_packages(root, base, head)
+    if files:
+        status = applied_branches(root) if facts["gitbutler"] else None
+        facts["files_in_other_branches"] = files_in_other_branches(root, status, files, head) if status else None
     return facts
 
 
@@ -123,9 +155,10 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--base")
     parser.add_argument("--head", default="HEAD")
+    parser.add_argument("--files", nargs="+", default=[])
     parser.add_argument("--repo", default=".")
     args = parser.parse_args(argv)
-    print(json.dumps(collect(args.repo, args.base, args.head), indent=2))
+    print(json.dumps(collect(args.repo, args.base, args.head, args.files), indent=2))
     return 0
 
 

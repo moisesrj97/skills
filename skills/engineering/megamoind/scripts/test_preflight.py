@@ -46,6 +46,28 @@ class TouchedPackages(unittest.TestCase):
         self.assertEqual(preflight.package_manager(root), "yarn")
 
 
+class FilesInOtherBranches(unittest.TestCase):
+    def test_names_each_other_applied_branch_and_uncommitted_change_touching_a_path(self):
+        root = Path(tempfile.mkdtemp())
+        for name in ("a.ts", "b.ts", "c.ts"):
+            (root / name).write_text("1")
+        git(root, "init", "-q", "-b", "main")
+        git(root, "add", "-A")
+        git(root, "commit", "-qm", "base")
+        for branch, file in (("mine", "a.ts"), ("theirs", "a.ts"), ("other", "b.ts")):
+            git(root, "switch", "-qc", branch, "main")
+            (root / file).write_text(branch)
+            git(root, "commit", "-qam", branch)
+        base = subprocess.run(["git", "-C", str(root), "rev-parse", "main"], capture_output=True, text=True).stdout.strip()
+        status = {"mergeBase": {"commitId": base},
+                  "uncommittedChanges": [{"filePath": "c.ts"}],
+                  "stacks": [{"assignedChanges": [], "branches": [{"name": "mine"}]},
+                             {"assignedChanges": [{"filePath": "b.ts"}], "branches": [{"name": "theirs"}, {"name": "other"}]}]}
+        touching = preflight.files_in_other_branches(root, status, ["a.ts", "b.ts", "c.ts", "d.ts"], head="mine")
+        self.assertEqual(touching, {"a.ts": ["theirs"], "b.ts": ["other", "(uncommitted)"], "c.ts": ["(uncommitted)"],
+                                    "d.ts": []})
+
+
 class IsGate(unittest.TestCase):
     def test_reading_scripts_are_gates_and_writing_ones_are_not(self):
         gates = ["ci", "ci:build", "lint", "test", "test-unit", "e2e", "check-types", "type-check", "typecheck", "tsc",
