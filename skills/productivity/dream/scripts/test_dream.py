@@ -67,6 +67,48 @@ class Start(unittest.TestCase):
         self.assertFalse(self.lock.exists())
 
 
+class Projects(unittest.TestCase):
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+
+    def project(self, name, sessions, memory=True, lock=None):
+        folder = self.root / name
+        folder.mkdir()
+        if memory:
+            (folder / "memory").mkdir()
+        if lock is not None:
+            (folder / "memory" / ".consolidate-lock").write_text("")
+            os.utime(folder / "memory" / ".consolidate-lock", (lock, lock))
+        for i, mtime in enumerate(sessions):
+            path = folder / f"s{i}.jsonl"
+            path.write_text("")
+            os.utime(path, (mtime, mtime))
+        return folder
+
+    def test_lists_projects_with_sessions_past_their_lock_and_every_session_without_one(self):
+        now = time.time()
+        self.project("-Users-me-repo", [OLD - 60, now], lock=OLD)
+        self.project("-Users-me--t3-worktrees-repo-t3-1a2b3c4d", [now])
+        self.project("-Users-me-new", [OLD - 30 * 86400, now])
+        self.project("-Users-me-done", [OLD - 60], lock=OLD)
+        self.project("-Users-me-nomemory", [now], memory=False)
+        self.project("-Users-me--t3-scratch-2026-11-01-x", [now])
+        self.project("-private-var-folders-ab-T-x", [now])
+        code, out = run("projects", "--projects-dir", str(self.root))
+        self.assertEqual(code, 0)
+        self.assertEqual({Path(p["memory_dir"]).parent.name: p["sessions"] for p in json.loads(out)},
+                         {"-Users-me-repo": 2, "-Users-me-new": 2})
+
+    def test_start_and_digest_read_the_repos_worktree_sessions(self):
+        repo = self.project("-Users-me-repo", [], lock=OLD)
+        worktree = self.project("-Users-me--t3-worktrees-repo-t3-1a2b3c4d", [time.time()], memory=False)
+        (worktree / "s0.jsonl").write_text(json.dumps({"type": "user", "message": {"content": "hi"}}))
+        code, out = run("start", "--memory-dir", str(repo / "memory"))
+        self.assertEqual(json.loads(out)["sessions"][0]["transcripts_dir"], str(worktree))
+        code, out = run("digest", "s0", "--memory-dir", str(repo / "memory"))
+        self.assertEqual(out.splitlines(), ["[] USER hi"])
+
+
 class Digest(unittest.TestCase):
     def test_keeps_user_and_claude_text_and_answers_and_drops_tool_traffic(self):
         project = Path(tempfile.mkdtemp())

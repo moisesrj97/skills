@@ -12,6 +12,8 @@ Write only inside the memory directory. Leave CLAUDE.md files and code untouched
 
 A dream runs unattended, end to end. Settle every conflict yourself with the rule in **Conflicts**, and report each decision as made.
 
+To dream every project (a scheduled run), `python3 <skill-dir>/scripts/dream.py projects` lists the memory dirs with sessions past their lock, every session for one with no lock yet, leaving out scratch and temp dirs and counting T3 worktree sessions toward their repo. Run this skill on each with its `--memory-dir`, one subagent per project, and keep every session `start` lists: the lock is stamped past them all, so a session left out never comes back.
+
 ## Step 0: Take the lock
 
 Pass the memory directory that your system prompt's auto-memory section names. Without `--memory-dir`, the script derives it from the repo.
@@ -20,7 +22,7 @@ Pass the memory directory that your system prompt's auto-memory section names. W
 python3 <skill-dir>/scripts/dream.py start --memory-dir <memory-dir>
 ```
 
-It prints the memory and transcripts directories, when the last consolidation ran, and the sessions modified since then, without the current one. It also stamps the lock with the current time, so a finished dream needs no further script call. If you stop before finishing, restore the lock with `python3 <skill-dir>/scripts/dream.py rollback --memory-dir <memory-dir> --to <previous_lock_mtime>`. If the script reports that another dream holds the lock, stop and say so.
+It prints the memory and transcripts directories, when the last consolidation ran, and the sessions modified since then, without the current one; a session from a T3 worktree carries its own `transcripts_dir`. It also stamps the lock with the current time, so a finished dream needs no further script call. If you stop before finishing, restore the lock with `python3 <skill-dir>/scripts/dream.py rollback --memory-dir <memory-dir> --to <previous_lock_mtime>`. If the script reports that another dream holds the lock, stop and say so.
 
 ## Step 1: Orient
 
@@ -35,7 +37,7 @@ In priority order:
 1. **Drift.** Memories that contradict what the code shows now.
 2. **Decisions and corrections in the listed sessions.** Transcripts are JSONL files of several MB. Read each one through its digest, which keeps the user's messages, their answers to questions and Claude's replies.
    `python3 <skill-dir>/scripts/dream.py digest <session-id> --memory-dir <memory-dir>`
-   When the digest cuts a detail short, such as an error message or a value, grep the raw transcript for a narrow term: `grep -n "<term>" <transcripts_dir>/<session-id>.jsonl | tail -50`.
+   When the digest cuts a detail short, such as an error message or a value, grep the raw transcript for a narrow term: `grep -n "<term>" <transcripts_dir>/<session-id>.jsonl | tail -50`, with the session's own `transcripts_dir` when it has one.
 
 ## Step 3: Consolidate
 
