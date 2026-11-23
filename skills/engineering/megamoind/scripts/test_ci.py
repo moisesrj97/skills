@@ -62,6 +62,23 @@ class Wait(unittest.TestCase):
         self.assertEqual(details["missing"], ["jenkins"])
 
 
+    def test_fails_naming_seen_checks_when_a_required_one_never_appears(self):
+        clock = iter(range(0, 3600, 300))
+        state, details = ci.wait(1, ["lintCodeQuality"], set(), 300, 3600,
+                                 fetch=lambda pr: [check("Jenkins Lint CodeQuality", "pass"), check("test", "skipping")],
+                                 sleep=lambda s: None, now=lambda: next(clock))
+        self.assertEqual(state, "missing")
+        self.assertEqual(details["missing"], ["lintCodeQuality"])
+        self.assertEqual(details["seen"], ["Jenkins Lint CodeQuality", "test"])
+
+    def test_a_late_required_check_inside_the_grace_period_still_counts(self):
+        rounds = iter([[check("lint", "pass")]] * 3 + [[check("lint", "pass"), check("jenkins", "pending")]] * 3
+                      + [[check("lint", "pass")]] * 3 + [[check("lint", "pass"), check("jenkins", "pass")]])
+        clock = iter(range(0, 36000, 300))
+        state, _ = ci.wait(1, ["jenkins"], set(), 300, 36000, fetch=lambda pr: next(rounds),
+                           sleep=lambda s: None, now=lambda: next(clock))
+        self.assertEqual(state, "green")
+
     def test_rides_out_transient_gh_errors_but_not_three_in_a_row(self):
         def flaky(results):
             it = iter(results)

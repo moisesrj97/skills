@@ -12,7 +12,8 @@ Usage:
       check has reported.
       --skip leaves checks out of the wait (e.g. ready-only ones on a draft, pending retarget).
       Exit 0: all green. 1: some check red (named on stdout). 4: timeout (pending and
-      missing named). 2: gh failed 3 polls in a row. A PR with no checks at all counts as
+      missing named). 3: every reported check settled 15 minutes ago and a --required one
+      never appeared (the names seen are printed, to catch a typo). 2: gh failed 3 polls in a row. A PR with no checks at all counts as
       pending for 5 minutes, then green when nothing it requires is left to wait for.
 """
 import argparse
@@ -121,10 +122,11 @@ def fetch_commit_checks(sha):
 
 
 def wait(pr, required_names, skip, interval, timeout, fetch=fetch_checks, sleep=time.sleep, now=time.monotonic,
-         max_errors=3, grace=300):
+         max_errors=3, grace=300, missing_grace=900):
     start = now()
     deadline = start + timeout
     errors = 0
+    only_missing_since = None
     while True:
         try:
             checks = fetch(pr)
@@ -135,8 +137,15 @@ def wait(pr, required_names, skip, interval, timeout, fetch=fetch_checks, sleep=
                 raise
             sleep(interval)
             continue
-        state, details = evaluate(checks, required_names, skip, settled=now() - start >= grace)
-        if state != "pending" or now() >= deadline:
+        t = now()
+        state, details = evaluate(checks, required_names, skip, settled=t - start >= grace)
+        if checks and state == "pending" and not details["pending"]:
+            only_missing_since = t if only_missing_since is None else only_missing_since
+            if t - only_missing_since >= missing_grace:
+                return "missing", {**details, "seen": [c["name"] for c in checks]}
+        else:
+            only_missing_since = None
+        if state != "pending" or t >= deadline:
             return state if state != "pending" else "timeout", details
         sleep(interval)
 
@@ -179,7 +188,9 @@ def main(argv=None):
         print(f"pending: {check['name']}")
     for name in details["missing"]:
         print(f"missing: {name} (required, not reported yet)")
-    return {"green": 0, "red": 1, "timeout": 4}[state]
+    if "seen" in details:
+        print(f"seen: {', '.join(details['seen'])}")
+    return {"green": 0, "red": 1, "missing": 3, "timeout": 4}[state]
 
 
 if __name__ == "__main__":
