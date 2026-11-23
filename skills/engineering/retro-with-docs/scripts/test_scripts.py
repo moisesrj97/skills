@@ -74,6 +74,10 @@ class Validate(unittest.TestCase):
         self.assertIn("R1: cause cites the evidence ([<index>]), starts with `suspicion: ` or is `unknown`", found)
         self.assertIn("frontmatter: date '10/11/2026' is not YYYY-MM-DD", found)
 
+    def test_an_unfilled_placeholder_status_is_a_problem(self):
+        self.assertIn("R1: status 'applied (<commit>)' has a `<…>` placeholder: fill it in",
+                      validate_retro.problems(GOOD.replace("- status: open", "- status: applied (<commit>)")))
+
     def test_a_malformed_finding_heading_is_a_problem(self):
         self.assertIn("heading '## R1 - The app could not start without a seeded account' is not `## R<n>: <problem>`",
                       validate_retro.problems(GOOD.replace("## R1: The app", "## R1 - The app")))

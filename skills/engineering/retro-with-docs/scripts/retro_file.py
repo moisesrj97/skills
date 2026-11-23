@@ -24,6 +24,7 @@ WEIGHT = {"blocker": 4, "high": 3, "medium": 2, "low": 1}
 REF_PATTERN = r"[^/\s]+/[^#\s]+\.md#R\d+[a-z]?"
 REF = re.compile(r"^([^/]+)/([^#]+\.md)#(R\d+[a-z]?)$")
 STATUS = re.compile(rf"^(open|applied \(.+\)|rejected \(.+\)|skipped \(.+\)|duplicate of {REF_PATTERN})$")
+PLACEHOLDER = re.compile(r"<[^>]*>")
 STATUS_HELP = "open, applied (…), rejected (…), skipped (…) or duplicate of <project>/<file>#R<n>"
 CAUSE = re.compile(r"^(unknown|suspicion: .+|.*\[\d+\].*)$")
 LINE_RANGE = re.compile(r"\S+:\d+(-\d+)?")
@@ -106,6 +107,8 @@ def problems(text):
                 out.append(f"{where}: {key} {f[key]!r} is not one of {' | '.join(allowed)}")
         if f.get("status") and not STATUS.match(f["status"]):
             out.append(f"{where}: status {f['status']!r} is not {STATUS_HELP}")
+        elif f.get("status") and PLACEHOLDER.search(f["status"]):
+            out.append(f"{where}: status {f['status']!r} has a `<…>` placeholder: fill it in")
         for key in ["expected", "cost", "cause"]:
             if f.get(key) == UNRECORDED and not migrated:
                 out.append(f"{where}: {key} `unrecorded` is only for migrated files")
@@ -154,6 +157,8 @@ def set_status(root, ref, status):
         raise ValueError(f"{ref}: not a <project>/<file>#R<n> ref")
     if not STATUS.match(status):
         raise ValueError(f"{ref}: status {status!r} is not {STATUS_HELP}")
+    if PLACEHOLDER.search(status):
+        raise ValueError(f"{ref}: status {status!r} has a `<…>` placeholder: fill it in")
     project, file, finding_id = match.groups()
     path = Path(root) / project / file
     if not path.exists():

@@ -90,7 +90,8 @@ class Retros(unittest.TestCase):
         for ref, status in [("shop/2026-11-10-cart.md#R1", "resolved"),
                             ("shop/2026-11-10-cart.md", "open"),
                             ("shop/2026-11-10-cart.md#R9", "open"),
-                            ("shop/nope.md#R1", "open")]:
+                            ("shop/nope.md#R1", "open"),
+                            ("shop/2026-11-10-cart.md#R1", "applied (<commit or PR for seed>)")]:
             with self.assertRaises(ValueError):
                 retros.set_status(self.root, ref, status)
         self.assertEqual(self.file.read_text(), RETRO)
