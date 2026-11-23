@@ -61,7 +61,7 @@ Push only with every gate green or **foreign** (see "Sharing the workspace").
 When the diff holds no code (a README, a skill, a recipe), the steps keep their shape and change what they test:
 
 - **Gates**: links and anchors resolve.
-- **Step 2**: the test is each claim the doc makes, checked against the code it documents and cited with `file:line`, plus its code snippets type-checked against the real types. A skill with a `benchmark/evals.json` gets one new eval per behaviour change, with the opposite case as a control. When the project defines a check its evals must pass, run it in a fresh agent on the first draft, before committing, and again after each fix until it passes.
+- **Step 2**: the test is each claim the doc makes, checked against the code it documents and cited with `file:line`, plus its code snippets type-checked against the real types. A skill with a `benchmark/evals.json` gets one new eval per behaviour change, with the opposite case as a control. When the project defines a check its evals must pass, the implementer runs it in a fresh agent on the first draft, before committing and handing back, and again after each fix until it passes.
 - **Step 3**: tidy after runs over prose a reader maintains (a SKILL.md, a README) and skips data files such as `evals.json`.
 - **Step 4** runs only when the diff adds a command, script or snippet that runs code or touches credentials. Otherwise skip it and say so in the report.
 - **Step 5**: run every command or snippet the doc adds exactly as written, in the real app. For a skill, run each new eval prompt in a fresh agent that reads only the skill. The evidence is each one's trace: the command or prompt and the output that proves it.
