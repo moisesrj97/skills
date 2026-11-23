@@ -14,7 +14,7 @@ Single retros are noisy. Friction that shows up in several sessions, or in sever
 python3 <skill-dir>/scripts/retros.py batches --out <scratchpad>/digest
 ```
 
-It reads every `~/.skill-docs/retros/<project>/*.md` and splits into batch files every `open` finding, plus the `rejected` ones so recurrences show and the `skipped` ones so recurring noise shows. Each finding carries its ref (`<project>/<file>#R<n>`), date and fields. The script leaves out skipped findings older than four weeks, since a one-off that has not recurred in that long is not a pattern. It sorts batches by where each change would land, so related findings tend to share one. If it writes no batch, say so and stop.
+It reads every `~/.skill-docs/retros/<project>/*.md` and splits into batch files every `open` finding, plus the `rejected` ones so recurrences show and the `skipped` ones so recurring noise shows. Each finding carries its ref (`<project>/<file>#R<n>`), date and fields. The script leaves out skipped findings older than four weeks, since a one-off that has not recurred in that long is not a pattern. It sorts batches by where each change would land, so related findings tend to share one. Skipped findings name no target, so they land in batches of their own, apart from the open findings they may repeat; step 3 joins them. If it writes no batch, say so and stop.
 
 ## 2. Cluster each batch
 
@@ -26,12 +26,17 @@ Done when every batch has its `clusters-<n>.json`.
 
 ## 3. Merge and rank
 
-Batches split some clusters, so merge the returned ones that share an owner and a cause into one.
+Batches split some clusters, skipped findings above all, so merge across batches the clusters that share an owner and a cause:
 
-Each merged cluster's **canonical** member, the earliest finding by date, carries the cluster's status. Skipped members count as occurrences. A cluster made only of skipped members goes forward once it has 3 members; a smaller one stays skipped and out of the digest. For each cluster:
+```bash
+python3 <skill-dir>/scripts/retros.py merge <scratchpad>/digest
+```
+
+It ids each cluster `<batch>.<n>` and writes `index.txt`, one line per cluster sorted by owner. Read it whole and write `<scratchpad>/merges.json`, one group per set of clusters with the same owner and cause, a skipped-only one included when it repeats an open one: `[{"ids": ["3.7", "12.2"], "owner": "…", "cause": "…", "proposal": "…"}]` (text left out comes from the first id). Rerun with `--merges <scratchpad>/merges.json`. It refuses, naming each, a finding missing or placed twice and a cluster without text; fix the file it names (resume that batch's subagent for its own clusters) and rerun until it writes `merged.json`.
+
+Each cluster in `merged.json` comes with its **canonical** member, the earliest finding by date, which carries the cluster's status; its `score`, the occurrences (skipped members count) times the highest weight among them (blocker 4, high 3, medium 2, low 1; 1 for a skipped member without a severity); its `rejected` members; and `forward`, false for a cluster of only skipped members with fewer than 3, which stays skipped and out of the digest. For each forward cluster:
 
 - **Scope** is **global** when the fix lands in shared setup (user-level steering files, skills, hooks, tooling) or when the same friction shows up in more than one project, which moves even a project-level fix there. It is **project** when the fix lands in one repo.
-- **Score** is the occurrences times the highest `weight` among its members (blocker 4, high 3, medium 2, low 1; 1 for a skipped member without a severity).
 - **Already in place**: read its target. If the change is already there, mark the cluster resolved in step 7 without asking.
 - **Recurring after rejection**: a cluster with a `rejected` member is not proposed again. List it apart with its count and the rejection reason, for the user to reopen it or fold its open members into the rejected one.
 

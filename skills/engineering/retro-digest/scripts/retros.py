@@ -10,6 +10,13 @@ Usage:
   retros.py batches --out <dir> [--size 40] [--skipped-days 28] [--root <dir>]
       Splits what collect prints into <dir>/batch-<n>.json, sorted by where each change would
       land so related findings share a batch, each field clipped. Prints the batch files.
+  retros.py merge <dir> [--merges <file.json>]
+      Reads <dir>/batch-<n>.json and the cluster subagents' <dir>/clusters-<n>.json, ids each
+      cluster <n>.<i>, merges each group in --merges ([{"ids": ["<id>", ...], "owner"?, "cause"?,
+      "proposal"?}], text defaulting to the first id's), and writes <dir>/merged.json, highest score first, and <dir>/index.txt, one line per
+      cluster sorted by owner, for spotting the clusters batches split. Refuses, naming every
+      offender, a batch without clusters, a cluster without owner, cause, proposal or members, an
+      unknown ref or id, and a finding placed in no cluster or in more than one.
   retros.py set <ref> <status> [--root <dir>]
   retros.py set --from <file.json> [--root <dir>]       {"<ref>": "<status>", ...}
       Rewrites each finding's `- status:` line. A status is `applied (<where>)`,
@@ -24,7 +31,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from retro_file import ROOT, collect, is_skipped, set_status  # noqa: E402
+from retro_file import ROOT, WEIGHT, collect, is_skipped, set_status  # noqa: E402
 
 BATCH_FIELDS = ["ref", "date", "status", "severity", "category", "kind", "target", "title", "evidence",
                 "cause", "proposal", "matches"]
@@ -59,6 +66,106 @@ def batches(findings, size):
     return [clipped[i:i + size] for i in range(0, len(clipped), size)]
 
 
+def numbered(directory, prefix):
+    found = {}
+    for path in Path(directory).glob(f"{prefix}-*.json"):
+        number = path.stem[len(prefix) + 1:]
+        if number.isdigit():
+            found[int(number)] = path
+    return dict(sorted(found.items()))
+
+
+def load_clusters(directory):
+    """Returns (findings by ref, clusters by id, problems)."""
+    findings, clusters, problems = {}, {}, []
+    batch_files, cluster_files = numbered(directory, "batch"), numbered(directory, "clusters")
+    for n, path in batch_files.items():
+        for finding in json.loads(path.read_text()):
+            findings[finding["ref"]] = finding
+        if n not in cluster_files:
+            problems.append(f"batch-{n}.json: no clusters-{n}.json")
+    for n, path in cluster_files.items():
+        try:
+            returned = json.loads(path.read_text())
+        except json.JSONDecodeError as error:
+            problems.append(f"{path.name}: not valid JSON ({error})")
+            continue
+        for i, cluster in enumerate(returned, 1):
+            cid = f"{n}.{i}"
+            missing = [k for k in ("owner", "cause", "proposal", "members") if not cluster.get(k)]
+            if missing:
+                problems.append(f"{cid}: no {', '.join(missing)}")
+            clusters[cid] = {"owner": "", "cause": "", "proposal": "", "members": [], **cluster}
+    return findings, clusters, problems
+
+
+def group_clusters(clusters, merges):
+    """Returns (groups of cluster ids, problems): each --merges group, every other cluster alone.
+
+    Equal owner and cause text is no ground to merge: cluster subagents give unrelated skipped
+    singletons the same placeholder owner and cause.
+    """
+    groups, problems, taken = [], [], {}
+    for g, merge in enumerate(merges, 1):
+        ids = merge.get("ids") or []
+        for cid in ids:
+            if cid not in clusters:
+                problems.append(f"merges[{g}]: unknown cluster {cid}")
+            elif cid in taken:
+                problems.append(f"merges[{g}]: {cid} is already in merges[{taken[cid]}]")
+            else:
+                taken[cid] = g
+        groups.append([cid for cid in ids if taken.get(cid) == g])
+    return [g for g in groups if g] + [[cid] for cid in clusters if cid not in taken], problems
+
+
+def merge(directory, merges=()):
+    """Returns (merged clusters, problems)."""
+    findings, clusters, problems = load_clusters(directory)
+    groups, merge_problems = group_clusters(clusters, list(merges))
+    problems += merge_problems
+    placed = {}
+    for cid, cluster in clusters.items():
+        for ref in cluster["members"]:
+            if ref not in findings:
+                problems.append(f"{cid}: {ref} is in no batch")
+            placed.setdefault(ref, []).append(cid)
+    problems += [f"{ref}: in {', '.join(ids)}" for ref, ids in placed.items() if len(ids) > 1]
+    problems += [f"{ref}: in no cluster" for ref in findings if ref not in placed]
+    if problems:
+        return [], problems
+
+    text = {m["ids"][0]: m for m in merges if m.get("ids")}
+    merged = []
+    for ids in groups:
+        first = clusters[ids[0]]
+        override = text.get(ids[0], {})
+        members = sorted({ref for cid in ids for ref in clusters[cid]["members"]},
+                         key=lambda ref: (findings[ref].get("date") or "", ref))
+        statuses = {}
+        for ref in members:
+            word = findings[ref].get("status", "").split(" ")[0]
+            statuses[word] = statuses.get(word, 0) + 1
+        weight = max(WEIGHT.get(findings[ref].get("severity"), 1) for ref in members)
+        merged.append({
+            "id": ids[0], "src": ids,
+            **{k: override.get(k) or first[k] for k in ("owner", "cause", "proposal")},
+            "members": members, "canonical": members[0], "statuses": statuses,
+            "weight": weight, "score": len(members) * weight,
+            "projects": sorted({ref.split("/")[0] for ref in members}),
+            "rejected": [ref for ref in members if findings[ref].get("status", "").startswith("rejected")],
+            "forward": set(statuses) != {"skipped"} or len(members) >= 3,
+        })
+    merged.sort(key=lambda c: (-c["score"], c["id"]))
+    return merged, []
+
+
+def index_lines(merged):
+    rows = sorted(merged, key=lambda c: (owner(c["owner"]), c["owner"].lower(), c["id"]))
+    return [f"{c['id']} | {' '.join(f'{v} {k}' for k, v in c['statuses'].items())} | {c['owner']} | {c['cause']}"
+            for c in rows]
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -71,6 +178,9 @@ def main(argv=None):
     b.add_argument("--size", type=int, default=40)
     b.add_argument("--skipped-days", type=int, default=28)
     b.add_argument("--root", default=str(ROOT))
+    m = sub.add_parser("merge")
+    m.add_argument("dir")
+    m.add_argument("--merges")
     s = sub.add_parser("set")
     s.add_argument("ref", nargs="?")
     s.add_argument("status", nargs="?")
@@ -89,6 +199,19 @@ def main(argv=None):
             path = out / f"batch-{i}.json"
             path.write_text(json.dumps(batch, indent=1, ensure_ascii=False))
             print(f"{path} ({len(batch)} findings)")
+        return 0
+    if args.command == "merge":
+        merges = json.loads(Path(args.merges).read_text()) if args.merges else []
+        merged, problems = merge(args.dir, merges)
+        if problems:
+            print("\n".join(problems), file=sys.stderr)
+            return 1
+        out = Path(args.dir)
+        (out / "merged.json").write_text(json.dumps(merged, indent=1, ensure_ascii=False))
+        (out / "index.txt").write_text("\n".join(index_lines(merged)) + "\n")
+        forward = [c for c in merged if c["forward"]]
+        print(f"{out / 'merged.json'}: {len(merged)} clusters, {len(forward)} forward "
+              f"({sum(1 for c in forward if c['rejected'])} with a rejected member); index in {out / 'index.txt'}")
         return 0
     if args.from_file:
         updates = json.loads(Path(args.from_file).read_text())

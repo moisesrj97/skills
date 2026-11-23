@@ -1,4 +1,5 @@
 import datetime
+import json
 import sys
 import tempfile
 import textwrap
@@ -123,6 +124,74 @@ class Digest(unittest.TestCase):
         split = retros.batches(findings, 2)
         self.assertEqual([[f["ref"] for f in b] for b in split], [["p/f.md#R1", "p/f.md#R3"], ["p/f.md#R0", "p/f.md#R2"]])
         self.assertEqual(len(split[0][0]["evidence"]), retros.CLIP + 1)
+
+
+class Merge(unittest.TestCase):
+    def setUp(self):
+        self.dir = Path(tempfile.mkdtemp())
+        self.write("batch-1", [{"ref": "a/x.md#R1", "date": "2026-11-12", "status": "open", "severity": "medium"},
+                               {"ref": "b/y.md#R1", "date": "2026-11-10", "status": "open", "severity": "low"}])
+        self.write("batch-2", [{"ref": "a/x.md#R2", "date": "2026-11-11", "status": "skipped (one-off)"},
+                               {"ref": "c/z.md#R4", "date": "2026-11-09", "status": "skipped (one-off)"},
+                               {"ref": "c/z.md#R5", "date": "2026-11-09", "status": "rejected (no)"}])
+        self.write("clusters-1", [{"owner": "hook", "cause": "pipes", "proposal": "block", "members": ["a/x.md#R1"]},
+                                  {"owner": "zsh", "cause": "globs", "proposal": "quote", "members": ["b/y.md#R1"]}])
+        self.write("clusters-2", [{"owner": "Hook", "cause": " pipes ", "proposal": "-", "members": ["a/x.md#R2"]},
+                                  {"owner": "zsh lint", "cause": "unquoted globs", "proposal": "-",
+                                   "members": ["c/z.md#R4"]},
+                                  {"owner": "x", "cause": "y", "proposal": "z", "members": ["c/z.md#R5"]}])
+
+    def write(self, name, data):
+        (self.dir / f"{name}.json").write_text(json.dumps(data))
+
+    def test_merges_the_given_groups_and_ranks_them(self):
+        merged, problems = retros.merge(self.dir, [{"ids": ["1.2", "2.2"], "cause": "unquoted globs"},
+                                                   {"ids": ["1.1", "2.1"]}])
+        self.assertEqual(problems, [])
+        by_id = {c["id"]: c for c in merged}
+        self.assertEqual(set(by_id), {"1.1", "1.2", "2.3"})
+        hook, zsh = by_id["1.1"], by_id["1.2"]
+        self.assertEqual((hook["src"], hook["members"], hook["canonical"]),
+                         (["1.1", "2.1"], ["a/x.md#R2", "a/x.md#R1"], "a/x.md#R2"))
+        self.assertEqual((hook["statuses"], hook["weight"], hook["score"]), ({"skipped": 1, "open": 1}, 2, 4))
+        self.assertEqual((zsh["owner"], zsh["cause"], zsh["projects"]), ("zsh", "unquoted globs", ["b", "c"]))
+        self.assertEqual(by_id["2.3"]["rejected"], ["c/z.md#R5"])
+        self.assertEqual([c["id"] for c in merged], ["1.1", "1.2", "2.3"])
+
+    def test_a_skipped_only_cluster_goes_forward_from_three_members(self):
+        self.write("batch-1", [{"ref": f"a/x.md#R{i}", "date": "2026-11-10", "status": "skipped (x)"} for i in range(5)])
+        self.write("clusters-1", [{"owner": "o", "cause": "c", "proposal": "p",
+                                   "members": ["a/x.md#R0", "a/x.md#R1", "a/x.md#R2"]},
+                                  {"owner": "o", "cause": "d", "proposal": "p", "members": ["a/x.md#R3", "a/x.md#R4"]}])
+        (self.dir / "batch-2.json").unlink()
+        (self.dir / "clusters-2.json").unlink()
+        merged, _ = retros.merge(self.dir)
+        self.assertEqual({c["id"]: c["forward"] for c in merged}, {"1.1": True, "1.2": False})
+
+    def test_names_every_offender_in_one_pass(self):
+        self.write("batch-3", [{"ref": "d/w.md#R1", "date": "2026-11-10", "status": "open"}])
+        self.write("clusters-1", [{"owner": "hook", "cause": "pipes", "proposal": "", "members": ["a/x.md#R1", "q/q.md#R1"]},
+                                  {"owner": "zsh", "cause": "globs", "proposal": "quote",
+                                   "members": ["b/y.md#R1", "a/x.md#R1"]}])
+        merged, problems = retros.merge(self.dir, [{"ids": ["1.1", "9.9"]}, {"ids": ["1.1"]}])
+        self.assertEqual(merged, [])
+        self.assertEqual(sorted(problems), sorted([
+            "batch-3.json: no clusters-3.json",
+            "1.1: no proposal",
+            "merges[1]: unknown cluster 9.9",
+            "merges[2]: 1.1 is already in merges[1]",
+            "1.1: q/q.md#R1 is in no batch",
+            "a/x.md#R1: in 1.1, 1.2",
+            "d/w.md#R1: in no cluster",
+        ]))
+
+    def test_cli_writes_merged_and_an_index_sorted_by_owner(self):
+        self.assertEqual(retros.main(["merge", str(self.dir)]), 0)
+        self.assertEqual(len(json.loads((self.dir / "merged.json").read_text())), 5)
+        self.assertEqual([line.split(" | ")[2] for line in (self.dir / "index.txt").read_text().splitlines()],
+                         ["hook", "Hook", "x", "zsh", "zsh lint"])
+        (self.dir / "clusters-2.json").write_text("[{")
+        self.assertEqual(retros.main(["merge", str(self.dir)]), 1)
 
 
 class SharedFormat(unittest.TestCase):
