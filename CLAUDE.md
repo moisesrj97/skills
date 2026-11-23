@@ -32,7 +32,7 @@ Before committing, grep the diff for URLs, IDs and absolute home paths.
    `but push` publishes the branch itself, not `main`.
 3. Only when the user asks for a PR: a GitButler branch (`but branch new <short-kebab-description>`, no `PD-` prefix, never a `/`) and a draft PR with `but pr new <branch> -F <file> --draft`. Ask before marking it ready or merging.
 
-`~/dot-files/claude/install.sh` symlinks every skill in this checkout into `~/.claude/skills`, so edits are live as soon as they are on disk, in every session, before any merge. Don't install these skills with `npx skills add`: a copy in its lock gets rewritten through the symlink by `npx skills update`. A **new** or renamed skill needs one run of `install.sh` to get its link.
+`~/dot-files/claude/install.sh` symlinks every skill in this checkout into `~/.claude/skills`, so edits are live as soon as they are on disk, in every session, before any merge. Don't install these skills with `npx skills add`: a copy in its lock gets rewritten through the symlink by `npx skills update`. A **new**, renamed or moved skill (a category change included) needs one run of `install.sh` to get its link.
 
 Add the skill to the table in `README.md` in the same commit.
 
