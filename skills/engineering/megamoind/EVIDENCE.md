@@ -13,7 +13,7 @@ A frontend flow that also changes what the backend stores or sends gets both a c
 ## Screenshots and recordings
 
 1. **Freeze animations** before a screenshot. A capture can land on an empty frame of a spinner or transition. Inject a `<style>` that sets `animation: none !important; transition: none !important` on everything, and give SVG spinners a visible stroke (e.g. MUI's `CircularProgress` circle needs a `stroke-dasharray` such as `80px, 200px`). Remove it before recording.
-2. **Capture** with `save: true`. States local data can't produce are injected through `fetch` as step 5 says.
+2. **Capture** with `save: true`. States local data can't produce are injected through `fetch` as step 5 says. When `preview_snapshot` returns no frame (the T3 window is hidden), capture with the project's verify-local skill, if it has one: `verify-local/scripts/shot.mjs <out> <w> <h> [path] [full]`. It has no session, so it only captures public pages.
 3. **Crop to the change.** Read the image's real size first (`sips -g pixelWidth -g pixelHeight <file>` on macOS), since the capture can come out at the browser's real viewport rather than the width you resized the tab to. Measure the changed region's bounding box in the page and scale it by the ratio between the image size and the page's `innerWidth`/`innerHeight`. Crop with `ffmpeg -loglevel error -y -i <in> -vf "crop=<w>:<h>:<x>:<y>" <out>`, offsets from the top-left (the same filter crops a clip). Without ffmpeg, use ImageMagick (`magick <in> -crop WxH+X+Y <out>`); without either, capture only the element's bounding box when the browser tooling supports a clip, or temporarily hide everything around the region. Open the result to check it shows the change.
 
 ## Traces
