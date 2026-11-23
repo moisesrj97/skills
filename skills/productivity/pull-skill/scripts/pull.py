@@ -9,10 +9,21 @@ import sys
 import tarfile
 from pathlib import PurePosixPath, Path
 
-ROOT = Path(__file__).resolve().parents[4]
 MANIFEST = "upstream.json"
 LICENSE_NAME = re.compile(r"(?i)licen[cs]e(\.md|\.txt)?")
 MIT_GRANT = "Permission is hereby granted, free of charge"
+
+
+def find_root(cwd=None):
+    """The checkout the agent works in, a worktree included: the installed script is a symlink
+    that resolves into the main checkout."""
+    top = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=cwd, capture_output=True, text=True)
+    if top.returncode == 0 and (Path(top.stdout.strip()) / MANIFEST).exists():
+        return Path(top.stdout.strip())
+    return Path(__file__).resolve().parents[4]
+
+
+ROOT = find_root()
 
 
 def gh(*args, raw=False):

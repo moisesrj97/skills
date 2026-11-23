@@ -1,5 +1,6 @@
 import io
 import json
+import subprocess
 import sys
 import tarfile
 import tempfile
@@ -11,6 +12,18 @@ import pull  # noqa: E402
 
 SHA = "a" * 40
 MIT = b"MIT License\n\nPermission is hereby granted, free of charge, to any person...\n"
+
+
+class Root(unittest.TestCase):
+    def test_root_is_the_cwd_checkout_holding_the_manifest_else_the_scripts_own(self):
+        worktree = Path(tempfile.mkdtemp())
+        subprocess.run(["git", "init", "-q", str(worktree)], check=True)
+        (worktree / "sub").mkdir()
+        own = Path(pull.__file__).resolve().parents[4]
+        self.assertEqual(pull.find_root(worktree / "sub"), own)
+        (worktree / "upstream.json").write_text("{}")
+        self.assertEqual(pull.find_root(worktree / "sub"), worktree.resolve())
+        self.assertEqual(pull.find_root(tempfile.mkdtemp()), own)
 
 
 def tarball(files):
