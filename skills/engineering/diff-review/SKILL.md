@@ -41,8 +41,8 @@ A continued reviewer already holds its instructions, the scope, the spec, the st
 
 Round 1, or a round with no handle, starts a fresh reviewer and records its **reviewer handle**. A round with a handle continues that reviewer. Continuing the same reviewer is deliberate: it remembers what it already reported and checks the fixes against its own findings, so do it even where a harness suggests a new agent for every re-check.
 
-- **T3 Code** (`delegate_task` is available). Fresh: `delegate_task` with `role: "review"`, `isolation: "shared"` and the target from `orchestrator_capabilities`, which is provider `claudeAgent` with option `effort`, or `codex` with option `reasoningEffort`. The handle is the child's thread id. Continue: `t3_thread_send` to that thread with the prompt. The child writes the round file. Wait for its completion notification.
-- **Otherwise**: run the reviewer's CLI through the script, in the background, from the repo root, and wait for it to exit:
+- **T3 Code** (`delegate_task` is available). Fresh: `delegate_task` with `role: "review"`, `isolation: "shared"` and the target from `orchestrator_capabilities`, which is provider `claudeAgent` with option `effort`, or `codex` with option `reasoningEffort`. The handle is the child's thread id. Continue: `t3_thread_send` to that thread with the prompt. The child writes the round file.
+- **Otherwise**: run the reviewer's CLI through the script, in the background, from the repo root:
 
   ```bash
   python3 <skill-dir>/scripts/run_round.py --reviewer <model>:<effort> --prompt <prompt file> --round-file <round file> [--handle <handle>]
@@ -51,6 +51,14 @@ Round 1, or a round with no handle, starts a fresh reviewer and records its **re
   A `claude-*` model runs on `claude -p`, a `gpt-*` model on `codex exec`, both read-only, so the reviewer can't edit, commit or post whatever the prompt says. The script runs an unsealed round once more and prints `{"handle", ...}`: keep the handle. On exit 1 the round failed twice; return its log tail (on stderr) to the caller. A `gpt-*` reviewer that exits 1 or 5 (CLI not installed) means Codex can't run, and a `claude-*` one that exits 5 means Claude can't: rerun the round on the other family, the lens's default reviewer from **reviewer** for a `gpt-*` one and `gpt-6.1-sol` at the same effort for a `claude-*` one, and tell the caller the round ran on the fallback and why, so a same-family review is never reported as cross-family. Exit 6 means the prompt names the round file: fix the prompt (step 1, fourth bullet) and run again. Its log is `<round file>` with `.log`; read only its tail, since the whole log floods the context.
 
 When a continue fails (the T3 thread is gone, or the script exits 3), start a fresh reviewer for this round with the full prompt, and return its new handle.
+
+Then wait for the round in the background, so its exit wakes you, with one call over every round file launched together:
+
+```bash
+python3 <skill-dir>/scripts/wait_rounds.py <round file>... [--timeout <seconds, default 1800>]
+```
+
+It exits 0 once every file ends with `END OF ROUND`, and 1 at the timeout with the unsealed ones. Wait with nothing else: a completion notice, a task wait or a `pgrep` loop can return before the round is sealed, or never. When `run_round.py` exits non-zero first, handle its exit as above.
 
 ## 3. Check the round
 

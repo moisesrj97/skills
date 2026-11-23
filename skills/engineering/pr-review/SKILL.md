@@ -14,7 +14,7 @@ Read the PR description, the issue or ticket it links (with the tracker the proj
 
 ## 2. Review
 
-Call the Skill tool with `diff-review` three times, launching all before waiting for any, each with its own round file and scope `<base>...<head sha>`:
+Call the Skill tool with `diff-review` three times, launching all before waiting for any, each with its own round file and scope `<base>...<head sha>`. Then wait for the three with one `wait_rounds.py` call over their round files, as diff-review's step 2 says:
 
 - `lens=code`, reviewer `claude-opus-5-5:medium`, `spec=<scratch>/spec.md`.
 - `lens=code`, reviewer `gpt-6.1-sol:medium`, the same spec.

@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 import check_quotes  # noqa: E402
 import run_round  # noqa: E402
 import slice_diff  # noqa: E402
+import wait_rounds  # noqa: E402
 
 SOURCE = textwrap.dedent("""\
     export function total(items: Item[]) {
@@ -372,6 +373,39 @@ class SliceDiff(unittest.TestCase):
 
     def test_empty_diff_exits_1(self):
         self.assertEqual(self.slice("main...main")[0], 1)
+
+
+class WaitRounds(unittest.TestCase):
+    def setUp(self):
+        self.dir = Path(tempfile.mkdtemp())
+        self.done = self.dir / "review-round-1.md"
+        self.done.write_text("NO FINDINGS\nEND OF ROUND\n")
+        self.running = self.dir / "review-round-2.md"
+        self.running.write_text("### 1. a.ts:1: x\n")
+
+    def test_returns_once_every_round_is_sealed(self):
+        def seal_on_sleep(seconds):
+            self.running.write_text("NO FINDINGS\nEND OF ROUND\n")
+        clock = iter(range(100))
+        self.assertEqual(wait_rounds.wait([self.done, self.running], 60, 5, sleep=seal_on_sleep,
+                                          now=lambda: next(clock)), [])
+
+    def test_times_out_with_the_unsealed_and_missing_files(self):
+        missing = self.dir / "review-round-3.md"
+        clock = iter([0, 30, 61])
+        unsealed = wait_rounds.wait([self.done, self.running, missing], 60, 30, sleep=lambda s: None,
+                                    now=lambda: next(clock))
+        self.assertEqual(unsealed, [self.running, missing])
+
+    def test_cli_exit_codes(self):
+        script = str(Path(wait_rounds.__file__))
+        ok = subprocess.run([sys.executable, script, str(self.done)], capture_output=True, text=True)
+        self.assertEqual(ok.returncode, 0, ok.stderr)
+        late = subprocess.run([sys.executable, script, str(self.done), str(self.running), "--timeout", "0"],
+                              capture_output=True, text=True)
+        self.assertEqual(late.returncode, 1)
+        self.assertIn("review-round-2.md (last line is not END OF ROUND)", late.stderr)
+        self.assertNotIn("review-round-1.md", late.stderr)
 
 
 if __name__ == "__main__":
