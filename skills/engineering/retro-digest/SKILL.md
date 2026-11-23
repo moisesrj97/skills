@@ -20,9 +20,9 @@ It reads every `~/.skill-docs/retros/<project>/*.md` and splits into batch files
 
 A **cluster** is a set of findings with the same root cause and the same fix, even if worded differently, from any project. A `matches:` ref is the writer's claim that two findings are one; confirm it against both.
 
-Launch one subagent per batch with the Agent tool, `model: "sonnet"`, at most 5 at a time. Brief each with the cluster definition above and its batch file, and ask for every finding placed in exactly one cluster, singletons included, returned as JSON: `[{"owner": "<the skill, script, app or file the change lands in>", "cause": "<root cause, one line>", "proposal": "<the change, one line>", "members": ["<ref>", ...]}]`.
+Launch one subagent per batch with the Agent tool, `model: "sonnet"`, at most 5 at a time. Brief each with the cluster definition above and its batch file, and ask for every finding placed in exactly one cluster, singletons included, written as valid JSON only to `clusters-<n>.json` beside its `batch-<n>.json`, replying with just that path. The file holds `[{"owner": "<the skill, script, app or file the change lands in>", "cause": "<root cause, one line>", "proposal": "<the change, one line>", "members": ["<ref>", ...]}]`.
 
-Done when every batch has its clusters back.
+Done when every batch has its `clusters-<n>.json`.
 
 ## 3. Merge and rank
 
