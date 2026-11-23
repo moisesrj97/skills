@@ -29,6 +29,7 @@ from pathlib import Path
 HERE = Path(__file__).parent
 REPO = HERE.parent.parent
 DIFF_REVIEW = REPO / "skills/engineering/diff-review/references"
+SLICE_DIFF = DIFF_REVIEW.parent / "scripts/slice_diff.py"
 CRAFT = REPO / "skills/engineering/craftsmanship"
 RUNS = int(os.environ.get("RUNS", "2"))
 WORKERS = int(os.environ.get("WORKERS", "6"))
@@ -79,9 +80,10 @@ def run_codex(prompt: str, cwd: Path, effort: str, out: Path) -> str:
     return out.read_text() if out.exists() else ""
 
 
-def reviewer_prompt(files, spec=None, standards=()):
+def reviewer_prompt(files, repo, scratch, spec=None, standards=()):
     lines = [f"You are the reviewer. Read {' and '.join(str(f) for f in files)} and follow them.", ""]
-    lines.append("Scope: the range main...feature. Show the diff with `git diff main...feature`. Read and quote the code from `git show feature:<file>`.")
+    listing = sh([sys.executable, str(SLICE_DIFF), "main...feature", "--out", str(scratch / "diff"), "--repo", str(repo)], repo, check=True).stdout
+    lines.append(f"Scope: the range main...feature, as patch files:\n{listing}Read and quote the code from `git show feature:<file>`.")
     if spec:
         lines.append(f"Spec: {spec}. Read it before reviewing.")
     if standards:
@@ -130,11 +132,11 @@ def edited_locations(diff: str):
 def arm_code_old(fx, repo, scratch):
     old = scratch / "reviewer-old.md"
     old.write_text(sh(["git", "show", f"{BASELINE_REF}:skills/engineering/diff-review/references/reviewer.md"], REPO, check=True).stdout)
-    return run_claude(reviewer_prompt([old]), repo, "high", ["--permission-mode", "plan"])
+    return run_claude(reviewer_prompt([old], repo, scratch), repo, "high", ["--permission-mode", "plan"])
 
 
 def arm_code_new(fx, repo, scratch):
-    prompt = reviewer_prompt([DIFF_REVIEW / "reviewer.md", DIFF_REVIEW / "lenses/code.md"], spec=fx / "spec.md")
+    prompt = reviewer_prompt([DIFF_REVIEW / "reviewer.md", DIFF_REVIEW / "lenses/code.md"], repo, scratch, spec=fx / "spec.md")
     return run_claude(prompt, repo, "high", ["--permission-mode", "plan"])
 
 
@@ -144,7 +146,7 @@ def arm_security_builtin(fx, repo, scratch):
 
 def arm_security_new(fx, repo, scratch):
     lens = DIFF_REVIEW / "lenses/security.md"
-    prompt = reviewer_prompt([DIFF_REVIEW / "reviewer.md", lens])
+    prompt = reviewer_prompt([DIFF_REVIEW / "reviewer.md", lens], repo, scratch)
     if shutil.which("codex"):
         round_text = run_codex(prompt, repo, "high", scratch / "security-round.md")
     else:
@@ -167,7 +169,7 @@ def arm_cleanup_builtin(fx, repo, scratch):
 
 def arm_cleanup_new(fx, repo, scratch):
     prompt = reviewer_prompt(
-        [DIFF_REVIEW / "reviewer.md", DIFF_REVIEW / "lenses/cleanup.md"],
+        [DIFF_REVIEW / "reviewer.md", DIFF_REVIEW / "lenses/cleanup.md"], repo, scratch,
         standards=[CRAFT / "tidy-first.md", CRAFT / "simple-design.md"],
     )
     return run_claude(prompt, repo, "medium", ["--permission-mode", "plan"])

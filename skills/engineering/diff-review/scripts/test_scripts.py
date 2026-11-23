@@ -1,3 +1,5 @@
+import contextlib
+import io
 import json
 import os
 import stat
@@ -11,6 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 import check_quotes  # noqa: E402
 import run_round  # noqa: E402
+import slice_diff  # noqa: E402
 
 SOURCE = textwrap.dedent("""\
     export function total(items: Item[]) {
@@ -318,6 +321,68 @@ class RunRound(unittest.TestCase):
     def test_rejects_unknown_family_and_missing_effort(self):
         self.assertEqual(self.run_script("--reviewer", "llama-3:high").returncode, 2)
         self.assertEqual(self.run_script("--reviewer", "claude-opus-5-5").returncode, 2)
+
+
+class SliceDiff(unittest.TestCase):
+    BUDGET = 2000
+
+    def setUp(self):
+        self.repo = tempfile.mkdtemp()
+        self.out = Path(tempfile.mkdtemp()) / "slices"
+        git(self.repo, "init", "-q", "-b", "main")
+        root = Path(self.repo)
+        (root / "big.txt").write_text("".join(f"line {i}\n" for i in range(400)))
+        for name in ("a.txt", "b.txt", "gone.txt"):
+            (root / name).write_text("one\ntwo\n")
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-qm", "base")
+        (root / "big.txt").write_text("".join(f"line {i} changed\n" if i % 3 else f"line {i}\n" for i in range(400)))
+        (root / "a.txt").write_text("one\nTWO\n")
+        (root / "gone.txt").unlink()
+        (root / "new.txt").write_text("fresh\n")
+        git(self.repo, "add", "-A")
+        git(self.repo, "commit", "-qm", "head")
+
+    def slice(self, *args, budget=BUDGET):
+        with contextlib.redirect_stdout(io.StringIO()) as listing:
+            code = slice_diff.main([*args, "--out", str(self.out), "--repo", self.repo, "--budget", str(budget)])
+        return code, listing.getvalue()
+
+    def patches(self):
+        return sorted(self.out.glob("diff-*.patch"))
+
+    def test_every_slice_fits_the_budget_and_applies_on_its_own(self):
+        code, listing = self.slice("main~1...main")
+        self.assertEqual(code, 0)
+        self.assertGreater(len(self.patches()), 2)
+        for patch in self.patches():
+            self.assertLessEqual(len(patch.read_text()), self.BUDGET, patch.name)
+            subprocess.run(["git", "-C", self.repo, "apply", "--check", "-R", "--unidiff-zero", str(patch)], check=True)
+        self.assertIn("big.txt (+", listing)
+        self.assertIn("part 1/", listing)
+        self.assertIn("gone.txt (+0 -2)", listing)
+
+    def test_slices_hold_the_whole_diff_once(self):
+        self.slice("main~1...main")
+        whole = subprocess.run(["git", "-C", self.repo, "diff", "main~1...main"], capture_output=True, text=True).stdout
+        changed = lambda text: sorted(l for l in text.splitlines() if l[:1] in "+-" and l[:3] not in ("+++", "---"))
+        self.assertEqual(changed("".join(p.read_text() for p in self.patches())), changed(whole))
+
+    def test_worktree_includes_untracked_files(self):
+        (Path(self.repo) / "a.txt").write_text("uncommitted\n")
+        (Path(self.repo) / "untracked.txt").write_text("brand new\n")
+        code, listing = self.slice("--worktree")
+        self.assertEqual(code, 0)
+        self.assertIn("a.txt (+1 -2)", listing)
+        self.assertIn("untracked.txt (+1 -0)", listing)
+
+    def test_rerun_replaces_stale_slices(self):
+        self.slice("main~1...main")
+        self.slice("main~1...main", budget=100_000)
+        self.assertEqual([p.name for p in self.patches()], ["diff-01.patch"])
+
+    def test_empty_diff_exits_1(self):
+        self.assertEqual(self.slice("main...main")[0], 1)
 
 
 if __name__ == "__main__":

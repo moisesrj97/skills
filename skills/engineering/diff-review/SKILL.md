@@ -23,7 +23,11 @@ A reviewer that shares the author's context shares its blind spots. The reviewer
 The round file is `<scratch>/review-round-<N>.md`, in the session scratchpad when the system prompt lists one, else a fresh `mktemp -d`. Write the reviewer's prompt to `<scratch>/review-prompt-<N>.md`, with every item below that applies:
 
 - First line: `You are the reviewer. Read <skill-dir>/references/reviewer.md and <skill-dir>/references/lenses/<lens>.md and follow them.`, with the absolute path of the folder this skill loaded from.
-- The scope and the exact command that shows the diff, with the range as given, since `a..b` and `a...b` differ. Resolve a branch name in the range to its SHA first (`git rev-parse <branch>`), so a branch that moves mid-round doesn't change what is reviewed.
+- The scope and the diff as patch files. Resolve a branch name in the range to its SHA first (`git rev-parse <branch>`), so a branch that moves mid-round doesn't change what is reviewed, and a PR number to `<base>...<head sha>`. Slice the diff, keeping the range as given since `a..b` and `a...b` differ, and paste the listing the script prints:
+
+  ```bash
+  python3 <skill-dir>/scripts/slice_diff.py <range> --out <scratch>/review-diff-<N>   # scope `diff`: --worktree
+  ```
 - Which version of the code to read and quote. For a range, that is its head (`git show <head>:<file>`), since the checkout can hold other changes. For `diff`, it is the working tree.
 - Where the round goes: the round file, or, for a CLI reviewer (step 2), the final message and no file writes.
 - With `tag=`, the tag as the prompt's last line, in every round.
@@ -31,7 +35,7 @@ The round file is `<scratch>/review-round-<N>.md`, in the session scratchpad whe
 - The already-decided list, phrased as "do not reopen unless you find new evidence that changes its severity". A PLAUSIBLE finding the author declined belongs on it.
 - After round 1, the commits since (say if they are amended or unpushed, since the reviewer reads the local branch), which findings each resolves, and the findings not acted on with their reasons. Tell the reviewer to review the **whole** scope again, since fixes can break things elsewhere, and to write the new round where the fourth bullet says.
 
-A continued reviewer already holds its instructions, the scope, the spec, the standards and its earlier rounds, so its prompt from round 2 on carries only where the round goes, the already-decided list and the items of the last bullet. A fresh reviewer gets every item, plus the previous round file.
+A continued reviewer already holds its instructions, the scope, the spec, the standards and its earlier rounds, so its prompt from round 2 on carries only where the round goes, the new patch listing, the already-decided list and the items of the last bullet. A fresh reviewer gets every item, plus the previous round file.
 
 ## 2. Launch
 

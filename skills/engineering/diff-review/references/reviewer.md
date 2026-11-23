@@ -6,7 +6,7 @@ Your lens file says what to look for and which fields each finding carries.
 
 ## Read the diff
 
-Start with the prompt's diff command plus `--stat`. Then read the diff one path group at a time (`git diff <range> -- <paths>`), each output under about 25KB: a larger one is cut off and saved to a file you'd have to read again. Never print the whole range in one call.
+The prompt lists the diff as patch files, each small enough to read in one call. Read them all. Don't run `git diff` on the range, whole or by path: its output overflows the tool's limit and gets cut. For context a hunk doesn't show, read the file in the version the prompt names.
 
 ## Verify
 
