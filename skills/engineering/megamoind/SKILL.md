@@ -1,7 +1,7 @@
 ---
 name: megamoind
 description: "Delegate a ticket end to end, unattended: TDD implementation, tidying, security review, pair-review, real-app verification, a PR ready for review and a CI loop until green. Use when the user hands over one ticket (a GitHub issue or a tracker ID such as a ClickUp task) to take all the way to a PR, e.g. \"megamoind PD-123\", or when another skill delegates one ticket's implementation. Several tickets go to megamoind-batch."
-argument-hint: "[ticket ID] [base=<branch>] [brief=<file>] [stop-at=draft]"
+argument-hint: "[ticket ID] [base=<branch>] [brief=<file>] [stop-at=draft|pushed]"
 ---
 
 # Megamoind
@@ -20,6 +20,7 @@ You are the **orchestrator**: you hold the brief, the branch, the PR and the CI,
 - `base=<branch>`: the branch to build on, e.g. the ticket below in a stack. Default: the default branch (`git symbolic-ref --short refs/remotes/origin/HEAD`). Every `<base>` below means this.
 - `brief=<file>`: step 0 already answered by whoever delegated the ticket. Read it instead of asking; only what it leaves open is HITL. A brief that says `mode: minimoi` runs the reduced flow (see step 0's "Minimoi").
 - `stop-at=draft`: the caller owns ready-for-review and reviewers. Step 7 opens the PR as a draft, step 8 loops on the checks that run on drafts, and step 10 is skipped.
+- `stop-at=pushed`: the project lands changes without a PR, and landing is the user's. Step 7 pushes each layer instead of opening a PR, step 8 waits on the branch's checks, and step 10 is skipped.
 
 ## When a skill is not available
 
@@ -88,6 +89,7 @@ With `brief=`, the briefer reads it and settles on its own whatever of the plan 
 
 - **Plan**: the approach in a few lines, what it reuses, the seams where tests go with what each buys and sells (Test Desiderata), the tidyings worth doing first or after and where each goes by area of impact (Tidy First), and anything ambiguous in the ticket. When the ticket replaces or reproduces something already visible in the product, the plan keeps its current look, cites the **visual reference** (the screenshot, the live screen), and checks that the shape of the data (copy keys, props) can carry that look, e.g. one copy key can't style half its text.
 - **Branch name**: the format in the project's `## Ticket tracker` section, else `<ticket-id>-<short-kebab-description>`, with no `/`. A pre-PR or post-PR from the plan adds `<name>-tidy-first` or `<name>-tidy-after`.
+- **Landing**: when the project's `CLAUDE.md` / `CLAUDE.local.md` says changes land without a PR, the run is `stop-at=pushed`; state it in the plan rather than asking.
 - **Base** (GitButler): run `but pull --check`. When the workspace is behind and updating would move other branches, ask: "the workspace is N commits behind; updating would move X and Y. Update?". A no leaves the base stale, so guard against a **borrowed green** (see "Sharing the workspace").
 - **Verification**: how to run the app or service (the dev commands, required env, data or login, ports), and which flows prove the change works, each with its route or entry point and the data it needs. Each observable named as proof (a status, a field, an endpoint's answer, an eval's expected output) cites the handler that produces it (`file:line`) and, when the app runs, has been seen once.
 - **CODEOWNERS**: if preflight names one, opening the PR ready for review requests those reviewers automatically. Say so, since it defeats waiting to add reviewers.
@@ -174,11 +176,13 @@ Call the Skill tool with `comment-cleanup` over the whole branch diff (`<base>..
 
 ### 7. PR
 
-Open one PR per layer, bottom first. For each, call the Skill tool with `merge-risk` over the layer's range (`<layer below or base>...<layer>`), then with `github-pr`, handing it the merge-risk report for its `## Merge risk` section, anything left unverified in step 5, and step 5's evidence for the passing flows, each file with its one-line source.
+With `stop-at=pushed`, push each layer bottom first (`but push <branch>`, else `git push -u origin <branch>`), run `merge-risk` over its range for the report, and skip the rest of this step but its interim report.
+
+Otherwise open one PR per layer, bottom first. For each, call the Skill tool with `merge-risk` over the layer's range (`<layer below or base>...<layer>`), then with `github-pr`, handing it the merge-risk report for its `## Merge risk` section, anything left unverified in step 5, and step 5's evidence for the passing flows, each file with its one-line source.
 
 `github-pr` writes the title and description and opens the PR **ready for review**, so the full CI runs (some checks skip drafts); with `stop-at=draft`, open it as a draft. Its approval is already given, so print the title, description and files and go on without waiting for `approve`. Under GitButler, create the PR with `but pr new <branch> -F <file>` (first line title, rest description; add `--draft` with `stop-at=draft`) instead of `gh`, because it pushes the branch and its ancestors and sets the right base in a stack. Run `but status` right before it: a `<base>` marked `(merged upstream)` merged during the run, and `but pr new` fails on its deleted head. Update (`but pull`, under step 1's conditions) and open the PR against the default branch, saying so in the description and the report. `but pr new` also force-pushes every ancestor whose local tip GitButler rebased, so compare each branch below yours that isn't one of your layers (`git rev-parse <b> origin/<b>`). When one differs and has an open PR, push your branch alone: `git replay --onto origin/<base> <base>..<branch>` prints the rebased tip's SHA, then `git push origin <sha>:refs/heads/<branch>` and `gh pr create --base <base>`. A tidy PR's description says it changes structure only and names the ticket's PR it serves.
 
-Then write the step 9 report as `STATUS: interim — CI pending`, to the caller's report path or else `<scratchpad>/<ticket>-report.md`, and, unless a caller passed a path, tell the user with `PushNotification` that the PR is ready to look at. Most runs need no CI fix, so the user can start reviewing while CI runs. Notify again only when the run stops on a HITL; a green CI ends quietly in the final report.
+Then write the step 9 report as `STATUS: interim — CI pending`, to the caller's report path or else `<scratchpad>/<ticket>-report.md`, and, unless a caller passed a path, tell the user with `PushNotification` that the PR (or the pushed branch) is ready to look at. Most runs need no CI fix, so the user can start reviewing while CI runs. Notify again only when the run stops on a HITL; a green CI ends quietly in the final report.
 
 Done when every layer has its PR. Keep each one current through steps 6 and 8: a fix that changes what an evidence file shows means capturing it again and re-attaching it, and a step 8 fix that changes exposed code means rerunning `merge-risk` and updating the section (`gh pr edit <number> --body-file <file>`).
 
@@ -191,6 +195,8 @@ Loop until every check is green:
    ```bash
    python3 <skill-dir>/scripts/ci.py wait <number> --required "<name>" … [--skip "<name>" …]   # one flag per check
    ```
+
+   With `stop-at=pushed`, pass `--branch <branch> --sha <pushed head>` instead of the PR number.
 
    It exits 0 once every check on the PR is green, required or not, and every required check has reported (some appear minutes after the others, and `gh pr checks --required` can't show one missing), or once a PR with no checks at all has had 5 minutes to get some and requires none; 1 with the red checks named; 4 after an hour with what is still pending or missing; 2 when `gh` failed three polls in a row. With `stop-at=draft`, pass the ready-only checks in `--skip` and list them in the report as pending for the caller. A layer stacked on another gets the checks that run only on PRs based on the default branch once the layer below merges: pass those in `--skip` too and list them as "pending retarget". When T3 Code delegated the ticket, wait inside the turn (`t3_background_wait({"taskIds": ["<task id>"]})`) rather than ending it.
 2. On any red check, required or not, diagnose with the tools at hand: a CI skill the project or the user has installed, `gh pr checks`, the job logs. Classify it:
@@ -208,7 +214,7 @@ When a caller passed a report path, write the report there before ending any tur
 
 Close the implementer and the verifier. Run `python3 <skill-dir>/scripts/metrics.py collect <state> --flows <n> --failures <n> --unverified <n>`, with the verifier's flow counts (leave the three flags out when step 5 never ran), which appends the run to the metrics log and prints its time, tokens and peak context per agent and per step. Then call the Skill tool with `retro-with-docs` on this session; if it is not available, skip it and say so in the report. Then write the report from the agents' reports and your own steps:
 
-- Each layer bottom to top: PR URL, branch, merge-risk color, final CI state.
+- Each layer bottom to top: PR URL (or the pushed head with `stop-at=pushed`), branch, merge-risk color, final CI state.
 - The Later tidyings, each with its files and why it waits.
 - Each review pass (tidy after, pair-review rounds, security review): findings, what was fixed, what was discarded and why.
 - What was verified in the real app and how, with each flow's evidence files; what wasn't, and why.
@@ -217,6 +223,6 @@ Close the implementer and the verifier. Run `python3 <skill-dir>/scripts/metrics
 - The retro file and its blockers.
 - The metrics `collect` printed.
 
-### 10. Reviewers (optional, skipped with `stop-at=draft`)
+### 10. Reviewers (optional, skipped with `stop-at=draft` or `stop-at=pushed`)
 
 Ask whether to add reviewers, proposing names from CODEOWNERS or the recent history of the touched files. Run `gh pr edit <number> --add-reviewer …` only after the user's explicit yes.

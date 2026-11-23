@@ -22,7 +22,7 @@ This skill delegates to `megamoind`, which delegates further. If the Skill tool 
 
 Every agent runs **async**: you start it, go on with the others, and its report or question reaches you on its own. A synchronous launch blocks you until the slowest agent returns, so a fast one's HITL question sits unread. Relay each HITL to the user the moment it arrives, naming the ticket, while the other agents keep running.
 
-Each ticket runs in its own agent, prompted with `/megamoind <ticket> base=<branch> brief=<file> stop-at=draft` plus one line asking it to write its step 9 report to `<scratch>/<ticket>-report.md`. A report is **final** when its first line is `STATUS: final` and its last is `END OF REPORT`; an interim one starts `STATUS: interim`.
+Each ticket runs in its own agent, prompted with `/megamoind <ticket> base=<branch> brief=<file> stop-at=<mode>` plus one line asking it to write its step 9 report to `<scratch>/<ticket>-report.md`. The mode is `draft`, or `pushed` when the project's `CLAUDE.md` / `CLAUDE.local.md` says changes land without a PR: then every "PR" below is the pushed branch, and step 4 asks to land instead of to mark ready. A report is **final** when its first line is `STATUS: final` and its last is `END OF REPORT`; an interim one starts `STATUS: interim`.
 
 A ticket can land as several **layers**: a tidy pre-PR below its branch, a post-PR above it. They belong to the ticket's place in its chain, and its report lists them bottom to top.
 
@@ -80,11 +80,11 @@ If a ticket turns out to need a change in a lower layer of its chain, the change
 
 ### 4. All ready
 
-Once every ticket's draft PR is green, bring the stacks up to date while the agents are idle: `but pull --check`, then `but pull`, reinstall if the lockfile changed, and push the batch. Then ask the user **once** whether to mark all the PRs ready, listing them, and send a `PushNotification` as the question goes out, because a question waiting in a thread goes unnoticed. On a yes, `gh pr ready <number>` each, tidy layers included, bottom of each chain first.
+Once every ticket's draft PR is green, bring the stacks up to date while the agents are idle: `but pull --check`, then `but pull`, reinstall if the lockfile changed, and push the batch. Then ask the user **once** whether to mark all the PRs ready, listing them, and send a `PushNotification` as the question goes out, because a question waiting in a thread goes unnoticed. On a yes, `gh pr ready <number>` each, tidy layers included, bottom of each chain first. With `pushed`, the question is whether to land the branches, and a yes lands them bottom first as the project's `CLAUDE.md` says.
 
 Some checks only run on ready PRs, and some only on PRs whose base is the default branch (e.g. Jenkins): a stacked layer gets those only once the layer below merges and GitHub retargets it. Report such layers as "pending retarget" and leave them out of every wait's exit condition. Loop until every other check of every PR is green, required or not:
 
-1. Wait with `ci.py wait` from the `megamoind` skill's `scripts/` (the folder next to this skill's), one per PR in the background, as `megamoind` step 8 does: one `--required` per required check (the project's `CLAUDE.md` / `CLAUDE.local.md`, else `ci.py required <default branch>`), one `--skip` per pending-retarget check of the PR.
+1. Wait with `ci.py wait` from the `megamoind` skill's `scripts/` (the folder next to this skill's), one per PR (`--branch <branch> --sha <head>` with `pushed`) in the background, as `megamoind` step 8 does: one `--required` per required check (the project's `CLAUDE.md` / `CLAUDE.local.md`, else `ci.py required <default branch>`), one `--skip` per pending-retarget check of the PR.
 2. Diagnose each red check enough to classify it as in `megamoind` step 8.
    - **Base staleness** (a scan comparing against a default branch newer than the PR's base): yours. Update the stacks as at the start of this step (`but pull --check`, `but pull`, reinstall if the lockfile changed, push the batch).
    - **Anything else**: send it to the agent that owns the branch, which handles it as its step 8 says and pushes a fix. A fix in a lower layer restacks the layers above; push the batch.
