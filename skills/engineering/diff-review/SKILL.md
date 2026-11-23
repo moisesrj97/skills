@@ -60,7 +60,7 @@ Check every finding's quote against the version the reviewer was told to read:
 python3 <skill-dir>/scripts/check_quotes.py <round file> --ref <head>   # scope `diff`: --worktree
 ```
 
-Exit 2 means the round file doesn't end with `END OF ROUND`, so the round was cut: run it once more, and return a second failure to the caller with the error. Otherwise the script prints each finding as CONFIRMED or DISCARDED with the reason, or UNPARSED when its header isn't `### <n>. <file>:<line>: <summary>`: check those quotes by hand. A quote that matches at another line, only after normalising whitespace (a formatter split or joined the statement, or the quote elides with `…`), or in another file than the header's stands; the reason names which. A note that some quote block is not in the cited file means it quotes evidence from elsewhere: open that file and check the block there before keeping the finding.
+Exit 2 means the round file doesn't end with `END OF ROUND`, so the round was cut: run it once more, and return a second failure to the caller with the error. Otherwise the script prints each finding as CONFIRMED or DISCARDED with the reason, or UNPARSED when its header or its quotes aren't in the shape `reviewer.md` sets: check those quotes by hand. A quote found at other lines of its file stands; the reason names where. A CONFIRMED finding with a block to check by hand has another block that matched: check that one before keeping the finding.
 
 For `security`, trace each remaining finding yourself in that version, from the attacker's input to the sink, and test it against every exclusion and precedent in `references/lenses/security.md`. Discard one that a rule rules out, naming the rule (`E4`, `P2`), and one the code refutes, naming the line.
 

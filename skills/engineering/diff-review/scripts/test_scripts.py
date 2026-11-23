@@ -25,7 +25,9 @@ SOURCE = textwrap.dedent("""\
     }
     """)
 
-ROUND = textwrap.dedent("""\
+FENCE = "`" * 3
+
+ROUND = textwrap.dedent(f"""\
     ### 1. src/cart.ts:4: price ignores discounts
 
     Severity: P1
@@ -34,72 +36,93 @@ ROUND = textwrap.dedent("""\
 
     Scenario: a discounted item → full price
 
-    > for (const item of items) {
-    >     sum += item.price * item.qty;
+    `src/cart.ts:3-4`
+    {FENCE}ts
+      for (const item of items) {{
+        sum += item.price * item.qty;
+    {FENCE}
 
     ### 2. src/cart.ts:2: quoted at a moved line
 
-    > return sum;
+    `src/cart.ts:2`
+    {FENCE}
+    return sum;
+    {FENCE}
 
     ### 3. src/cart.ts:5: invented code
 
-    > sum -= item.discount;
+    `src/cart.ts:5`
+    {FENCE}
+    sum -= item.discount;
+    {FENCE}
 
     ### 4. src/missing.ts:1: file not in head
 
-    > anything
+    `src/missing.ts:1`
+    {FENCE}
+    anything
+    {FENCE}
 
     ### 5. src/cart.ts:1: no quote at all
 
     Scenario: none
 
-    ### 6. src/cart.ts:1: elided quote
+    ### 6. `./src/cart.ts`:4-5: diff-marked quote under a backticked path
 
-    > export function total(items: Item[]) {
-    > ...
-    > return sum;
+    `./src/cart.ts:4-5`
+    {FENCE}diff
+    +    sum += item.price * item.qty;
+    +  }}
+    {FENCE}
 
-    ### 7. `./src/cart.ts`:4-5: diff-marked quote under a backticked path
+    ### 7. src/cart.ts:6: second block quotes another file
 
-    > +    sum += item.price * item.qty;
-    > +  }
-
-    ### 8. src/cart.ts:6: second block quotes another file
-
-    > return sum;
+    `src/cart.ts:6`
+    {FENCE}
+      return sum;
+    {FENCE}
 
     Evidence from the caller:
 
-    > checkout(total(items));
+    `src/state.ts:1`:
+    {FENCE}
+    export const state = 'idle';
+    {FENCE}
 
-    ### 9. src/cart.ts:4–5: en-dash range and a fenced quote
+    ### 8. src/cart.ts:4: one block is invented
 
-    > ```ts
-    > sum += item.price * item.qty;
-    > ```
+    `src/cart.ts:4`
+    {FENCE}
+    sum += item.price * item.qty;
+    {FENCE}
+
+    `src/state.ts:1`
+    {FENCE}
+    export const state = 'busy';
+    {FENCE}
 
     ### 10 src/cart.ts line 4 malformed header
 
-    > for (const item of items) {
-
-    ### 12. Off-by-one in the loop (src/cart.ts:4)
-
-    > for (const item of items) {
-
-    ### 13. src/cart.ts:4: a quote whose inner whitespace differs
-
-    > sum  += item.price * item.qty;
-
-    ### 14. README.md:1: a fence that is itself the evidence
-
-    > ```bash
-
     ### 11. `src/my file.ts`:1: a path with a space
 
-    > const spaced = true;
+    `src/my file.ts:1`
+    {FENCE}
+    const spaced = true;
+    {FENCE}
+
+    ### 12. README.md:1: a quote that holds a fence
+
+    `README.md:1-3`
+    ~~~~
+    {FENCE}bash
+    npm test
+    {FENCE}
+    ~~~~
 
     END OF ROUND
     """)
+
+FIXTURES = Path(__file__).parent / "fixtures"
 
 
 def git(repo, *args):
@@ -115,98 +138,55 @@ class CheckQuotes(unittest.TestCase):
         (Path(self.repo) / "src/cart.ts").write_text(SOURCE)
         (Path(self.repo) / "src/my file.ts").write_text("const spaced = true;\n")
         (Path(self.repo) / "src/state.ts").write_text("export const state = 'idle';\n")
-        (Path(self.repo) / "README.md").write_text("```bash\nnpm test\n```\n")
+        (Path(self.repo) / "README.md").write_text(f"{FENCE}bash\nnpm test\n{FENCE}\n")
         git(self.repo, "add", "-A")
         git(self.repo, "commit", "-qm", "head")
         (Path(self.repo) / "src/cart.ts").write_text("// the working tree moved on\n")
 
-    def verdicts(self, ref):
-        _, findings = check_quotes.parse_round(ROUND)
-        return {(verdict if verdict == "UNPARSED" else label.split()[0]): (verdict, reason)
-                for verdict, label, reason in
-                check_quotes.check(findings, ref, self.repo)}
+    def verdicts(self, ref, text=ROUND):
+        _, findings = check_quotes.parse_round(text)
+        return {label.split()[0]: (verdict, reason) for verdict, label, reason in check_quotes.check(findings, ref, self.repo)}
 
-    def test_reads_the_given_ref_not_the_working_tree(self):
-        v = self.verdicts("main")
-        self.assertEqual(v["1"], ("CONFIRMED", ""))
-        self.assertEqual(v["2"], ("CONFIRMED", "quote found at line 6"))
-        self.assertEqual(v["3"][0], "DISCARDED")
-        self.assertIn("matches nothing in main:src/cart.ts", v["3"][1])
-        self.assertIn("does not exist", v["4"][1])
-        self.assertEqual(v["5"], ("DISCARDED", "no quote"))
-        self.assertEqual(v["6"][0], "CONFIRMED")
-        self.assertEqual(v["7"][0], "CONFIRMED")
-        self.assertEqual(v["8"][0], "CONFIRMED")
-        self.assertIn("quote block 2 of 2 is not in src/cart.ts", v["8"][1])
-        self.assertEqual(v["9"], ("CONFIRMED", ""))
-        self.assertEqual(v["UNPARSED"][0], "UNPARSED")
-        self.assertEqual(v["11"], ("CONFIRMED", ""))
-        self.assertEqual(v["13"], ("CONFIRMED", "matched after normalising whitespace"))
-        self.assertEqual(v["14"], ("CONFIRMED", ""))
-        _, findings = check_quotes.parse_round(ROUND)
-        unparsed = [r for r in check_quotes.check(findings, "main", self.repo) if r[0] == "UNPARSED"]
-        self.assertEqual(len(unparsed), 2)
-
-    def test_strips_tab_line_numbers_from_read_output(self):
-        round_text = ("### 1. src/cart.ts:3: quoted from Read output\n\n"
-                      "> 3\t  for (const item of items) {\n"
-                      ">     4\t    sum += item.price * item.qty;\n\nEND OF ROUND\n")
-        _, findings = check_quotes.parse_round(round_text)
-        [(verdict, _, reason)] = check_quotes.check(findings, "main", self.repo)
-        self.assertEqual((verdict, reason), ("CONFIRMED", ""))
-
-    def check_one(self, quote_block, header="src/cart.ts:4"):
-        round_text = f"### 1. {header}: x\n\n{quote_block}\n\nEND OF ROUND\n"
+    def check_one(self, quote, header="src/cart.ts:4"):
+        round_text = f"### 1. {header}: x\n\n{quote}\n\nEND OF ROUND\n"
         _, findings = check_quotes.parse_round(round_text)
         [(verdict, _, reason)] = check_quotes.check(findings, "main", self.repo)
         return verdict, reason
 
-    def test_confirms_a_statement_the_formatter_split_across_lines(self):
-        self.assertEqual(self.check_one("> for (const item of items) { sum += item.price * item.qty;"),
-                         ("CONFIRMED", "matched after normalising whitespace"))
-
-    def test_confirms_a_quote_nested_in_extra_blockquote_markers(self):
-        self.assertEqual(self.check_one("> > for (const item of items) {", header="src/cart.ts:3"), ("CONFIRMED", ""))
-        self.assertEqual(self.check_one(">> for (const item of items) {", header="src/cart.ts:3"), ("CONFIRMED", ""))
-
-    def test_confirms_an_inline_elision(self):
-        self.assertEqual(self.check_one("> export function total(…) {", header="src/cart.ts:1"),
-                         ("CONFIRMED", "matched after normalising whitespace"))
-
-    def test_finds_a_quote_from_another_file_under_the_header(self):
-        verdict, reason = self.check_one("> const spaced = true;")
-        self.assertEqual(verdict, "CONFIRMED")
-        self.assertIn("found in src/my file.ts:1, not src/cart.ts", reason)
-
-    def test_strips_a_path_line_label_from_each_quoted_line(self):
-        self.assertEqual(self.check_one("> cart.ts:4    sum += item.price * item.qty;"), ("CONFIRMED", ""))
-        self.assertEqual(self.check_one("> src/cart.ts:3-4\tfor (const item of items) {", header="src/cart.ts:3"),
-                         ("CONFIRMED", ""))
-
-    def test_a_label_line_inside_the_quote_is_not_code(self):
-        self.assertEqual(self.check_one("> src/cart.ts:3-4\n> for (const item of items) {\n>     sum += item.price * item.qty;"),
-                         ("CONFIRMED", ""))
-
-    def test_checks_each_labelled_block_against_its_own_file(self):
-        quote = ("> cart.ts:4\n> sum += item.price * item.qty;\n>\n"
-                 "> state.ts:1\n> export const state = 'idle';")
-        self.assertEqual(self.check_one(quote), ("CONFIRMED", ""))
-
-    def test_a_label_line_before_the_quote_points_at_its_file(self):
-        quote = "> sum += item.price * item.qty;\n\n`src/state.ts:1`:\n\n> export const state = 'idle';"
-        self.assertEqual(self.check_one(quote), ("CONFIRMED", ""))
-
-    def test_a_block_missing_from_its_labelled_file_is_flagged(self):
-        quote = "> sum += item.price * item.qty;\n\nstate.ts:1\n\n> export const state = 'busy';"
-        verdict, reason = self.check_one(quote)
-        self.assertEqual(verdict, "CONFIRMED")
-        self.assertIn("quote block 2 of 2 is not in src/state.ts", reason)
-
-    def test_still_discards_code_that_exists_nowhere(self):
-        self.assertEqual(self.check_one("> sum -= item.discount;")[0], "DISCARDED")
+    def test_reads_the_given_ref_not_the_working_tree(self):
+        v = self.verdicts("main")
+        self.assertEqual(v["1"], ("CONFIRMED", ""))
+        self.assertEqual(v["2"], ("CONFIRMED", "`src/cart.ts:2` found at lines 6-6"))
+        self.assertEqual(v["3"], ("DISCARDED", "`src/cart.ts:5` matches nothing in main:src/cart.ts"))
+        self.assertIn("does not exist", v["4"][1])
+        self.assertEqual(v["5"][0], "UNPARSED")
+        self.assertIn("header is not", v["10"][1])
+        self.assertEqual(v["6"], ("CONFIRMED", ""))
+        self.assertEqual(v["7"], ("CONFIRMED", ""))
+        self.assertEqual(v["8"][0], "CONFIRMED")
+        self.assertIn("`src/state.ts:1` matches nothing in main:src/state.ts: check that block by hand", v["8"][1])
+        self.assertEqual(v["11"], ("CONFIRMED", ""))
+        self.assertEqual(v["12"], ("CONFIRMED", ""))
 
     def test_worktree_mode_reads_disk(self):
         self.assertEqual(self.verdicts(None)["1"][0], "DISCARDED")
+
+    def test_strips_read_line_number_prefixes(self):
+        arrow = f"`src/cart.ts:3-4`\n{FENCE}\n     3→  for (const item of items) {{\n     4→    sum += item.price * item.qty;\n{FENCE}"
+        tab = f"`src/cart.ts:3-4`\n{FENCE}\n3\t  for (const item of items) {{\n4\t    sum += item.price * item.qty;\n{FENCE}"
+        self.assertEqual(self.check_one(arrow), ("CONFIRMED", ""))
+        self.assertEqual(self.check_one(tab), ("CONFIRMED", ""))
+
+    def test_ignores_whitespace_differences_inside_lines(self):
+        quote = f"`src/cart.ts:4`\n{FENCE}\nsum  +=   item.price * item.qty;\n{FENCE}"
+        self.assertEqual(self.check_one(quote), ("CONFIRMED", ""))
+
+    def test_an_elided_block_is_not_verbatim(self):
+        quote = f"`src/cart.ts:1-6`\n{FENCE}\nexport function total(items: Item[]) {{\n...\nreturn sum;\n{FENCE}"
+        self.assertEqual(self.check_one(quote)[0], "DISCARDED")
+
+    def test_a_label_without_a_fence_is_no_quote(self):
+        self.assertEqual(self.check_one("`src/cart.ts:4`\n> sum += item.price * item.qty;")[0], "UNPARSED")
 
     def test_unsealed_round_exits_2(self):
         path = Path(self.repo) / "round.md"
@@ -217,6 +197,15 @@ class CheckQuotes(unittest.TestCase):
         sealed, findings = check_quotes.parse_round("NO FINDINGS\nEND OF ROUND\n")
         self.assertTrue(sealed)
         self.assertEqual(findings, [])
+
+    def test_quotes_that_were_wrongly_discarded_are_now_unparsed(self):
+        fixtures = sorted((FIXTURES / "discarded").glob("*.md"))
+        self.assertGreater(len(fixtures), 5)
+        for fixture in fixtures:
+            sealed, findings = check_quotes.parse_round(fixture.read_text())
+            self.assertTrue(sealed, fixture.name)
+            verdicts = {verdict for verdict, _, _ in check_quotes.check(findings, "main", self.repo)}
+            self.assertEqual(verdicts, {"UNPARSED"}, fixture.name)
 
 
 FAKE_CLAUDE = """#!/bin/sh

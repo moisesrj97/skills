@@ -24,13 +24,18 @@ When your lens has a `Verdict` field, judge each candidate:
 
 Findings most severe first, each in this shape:
 
-```markdown
+````markdown
 ### <n>. <file>:<line>: <summary>
 
 <each field your lens names, one per line as `Field: value`, a blank line between>
 
-> <quoted lines>
+`<path>:<start>-<end>`
+```<language>
+<lines start to end>
 ```
+````
+
+Each quote is a label line with the repo-relative path and line range, then a fenced block holding exactly those lines, copied from the version the brief names: no line numbers, no `>` and no `…`. Lines that aren't adjacent, or that live in another file, get their own label and block. A script compares each block with the lines its label names, and a quote in any other shape goes back to the author unchecked.
 
 With no findings, write the literal `NO FINDINGS`. The last line is always `END OF ROUND`.
 

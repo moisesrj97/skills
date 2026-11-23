@@ -3,8 +3,10 @@
 
 Usage: check_quotes.py <round file> (--ref <git ref> | --worktree) [--repo <dir>]
 
-Prints one line per finding, CONFIRMED, DISCARDED or UNPARSED with the reason, then a count line.
-Exit 0 when the round is sealed (even with discards), 2 when it is not sealed or not readable.
+A quote is a `<path>:<start>-<end>` label line followed by a fenced block; the block is compared,
+whitespace-normalised, with those lines of that file. Prints one line per finding, CONFIRMED,
+DISCARDED or UNPARSED (no quote or header in that shape: check it by hand) with the reason, then a
+count line. Exit 0 when the round is sealed (even with discards), 2 when it is not sealed or not readable.
 """
 import argparse
 import re
@@ -14,155 +16,81 @@ from pathlib import Path
 
 SEAL = "END OF ROUND"
 HEADER = re.compile(r"^###\s+(\d+)\.\s+(?:`([^`]+)`|([^\s:`]+)):(\d+)(?:\s*[-–—]\s*\d+)?:?\s*(.*)$")
-FENCE = re.compile(r"^\s*(```|~~~)")
-ELISION = re.compile(r"^\s*(\.\.\.|…)\s*$")
-LINE_NUMBER = re.compile(r"^\s*\d+(?:\s*[|:]\s?|\t)")
-BLOCKQUOTE = re.compile(r"^(?:>\s?)+")
-INLINE_ELISION = re.compile(r"\.\.\.|…")
-LABEL = re.compile(r"^\s*[`*]*(?P<path>[\w@.-]*[./][\w@./-]*):\d+(?:\s*[-–—]\s*\d+)?[`*]*:?\s*$")
-LABEL_PREFIX = re.compile(r"^\s*[\w@./-]+:\d+(?:-\d+)?[\t ]+")
-LOOSE = "matched after normalising whitespace"
+LABEL = re.compile(r"^`(?P<path>[^`]+?):(?P<start>\d+)(?:-(?P<end>\d+))?`:?\s*$")
+FENCE = re.compile(r"^(`{3,}|~{3,})")
+READ_PREFIX = re.compile(r"^\s*\d+(?:→|\t)")
+SHAPE = "`<path>:<start>-<end>` + fenced block"
+
+
+def closes(line, fence):
+    stripped = line.rstrip()
+    return stripped.startswith(fence) and set(stripped) == {fence[0]}
 
 
 def parse_round(text):
-    """Return (sealed, findings). Each finding: {n, path, line, title, quotes: [(label, segment), ...]}.
-
-    A label is the `<path>:<line>` a reviewer wrote on its own line before a quote block, inside the
-    quote or out; it names the file that block quotes, until the next label.
-    """
+    """Return (sealed, findings). Each finding: {n, path, line, title, quotes: [(path, start, end, lines)]}."""
     lines = text.rstrip().splitlines()
     sealed = bool(lines) and lines[-1].strip() == SEAL
-    findings = []
-    current = None
-    for line in lines:
-        header = HEADER.match(line)
-        if line.startswith("### ") and not header:
-            current = {"n": None, "path": None, "line": None, "title": line[4:].strip(), "quote_lines": []}
+    findings, current, i = [], None, 0
+    while i < len(lines):
+        line = lines[i]
+        i += 1
+        if line.startswith("### "):
+            header = HEADER.match(line)
+            current = {"n": None, "path": None, "line": None, "title": line[4:].strip(), "quotes": []}
+            if header:
+                current.update(n=int(header[1]), path=(header[2] or header[3]).removeprefix("./"),
+                               line=int(header[4]), title=header[5])
             findings.append(current)
             continue
-        if header:
-            current = {
-                "n": int(header.group(1)),
-                "path": (header.group(2) or header.group(3)).removeprefix("./"),
-                "line": int(header.group(4)),
-                "title": header.group(5),
-                "quote_lines": [],
-            }
-            findings.append(current)
-        elif current is None:
+        label = LABEL.match(line)
+        if current is None or not label:
             continue
-        elif line.startswith(">"):
-            quoted = BLOCKQUOTE.sub("", line)
-            label = LABEL.match(quoted)
-            current["quote_lines"].append(("label", label["path"]) if label else quoted)
-        elif label := LABEL.match(line):
-            current["quote_lines"].append(("label", label["path"]))
-        elif current["quote_lines"] and current["quote_lines"][-1] is not None:
-            current["quote_lines"].append(None)
-    for finding in findings:
-        finding["quotes"] = segments(finding.pop("quote_lines"))
+        while i < len(lines) and not lines[i].strip():
+            i += 1
+        opening = FENCE.match(lines[i]) if i < len(lines) else None
+        if not opening:
+            continue
+        body = []
+        i += 1
+        while i < len(lines) and not closes(lines[i], opening[1]):
+            body.append(lines[i])
+            i += 1
+        i += 1
+        end = int(label["end"]) if label["end"] else None
+        current["quotes"].append((label["path"].removeprefix("./"), int(label["start"]), end, body))
     return sealed, findings
 
 
-def segments(quote_lines):
-    """Split a finding's quoted lines on elisions, labels and gaps between quote blocks."""
-    out, current, label = [], [], None
-    for line in quote_lines:
-        if line is None or isinstance(line, tuple) or ELISION.match(line):
-            if current:
-                out.append((label, current))
-            current = []
-            if isinstance(line, tuple):
-                label = line[1].removeprefix("./")
-        else:
-            current.append(line)
-    if current:
-        out.append((label, current))
-    return [(label, s) for label, s in out if any(l.strip() for l in s)]
+def normalize(line):
+    return " ".join(line.split())
 
 
-def normalize(lines):
-    return "\n".join(l.strip() for l in lines).strip()
+def clean(body):
+    """The block's lines, without a Read `N→` prefix or `+` diff markers on every line, blank ends trimmed."""
+    filled = [l for l in body if l.strip()]
+    if filled and all(READ_PREFIX.match(l) for l in filled):
+        body = [READ_PREFIX.sub("", l, count=1) for l in body]
+        filled = [l for l in body if l.strip()]
+    if filled and all(l[:1] in "+ " for l in filled) and any(l[:1] == "+" for l in filled):
+        body = [l[1:] for l in body]
+    body = [normalize(l) for l in body]
+    while body and not body[0]:
+        body.pop(0)
+    while body and not body[-1]:
+        body.pop()
+    return body
 
 
-def variants(segment):
-    yield segment
-    unfenced = [l for l in segment if not FENCE.match(l)]
-    if len(unfenced) < len(segment):
-        yield unfenced
-        segment = unfenced
-    yield [LINE_NUMBER.sub("", l) for l in segment]
-    yield [LABEL_PREFIX.sub("", l) for l in segment]
-    if all(l[:1] in "+- " for l in segment if l):
-        yield [l[1:] for l in segment]
-
-
-def locate(segment, source_lines):
-    """1-based (first, last) lines the segment spans in the source, or None."""
-    haystack = normalize(source_lines)
-    for candidate in variants(segment):
-        needle = normalize(candidate)
-        if not needle:
-            continue
-        at = haystack.find(needle)
-        if at >= 0:
-            first = haystack.count("\n", 0, at) + 1
-            return first, first + needle.count("\n")
-    return None
-
-
-def locate_loose(segment, source_lines):
-    """Like locate, ignoring all whitespace and treating `...`/`…` inside a line as a gap.
-
-    Catches statements a formatter split or joined, and quotes with inline elisions.
-    """
-    chars, line_of = [], []
-    for number, line in enumerate(source_lines, 1):
-        for ch in line:
-            if not ch.isspace():
-                chars.append(ch)
-                line_of.append(number)
-    haystack = "".join(chars)
-    for candidate in variants(segment):
-        parts = [p for p in (re.sub(r"\s+", "", part) for part in INLINE_ELISION.split("\n".join(candidate))) if p]
-        if not parts:
-            continue
-        start, end = None, 0
-        for part in parts:
-            at = haystack.find(part, end)
-            if at < 0:
-                break
-            start = at if start is None else start
-            end = at + len(part)
-        else:
-            return line_of[start], line_of[end - 1]
-    return None
-
-
-def find(segment, source_lines):
-    """(first, last, loose) for the segment in the source, or None."""
-    span = locate(segment, source_lines)
-    if span:
-        return (*span, False)
-    span = locate_loose(segment, source_lines)
-    return (*span, True) if span else None
-
-
-def find_elsewhere(segment, path, ref, repo):
-    """(path, first line) of another file holding the segment, or None."""
-    lines = [l.strip().lstrip("+-").strip() for l in segment if not FENCE.match(l)]
-    probe = max((INLINE_ELISION.split(l)[0].strip() for l in lines), key=len, default="")
-    if len(probe) < 8:
-        return None
-    command = ["git", "grep", "-F", "-l", "-e", probe] + ([ref] if ref else []) + ["--"]
-    result = subprocess.run(command, cwd=repo, capture_output=True, text=True, errors="replace")
-    for hit in result.stdout.splitlines()[:20]:
-        other = hit.removeprefix(f"{ref}:") if ref else hit
-        if other == path:
-            continue
-        span = find(segment, read_source(other, ref, repo) or [])
-        if span:
-            return other, span[0]
+def locate(body, source, start, end):
+    """(first, last) lines the body matches: the labelled span when it does, else its first match in the file."""
+    lines = [normalize(l) for l in source]
+    last = end if end is not None else start + len(body) - 1
+    if last - start + 1 == len(body) and lines[start - 1:last] == body:
+        return start, last
+    for first in range(len(lines) - len(body) + 1):
+        if lines[first:first + len(body)] == body:
+            return first + 1, first + len(body)
     return None
 
 
@@ -176,16 +104,6 @@ def read_source(path, ref, repo):
     return result.stdout.splitlines() if result.returncode == 0 else None
 
 
-def resolve_label(label, ref, repo):
-    """The tracked path a label names, exactly or as a unique path suffix, else None."""
-    command = ["git", "ls-tree", "-r", "--name-only", ref] if ref else ["git", "ls-files"]
-    tracked = subprocess.run(command, cwd=repo, capture_output=True, text=True, errors="replace").stdout.splitlines()
-    if label in tracked:
-        return label
-    matches = [path for path in tracked if path.endswith("/" + label)]
-    return matches[0] if len(matches) == 1 else None
-
-
 def check(findings, ref, repo):
     where = f"{ref}:" if ref else "the working tree: "
     results = []
@@ -194,38 +112,30 @@ def check(findings, ref, repo):
             results.append(("UNPARSED", f["title"], "header is not `### <n>. <file>:<line>: <summary>`; check it by hand"))
             continue
         label = f"{f['n']} {f['path']}:{f['line']}"
-        source = read_source(f["path"], ref, repo)
-        if source is None:
+        if not f["quotes"]:
+            results.append(("UNPARSED", label, f"no quote in the {SHAPE} shape; check it by hand"))
+            continue
+        if read_source(f["path"], ref, repo) is None:
             results.append(("DISCARDED", label, f"{f['path']} does not exist in {where.rstrip(': ')}"))
             continue
-        if not f["quotes"]:
-            results.append(("DISCARDED", label, "no quote"))
-            continue
-        in_header, in_labelled, missing = [], 0, []
-        for i, (quote_label, segment) in enumerate(f["quotes"]):
-            home = resolve_label(quote_label, ref, repo) if quote_label else None
-            if home and home != f["path"] and find(segment, read_source(home, ref, repo) or []):
-                in_labelled += 1
-                continue
-            span = find(segment, source)
-            if span:
-                in_header.append(span)
+        notes, misses = [], []
+        for path, start, end, body in f["quotes"]:
+            cited = f"`{path}:{start}" + (f"-{end}`" if end else "`")
+            source = read_source(path, ref, repo)
+            lines = clean(body)
+            if source is None:
+                misses.append(f"{path} does not exist in {where.rstrip(': ')}")
+            elif not lines:
+                misses.append(f"{cited} has an empty block")
+            elif span := locate(lines, source, start, end):
+                if span[0] != start:
+                    notes.append(f"{cited} found at lines {span[0]}-{span[1]}")
             else:
-                missing.append((i + 1, home or f["path"]))
-        if not in_header and not in_labelled:
-            elsewhere = next(filter(None, (find_elsewhere(s, f["path"], ref, repo) for _, s in f["quotes"])), None)
-            if elsewhere:
-                results.append(("CONFIRMED", label, f"quote found in {elsewhere[0]}:{elsewhere[1]}, not {f['path']}"))
-            else:
-                results.append(("DISCARDED", label, f"quote matches nothing in {where}{f['path']}"))
+                misses.append(f"{cited} matches nothing in {where}{path}")
+        if len(misses) == len(f["quotes"]):
+            results.append(("DISCARDED", label, "; ".join(misses)))
             continue
-        notes = []
-        if any(loose for _, _, loose in in_header):
-            notes.append(LOOSE)
-        if in_header and not any(first <= f["line"] <= last for first, last, _ in in_header):
-            notes.append(f"quote found at line {in_header[0][0]}")
-        for n, path in missing:
-            notes.append(f"quote block {n} of {len(f['quotes'])} is not in {path}: check it quotes another file")
+        notes += [f"{miss}: check that block by hand" for miss in misses]
         results.append(("CONFIRMED", label, "; ".join(notes)))
     return results
 
