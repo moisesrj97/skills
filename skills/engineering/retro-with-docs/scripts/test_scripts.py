@@ -1,3 +1,4 @@
+import json
 import os
 import subprocess
 import sys
@@ -105,6 +106,34 @@ class Validate(unittest.TestCase):
         self.assertEqual(validate_retro.problems(wasted.replace("- target: unknown", "- target: CLAUDE.md:10-40")), [])
         bad_ref = GOOD.replace("- matches: shop/2026-11-01-x.md#R2", "- matches: R2")
         self.assertTrue(any(p.startswith("R1: matches 'R2'") for p in validate_retro.problems(bad_ref)))
+
+
+class Condense(unittest.TestCase):
+    def condense(self, results):
+        lines = []
+        for i, (command, output) in enumerate(results):
+            lines.append({"type": "assistant", "message": {"content": [
+                {"type": "tool_use", "id": f"t{i}", "name": "Bash", "input": {"command": command}}]}})
+            lines.append({"type": "user", "message": {"content": [
+                {"type": "tool_result", "tool_use_id": f"t{i}", "is_error": True, "content": output}]}})
+        transcript = Path(tempfile.mkdtemp()) / "s.jsonl"
+        transcript.write_text("\n".join(json.dumps(line) for line in lines))
+        out = subprocess.run([sys.executable, str(Path(__file__).parent / "condense_session.py"), str(transcript)],
+                             capture_output=True, text=True, check=True).stdout
+        return [line.split(": ", 1)[0].split()[-1] for line in out.splitlines() if "CALL" not in line]
+
+    def test_an_expected_no_match_exit_is_a_result_not_an_error(self):
+        self.assertEqual(self.condense([
+            ("cd repo && grep -rn foo src", "Exit code 1"),
+            ("git diff | rg bar", "Exit code 1\nheader printed before"),
+            ("git grep -n baz", "Exit code 1"),
+            ("which nope", "Exit code 1"),
+            ('[ -f CODEOWNERS ]', "Exit code 1"),
+            ("ls CODEOWNERS", "Exit code 1\nls: CODEOWNERS: No such file or directory"),
+            ("grep foo missing.txt", "Exit code 2\ngrep: missing.txt: No such file or directory"),
+            ("ls --zzz", "Exit code 1\nls: unrecognized option `--zzz'"),
+            ("grep foo a.txt; npm test", "Exit code 1\nFAIL"),
+        ]), ["RESULT"] * 6 + ["ERROR"] * 3)
 
 
 class Known(unittest.TestCase):
