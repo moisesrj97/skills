@@ -105,7 +105,7 @@ Done when the user has confirmed the plan and you have everything needed to reac
 
 If the repo uses GitButler (`but status` works), create the branch with `but branch new <name>`, or `but branch new <name> --above <base>` when `base=` is a branch in the workspace, and do every commit and push with `but`. Otherwise update `<base>` and `git switch -c <name> <base>`. Under GitButler, update from the target (`but pull`) when only your branches are applied or the user said yes in step 0, since moving other branches is their call. When updating the base changed a lockfile, reinstall dependencies with the project's package manager and restart any dev server already running, before anything else runs.
 
-With a pre-PR, create `<name>-tidy-first` on `<base>` as above. Under GitButler, create the ticket's branch on top of it now (`--above <name>-tidy-first`), so commits to the lower branch restack it. With plain git, create it once the pre-PR's commits are in (`git switch -c <name> <name>-tidy-first`, end of step 2's first pass), since a branch created earlier stays on the old commit. These branches, plus a post-PR's, are the ticket's **layers**, bottom to top; `HEAD` in the ranges below is the top layer. With plain git, after any later commit on a lower layer (a review fix, a CI fix), rebase each layer above onto it, bottom up (`git rebase <lower> <upper>`), then switch back to the top layer; once they are pushed, push them with `--force-with-lease`.
+With a pre-PR, create `<name>-tidy-first` on `<base>` as above. Under GitButler, create the ticket's branch on top of it now (`--above <name>-tidy-first`), so commits to the lower branch restack it. With plain git, create it once the pre-PR's commits are in (`git switch -c <name> <name>-tidy-first`, end of step 2's first pass), since a branch created earlier stays on the old commit. These branches, plus a post-PR's, are the ticket's **layers**, bottom to top; `<top>` in the ranges below is the top layer's branch name, never `HEAD`, which under GitButler is the workspace commit merging every applied branch. With plain git, after any later commit on a lower layer (a review fix, a CI fix), rebase each layer above onto it, bottom up (`git rebase <lower> <upper>`), then switch back to the top layer; once they are pushed, push them with `--force-with-lease`.
 
 Done when the branch exists. Then start the implementer (see "Agents") and wait for its report of steps 2 to 4.
 
@@ -138,8 +138,8 @@ Done when every point of the ticket is implemented, every planned tidying first 
 
 Two reviews of the same commit, launched together so neither waits for the other:
 
-- **Tidy after**: `craftsmanship`'s *Tidy a diff* over `<base>...HEAD`. It places each tidying by area of impact: a `refactor:` commit on the ticket's branch, or the post-PR branch `<name>-tidy-after` on top of it. One that is Later goes on a list for the report.
-- **Pair review**: call the Skill tool with `pair-review` with args `<base>...HEAD spec=<scratchpad>/<ticket>-brief.md standards=<skill-dir>/../craftsmanship/test-desiderata.md`, passing the user's decisions from step 0 and any HITL answers as its already-decided list. It fixes and re-reviews until done; its HITL stops are this skill's HITL stops.
+- **Tidy after**: `craftsmanship`'s *Tidy a diff* over `<base>...<top>`. It places each tidying by area of impact: a `refactor:` commit on the ticket's branch, or the post-PR branch `<name>-tidy-after` on top of it. One that is Later goes on a list for the report.
+- **Pair review**: call the Skill tool with `pair-review` with args `<base>...<top> spec=<scratchpad>/<ticket>-brief.md standards=<skill-dir>/../craftsmanship/test-desiderata.md`, passing the user's decisions from step 0 and any HITL answers as its already-decided list. It fixes and re-reviews until done; its HITL stops are this skill's HITL stops.
 
 Land the tidyings before pair-review's round 2, so that round reviews them too. A tidying that lands after pair-review's last round, a clean round 1 included, gets one more round over the new tip. A finding fixed by a tidying goes on the layer its area of impact picks.
 
@@ -147,7 +147,7 @@ Done when pair-review ends Done, every tidying has landed or moved to Later, and
 
 ### 4. Security review (implementer)
 
-Call the Skill tool with `diff-review` with `lens=security` over `<base>...HEAD`, now that the code has settled. One round, with no loop: no review follows it, so each fix stays within its finding.
+Call the Skill tool with `diff-review` with `lens=security` over `<base>...<top>`, now that the code has settled. One round, with no loop: no review follows it, so each fix stays within its finding.
 
 Done when every finding it returns is fixed with a test that fails without the fix, or discarded with a one-line reason for the report, and the gates are green. Then the implementer reports and waits. Its report resolves each verification flow from the brief, so the verifier starts driving instead of reading code: the URL or command that starts it, the data, account or fixture it needs and how to get it, the steps, the observable to check, and the files it exercises.
 
@@ -172,7 +172,7 @@ Done when every flow from step 0 and every item of the failure-path checklist ha
 
 ### 6. Comment cleanup (implementer)
 
-Call the Skill tool with `comment-cleanup` over the whole branch diff (`<base>...HEAD`). Done when its result is committed and the gates are green.
+Call the Skill tool with `comment-cleanup` over the whole branch diff (`<base>...<top>`). Done when its result is committed and the gates are green.
 
 ### 7. PR
 
