@@ -10,7 +10,7 @@ The user delegates a whole ticket and walks away. They come back to a PR that is
 
 Invoking this skill is the user's approval to commit, push to the ticket's own branch and open the PR ready for review, each once the gates are green. Adding reviewers still waits for their explicit yes.
 
-You are the **orchestrator**: you hold the brief, the branch, the PR and the CI, and two agents do the turn-heavy work in their own contexts (see "Agents"). Every turn re-reads your whole context, so what runs here stays small: you read their reports, not their work, and every code change goes through the implementer.
+You are the **orchestrator**: you hold the brief, the branch, the PR and the CI, and three agents do the turn-heavy work in their own contexts (see "Agents"). Every turn re-reads your whole context, so what runs here stays small: you read their reports, not their work, and every code change goes through the implementer.
 
 **One ticket per run.** More than one (a list, a label or other tracker query, a spec) is a **batch**: call the Skill tool with `megamoind-batch`, passing the user's request, and follow it instead of this skill.
 
@@ -27,18 +27,19 @@ This skill hands off to `megamoind-batch`, `craftsmanship`, `diagnosing-bugs`, `
 
 ## Agents
 
+- **Briefer**: owns step 0's research and drafts the brief. Start it once the ticket ID is known, and close it once the brief is confirmed.
 - **Implementer**: owns steps 2, 3, 4 and 6, and every later code change (a verification failure, a red CI check). Start it after step 1 and keep it alive until step 9, so each fix lands with the context that wrote the code.
 - **Verifier**: owns step 5. Start it fresh once step 4 is done; it changes no code and reports per flow.
 
-Start each with the Agent tool (`run_in_background: false`, model `opus`), and send it later work with SendMessage to the id it returns. Its prompt holds, in this order:
+Start each with the Agent tool (`run_in_background: false`, model `opus`; the verifier `sonnet`, since driving the browser and capturing evidence is mechanical), and send it later work with SendMessage to the id it returns. Its prompt holds, in this order:
 
-1. The tag line `megamoind-run: <run> role=implementer` (or `role=verifier`), from step 0's `metrics.py start`.
-2. The brief's path, the ticket, the branch, `<base>` and this skill's folder.
-3. What to follow: this file's "Gates", "Docs or skill changes" and "Sharing the workspace" sections and its own steps, read from `<skill-dir>/SKILL.md`. The implementer passes `tag=megamoind-run: <run> role=review-<lens>` to every `diff-review` it runs, directly or through `pair-review` or `craftsmanship`.
-4. Where its report goes: `<scratchpad>/<ticket>-implement.md` or `<scratchpad>/<ticket>-verify.md`, rewritten after each piece of work, ending in `END OF REPORT`.
+1. The tag line `megamoind-run: <run> role=<briefer|implementer|verifier>`, from step 0's `metrics.py start`.
+2. The brief's path, the ticket, the branch, `<base>`, this skill's folder and the metrics state file.
+3. What to follow: this file's "Gates", "Docs or skill changes" and "Sharing the workspace" sections and its own steps, read from `<skill-dir>/SKILL.md`, marking the start of each step it owns (see step 0). The implementer passes `tag=megamoind-run: <run> role=review-<lens>` to every `diff-review` it runs, directly or through `pair-review` or `craftsmanship`.
+4. Where its report goes: `<scratchpad>/<ticket>-brief.md`, `<scratchpad>/<ticket>-implement.md` or `<scratchpad>/<ticket>-verify.md`, rewritten after each piece of work, ending in `END OF REPORT`.
 5. That a HITL question goes into the report and ends its turn instead of being asked. Relay it to the user, then send the answer back.
 
-Each report carries what step 9 needs: the implementer's commits, review passes (findings fixed, discarded and why), Later tidyings and failure-path checklist; the verifier's flows with pass or fail, each with its evidence files (paths and one-line sources, see [`EVIDENCE.md`](EVIDENCE.md)), and what went unverified and why.
+Each report carries what step 9 needs: the implementer's commits, review passes (findings fixed, discarded and why), Later tidyings and failure-path checklist; the verifier's flow counts (verified, failed at least once, unverified) and its flows with pass or fail, each with its evidence files (paths and one-line sources, see [`EVIDENCE.md`](EVIDENCE.md)), and what went unverified and why.
 
 ## Gates
 
@@ -70,23 +71,25 @@ When the diff holds no code (a README, a skill, a recipe), the steps keep their 
 
 ### 0. Brief and HITL check
 
-Each step starts with `python3 <skill-dir>/scripts/metrics.py mark <state> "<n> <name>"` (e.g. `"5 verify"`), so the run's time and tokens split by step. Step 0 starts it instead, as soon as the ticket ID is known: `python3 <skill-dir>/scripts/metrics.py start <ticket> --dir <scratchpad>` prints the run's tag line and its state file.
+Each step starts with `python3 <skill-dir>/scripts/metrics.py mark <state> "<n> <name>"`, so the run's time and tokens split by step. The names are fixed, and `mark` rejects any other: `0 brief`, `1 branch`, `2 implement`, `3 review`, `4 security`, `5 verify`, `6 comments`, `7 pr`, `8 ci`, `9 report`, `10 reviewers`. The agent that owns a step marks it. Step 0 starts it instead, as soon as the ticket ID is known: `python3 <skill-dir>/scripts/metrics.py start <ticket> --dir <scratchpad>` prints the run's tag line and its state file.
 
 With no ticket in the request, get one before anything else, in one question with two options:
 
 - **Give the ID**: the user writes it.
 - **Create it**: a ticket in the tracker, titled and described from the user's request, in the in-progress status, assigned to the user running this skill (GitHub: `gh issue create --assignee @me`). It goes where the `## Ticket tracker` section says new tickets go; when it names no place, ask for one. Its new ID is the ticket from here on.
 
-Fetch the ticket (`gh issue view` for a GitHub issue, the tracker's tools otherwise); a tracker you can't reach is HITL. Read the ticket and quote each decision in it that the request, or a plan already agreed in this conversation, contradicts: that conflict is HITL. Then read the code it touches, and look for what the change can **reuse**: helpers, a similar feature, how the neighbouring tests are written. When the ticket relies on how a third-party service behaves (an embed, a player, an API), read that service's terms or policy for the behaviour and cite it in the plan: a design its terms forbid is HITL before any code. Call the Skill tool with `craftsmanship`. For a bug, call the Skill tool with `diagnosing-bugs` and take it through phase 4, so the plan names the confirmed cause; its fix waits for step 2.
+Then start the briefer (see "Agents"), adding to its prompt the user's request and any plan already agreed in this conversation, and wait for its draft. The briefer runs the research below and writes the draft to `<scratchpad>/<ticket>-brief.md`: each item of the round with its proposal, and which of MINIMOI.md's "Eligibility" conditions the ticket meets. You read only that file, so your context holds the brief and not the code behind it. Ask the round, send the briefer any answer that needs more research, write the answers into the brief, then close the briefer.
+
+**Briefer's research.** Fetch the ticket (`gh issue view` for a GitHub issue, the tracker's tools otherwise); a tracker you can't reach is HITL. Read the ticket and quote each decision in it that the request, or a plan already agreed in this conversation, contradicts: that conflict is HITL. Then read the code it touches, and look for what the change can **reuse**: helpers, a similar feature, how the neighbouring tests are written. When the ticket relies on how a third-party service behaves (an embed, a player, an API), read that service's terms or policy for the behaviour and cite it in the plan: a design its terms forbid is HITL before any code. Call the Skill tool with `craftsmanship`. For a bug, call the Skill tool with `diagnosing-bugs` and take it through phase 4, so the plan names the confirmed cause; its fix waits for step 2.
 
 Run `python3 <skill-dir>/scripts/preflight.py` once for the repo facts below (default branch, GitButler, CODEOWNERS, required checks, gh version, the sections of each steering file).
 
-With `brief=`, read it, settle on your own whatever of the plan below it leaves open (only the user's decisions are HITL), and go to step 1, or hand off when it says `mode: minimoi`. Otherwise ask everything in **one** round, with your proposal for each. When the ticket already states the approach, files and validation, the plan is one short question that restates it and names only where you deviate, with no fallbacks or conditional plans. Each option states only consequences you checked in code or data this session: grep the consumer before claiming "with X, Y happens", and mark anything unchecked "unverified: …". An option that extends scope to a sibling case ("X has the same bug") quotes the routing line that sends the user's action into that code, found by tracing every call site.
+With `brief=`, the briefer reads it and settles on its own whatever of the plan below it leaves open (only the user's decisions are HITL); then go to step 1, or hand off when it says `mode: minimoi`. Otherwise the round asks everything in **one** round, with your proposal for each. When the ticket already states the approach, files and validation, the plan is one short question that restates it and names only where you deviate, with no fallbacks or conditional plans. Each option states only consequences you checked in code or data this session: grep the consumer before claiming "with X, Y happens", and mark anything unchecked "unverified: …". An option that extends scope to a sibling case ("X has the same bug") quotes the routing line that sends the user's action into that code, found by tracing every call site.
 
 - **Plan**: the approach in a few lines, what it reuses, the seams where tests go with what each buys and sells (Test Desiderata), the tidyings worth doing first or after and where each goes by area of impact (Tidy First), and anything ambiguous in the ticket. When the ticket replaces or reproduces something already visible in the product, the plan keeps its current look, cites the **visual reference** (the screenshot, the live screen), and checks that the shape of the data (copy keys, props) can carry that look, e.g. one copy key can't style half its text.
 - **Branch name**: the format in the project's `## Ticket tracker` section, else `<ticket-id>-<short-kebab-description>`, with no `/`. A pre-PR or post-PR from the plan adds `<name>-tidy-first` or `<name>-tidy-after`.
 - **Base** (GitButler): run `but pull --check`. When the workspace is behind and updating would move other branches, ask: "the workspace is N commits behind; updating would move X and Y. Update?". A no leaves the base stale, so guard against a **borrowed green** (see "Sharing the workspace").
-- **Verification**: how to run the app or service (the dev commands, required env, data or login, ports), and which flows prove the change works. Each observable named as proof (a status, a field, an endpoint's answer, an eval's expected output) cites the handler that produces it (`file:line`) and, when the app runs, has been seen once.
+- **Verification**: how to run the app or service (the dev commands, required env, data or login, ports), and which flows prove the change works, each with its route or entry point and the data it needs. Each observable named as proof (a status, a field, an endpoint's answer, an eval's expected output) cites the handler that produces it (`file:line`) and, when the app runs, has been seen once.
 - **CODEOWNERS**: if preflight names one, opening the PR ready for review requests those reviewers automatically. Say so, since it defeats waiting to add reviewers.
 - **Required checks**: the names CI must turn green, from the project's `CLAUDE.md` / `CLAUDE.local.md`, else preflight's `required_checks` (the base's rulesets and branch protection; pass `--base <base>` when it isn't the default branch). If neither gives them, or preflight reports `required_checks_error`, ask. Split them into checks that run on drafts and ready-only ones (e.g. a Jenkins job that builds only non-draft PRs whose base is the default branch).
 - **Evidence media** (screenshots, recordings): the PR gets them through `gh-attach`, which needs gh ≥ 2.99. When preflight reports `gh_attach_ok: false`, ask the user to upgrade.
@@ -144,11 +147,11 @@ Done when pair-review ends Done, every tidying has landed or moved to Later, and
 
 Call the Skill tool with `diff-review` with `lens=security` over `<base>...HEAD`, now that the code has settled. One round, with no loop: no review follows it, so each fix stays within its finding.
 
-Done when every finding it returns is fixed with a test that fails without the fix, or discarded with a one-line reason for the report, and the gates are green. Then the implementer reports and waits.
+Done when every finding it returns is fixed with a test that fails without the fix, or discarded with a one-line reason for the report, and the gates are green. Then the implementer reports and waits. Its report resolves each verification flow from the brief, so the verifier starts driving instead of reading code: the URL or command that starts it, the data, account or fixture it needs and how to get it, the steps, the observable to check, and the files it exercises.
 
 ### 5. Verify in the real app (verifier)
 
-Start the verifier (see "Agents"), adding the implementer's report path to its prompt for the failure-path checklist. A flow that fails goes to the implementer as a fix; once its report says the fix is in and the gates are green, send the verifier back to that flow and to the flows the fix's files reach.
+Start the verifier (see "Agents"), adding the implementer's report path to its prompt for the resolved flows and the failure-path checklist. The verifier works from those flows and reads code only to fill a gap they leave, naming the gap in its report. A flow that fails goes to the implementer as a fix; once its report says the fix is in and the gates are green, send the verifier back to that flow and to the flows the fix's files reach.
 
 The rest of this step is the verifier's. Start what the app needs as background subshells (`run_in_background`) with the commands from step 0, and stop every one you started when done. When the brief says the servers are already running, use them, since a second copy fights for the same ports.
 
@@ -203,7 +206,7 @@ Stop with HITL after 3 fix pushes that haven't turned CI green: the loop isn't c
 
 When a caller passed a report path, write the report there before ending any turn, even with checks still pending (list them as open). Its first line is `STATUS: final` once every earlier step and the retro are done, else `STATUS: interim — <what is pending>`, and its last line is `END OF REPORT` either way. End a turn only once every action you announced has run.
 
-Close the implementer and the verifier. Run `python3 <skill-dir>/scripts/metrics.py collect <state>`, which appends the run to the metrics log and prints its time, tokens and peak context per agent and per step. Then call the Skill tool with `retro-with-docs` on this session; if it is not available, skip it and say so in the report. Then write the report from the agents' reports and your own steps:
+Close the implementer and the verifier. Run `python3 <skill-dir>/scripts/metrics.py collect <state> --flows <n> --failures <n> --unverified <n>`, with the verifier's flow counts (leave the three flags out when step 5 never ran), which appends the run to the metrics log and prints its time, tokens and peak context per agent and per step. Then call the Skill tool with `retro-with-docs` on this session; if it is not available, skip it and say so in the report. Then write the report from the agents' reports and your own steps:
 
 - Each layer bottom to top: PR URL, branch, merge-risk color, final CI state.
 - The Later tidyings, each with its files and why it waits.

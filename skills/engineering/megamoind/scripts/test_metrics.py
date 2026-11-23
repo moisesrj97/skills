@@ -213,6 +213,62 @@ class Skill(unittest.TestCase):
         self.assertEqual(metrics.collect(self.state, self.root / "p", self.root / "c", now=at(10))["skill"], "megamoind")
 
 
+class Phases(unittest.TestCase):
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        self.state = self.root / "PD-1-metrics.json"
+        with contextlib.redirect_stdout(io.StringIO()):
+            metrics.main(["start", "PD-1", "--dir", str(self.root)])
+
+    def mark(self, *argv):
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()) as err:
+            code = metrics.main(["mark", str(self.state), *argv])
+        return code, err.getvalue()
+
+    def phases(self):
+        return [m["phase"] for m in json.loads(self.state.read_text())["marks"]]
+
+    def test_every_megamoind_step_can_be_marked(self):
+        for phase in metrics.PHASES["megamoind"]:
+            self.assertEqual(self.mark(phase)[0], 0, phase)
+
+    def test_a_phase_outside_the_list_is_rejected_naming_the_valid_ones(self):
+        code, err = self.mark("6 comment cleanup")
+        self.assertNotEqual(code, 0)
+        self.assertIn("6 comments", err)
+        self.assertEqual(self.phases(), ["0 brief"])
+
+    def test_a_minimoi_run_checks_against_its_own_steps(self):
+        self.assertEqual(self.mark("0 handoff", "--skill", "minimoi")[0], 0)
+        self.assertEqual(self.mark("4 evidence")[0], 0)
+        self.assertNotEqual(self.mark("5 verify")[0], 0)
+
+    def test_an_escalation_checks_against_the_skill_it_moves_to(self):
+        self.mark("0 handoff", "--skill", "minimoi")
+        self.assertEqual(self.mark("2 implement", "--skill", "megamoind")[0], 0)
+        self.assertEqual(self.mark("5 verify")[0], 0)
+
+
+class Verify(unittest.TestCase):
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        self.state = self.root / "PD-1-metrics.json"
+        self.log = self.root / "metrics.jsonl"
+        self.state.write_text(json.dumps({"run": "PD-1-20261117100000", "ticket": "PD-1", "marks": [{"phase": "0 brief", "t": at(0)}]}))
+
+    def collected(self, *flags):
+        with contextlib.redirect_stdout(io.StringIO()):
+            metrics.main(["collect", str(self.state), "--log", str(self.log), *flags])
+        return json.loads(self.log.read_text().splitlines()[-1])
+
+    def test_collect_records_the_verify_outcome(self):
+        run = self.collected("--flows", "6", "--failures", "2", "--unverified", "1")
+        self.assertEqual(run["verify"], {"flows": 6, "failures": 2, "unverified": 1})
+
+    def test_a_run_without_verify_records_none(self):
+        self.assertNotIn("verify", self.collected())
+
+
 class Report(unittest.TestCase):
     def setUp(self):
         self.root = Path(tempfile.mkdtemp())
@@ -250,6 +306,20 @@ class Report(unittest.TestCase):
         text = metrics.report(self.log, None, self.seen, min_runs=1, skill="minimoi")
         self.assertIn("minimoi metrics: 1 runs", text)
         self.assertIn("run minutes: median 40", text)
+
+    def test_compares_the_verifier_by_model(self):
+        def run(name, model, read, failures):
+            r = self.run_with(10)
+            r["run"] = name
+            r["agents"].append({**r["agents"][0], "role": "verifier", "models": [model], "cache_read": read})
+            r["verify"] = {"flows": 5, "failures": failures, "unverified": 0}
+            return r
+        runs = [run("a", "claude-opus-5-5", 4_000_000, 2), run("b", "claude-opus-5-5", 6_000_000, 2),
+                run("c", "claude-sonnet-5-5", 3_000_000, 1), self.run_with(30)]
+        self.log.write_text("".join(json.dumps(r) + "\n" for r in runs))
+        text = metrics.report(self.log, None, self.seen, min_runs=1)
+        self.assertIn("claude-opus-5-5: 2 runs, cache read median 5.0M, failures found median 2, unverified median 0", text)
+        self.assertIn("claude-sonnet-5-5: 1 runs, cache read median 3.0M, failures found median 1, unverified median 0", text)
 
     def test_an_empty_log_says_nothing_whatever_the_threshold(self):
         self.log.write_text("")

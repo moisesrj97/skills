@@ -6,10 +6,12 @@ Usage:
       Writes <scratchpad>/<ticket>-metrics.json and prints the run tag line. Every agent the
       run starts carries that line in its prompt, with its role (`role=implementer`).
   metrics.py mark <state file> <phase> [--skill <name>]
-      --skill relabels the run, e.g. when megamoind hands off to minimoi.
-  metrics.py collect <state file> [--log <file>]
+      <phase> must be one of the run's skill's PHASES. --skill relabels the run, e.g. when
+      megamoind hands off to minimoi.
+  metrics.py collect <state file> [--log <file>] [--flows N --failures N --unverified N]
       Finds every Claude transcript and Codex session carrying the tag, measures each one and
-      the main agent's phases, and appends the run as one line to the log.
+      the main agent's phases, and appends the run as one line to the log, with step 5's
+      outcome when given.
   metrics.py report [--log <file>] [--baseline <file>] [--min-runs N] [--skill <name>]
       Summarises the skill's runs (default megamoind) logged since the last report; prints
       nothing and exits 3 while there are fewer than N. A run logged without a skill is megamoind.
@@ -32,6 +34,11 @@ TAG = re.compile(r"megamoind-run: ([\w.-]+)(?: role=([\w-]+))?")
 NOTICES = ("Delegated task node", "Another Claude session sent", "<task-notification", "Update on pull request")
 TOKENS = ("cache_read", "cache_write", "input", "output")
 DEFAULT_SKILL = "megamoind"
+PHASES = {
+    "megamoind": ["0 brief", "1 branch", "2 implement", "3 review", "4 security", "5 verify", "6 comments", "7 pr",
+                  "8 ci", "9 report", "10 reviewers"],
+    "minimoi": ["0 brief", "0 handoff", "1 branch", "2 implement", "3 review", "4 evidence", "5 comments", "6 pr"],
+}
 
 
 def parse_time(stamp):
@@ -223,6 +230,18 @@ def report(log=LOG, baseline=BASELINE, seen=SEEN, min_runs=10, skill=DEFAULT_SKI
     lines.append("  share of run time per phase (median %):")
     for name, shares in sorted(phase_share.items()):
         lines.append(f"    {name}: {statistics.median(shares):.0f}")
+    by_model = {}
+    for r in runs:
+        verifiers = [a for a in r["agents"] if a["role"] == "verifier"]
+        if verifiers and "verify" in r:
+            model = ", ".join(sorted({m for a in verifiers for m in a["models"]}))
+            by_model.setdefault(model, []).append((sum(a["cache_read"] for a in verifiers) / 1e6, r["verify"]))
+    if by_model:
+        lines.append("  verifier by model (median per run):")
+    for model, rows in sorted(by_model.items()):
+        lines.append(f"    {model}: {len(rows)} runs, cache read median {statistics.median(c for c, _ in rows):.1f}M, "
+                     f"failures found median {statistics.median(v['failures'] for _, v in rows):.0f}, "
+                     f"unverified median {statistics.median(v['unverified'] for _, v in rows):.0f}")
     seen.parent.mkdir(parents=True, exist_ok=True)
     seen.write_text(json.dumps(sorted(done | {r["run"] for r in runs})))
     return "\n".join(lines)
@@ -234,14 +253,17 @@ def main(argv):
     s = sub.add_parser("start")
     s.add_argument("ticket")
     s.add_argument("--dir", required=True)
-    s.add_argument("--skill", default=DEFAULT_SKILL)
+    s.add_argument("--skill", default=DEFAULT_SKILL, choices=sorted(PHASES))
     m = sub.add_parser("mark")
     m.add_argument("state")
     m.add_argument("phase")
-    m.add_argument("--skill")
+    m.add_argument("--skill", choices=sorted(PHASES))
     c = sub.add_parser("collect")
     c.add_argument("state")
     c.add_argument("--log", default=LOG)
+    c.add_argument("--flows", type=int)
+    c.add_argument("--failures", type=int)
+    c.add_argument("--unverified", type=int)
     r = sub.add_parser("report")
     r.add_argument("--log", default=LOG)
     r.add_argument("--baseline", default=BASELINE)
@@ -257,12 +279,18 @@ def main(argv):
         print(f"megamoind-run: {run} role=main\nstate: {state}")
     elif args.cmd == "mark":
         state = json.loads(Path(args.state).read_text())
+        allowed = PHASES[args.skill or state.get("skill", DEFAULT_SKILL)]
+        if args.phase not in allowed:
+            print(f"unknown phase {args.phase!r}; one of: {', '.join(allowed)}", file=sys.stderr)
+            return 2
         state["marks"].append({"phase": args.phase, "t": now_iso()})
         if args.skill:
             state["skill"] = args.skill
         Path(args.state).write_text(json.dumps(state))
     elif args.cmd == "collect":
         run = collect(args.state)
+        if args.flows is not None:
+            run["verify"] = {"flows": args.flows, "failures": args.failures or 0, "unverified": args.unverified or 0}
         log = Path(args.log)
         log.parent.mkdir(parents=True, exist_ok=True)
         with log.open("a") as f:
