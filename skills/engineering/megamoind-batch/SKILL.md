@@ -98,7 +98,7 @@ Close every pane you opened (`herdr pane close <id>`), cancel any T3 child still
 | Chain | Ticket | Branch | PR | CI |
 |---|---|---|---|---|
 
-One row per layer. Then, from the agents' reports: Later tidyings, findings discarded and why, what went unverified in the real app, changes that landed in a different layer than planned, and open HITL questions. Leave the tickets untouched in the tracker; they close when the user merges.
+One row per layer. Under it, one line per ticket: `<ticket> verified: <real-app or boot check, result>; type-check: <command, result>`. Then, from the agents' reports: Later tidyings, findings discarded and why, what went unverified in the real app, changes that landed in a different layer than planned, and open HITL questions. Leave the tickets untouched in the tracker; they close when the user merges.
 
 ### 6. Reviewers (optional)
 
