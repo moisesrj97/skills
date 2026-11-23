@@ -141,7 +141,7 @@ Two reviews of the same commit, launched together so neither waits for the other
 - **Tidy after**: `craftsmanship`'s *Tidy a diff* over `<base>...<top>`. It places each tidying by area of impact: a `refactor:` commit on the ticket's branch, or the post-PR branch `<name>-tidy-after` on top of it. One that is Later goes on a list for the report.
 - **Pair review**: call the Skill tool with `pair-review` with args `<base>...<top> spec=<scratchpad>/<ticket>-brief.md standards=<skill-dir>/../craftsmanship/test-desiderata.md`, passing the user's decisions from step 0 and any HITL answers as its already-decided list. It fixes and re-reviews until done; its HITL stops are this skill's HITL stops.
 
-Land the tidyings before pair-review's round 2, so that round reviews them too. A tidying that lands after pair-review's last round, a clean round 1 included, gets one more round over the new tip. A finding fixed by a tidying goes on the layer its area of impact picks.
+Land the tidyings before pair-review's round 2, so that round reviews them too. A tidying that lands after pair-review's last round, a clean round 1 included, gets one more round over the new tip. A finding fixed by a tidying goes on the layer its area of impact picks. A review fix in hunks that a later tidying commit also touches goes in its own `fix:` commit on top, since GitButler refuses to amend or squash it below that commit; the tidying commit stays behaviour-free.
 
 Done when pair-review ends Done, every tidying has landed or moved to Later, and the gates are green.
 
