@@ -45,9 +45,9 @@ All agents write to the same working directory, so each one's type-check, tests 
 
 ### 0. Read the tickets
 
-Resolve the batch through GitHub (`gh issue view`, `gh issue list --label …`) or the tracker the project's `## Ticket tracker` section names:
+Resolve the batch through GitHub (`gh issue view <n> --json title,body,labels,comments`, `gh issue list --label …`) or the tracker the project's `## Ticket tracker` section names:
 
-- a spec ID: the spec and its tickets (sub-issues, subtasks or the tickets it links);
+- a spec ID: the spec and its tickets (sub-issues, subtasks or the tickets it links), each fetched on its own, since the spec's subtask list is a summary with empty descriptions (ClickUp: `clickup_get_task` per subtask with `include: ["description", "dependencies"]`);
 - a list: those tickets;
 - a query (a label, a status): the tickets it returns.
 
