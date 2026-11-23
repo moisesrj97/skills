@@ -6,9 +6,20 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[4]
 MANIFEST = "upstream.json"
 COMPARE_FILE_CAP = 300
+
+
+def find_root(cwd=None):
+    """The checkout the agent works in, a worktree included: the installed script is a symlink
+    that resolves into the main checkout."""
+    top = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=cwd, capture_output=True, text=True)
+    if top.returncode == 0 and (Path(top.stdout.strip()) / MANIFEST).exists():
+        return Path(top.stdout.strip())
+    return Path(__file__).resolve().parents[4]
+
+
+ROOT = find_root()
 
 
 def gh(*args):

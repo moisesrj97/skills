@@ -1,4 +1,5 @@
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -9,6 +10,18 @@ import upstream  # noqa: E402
 
 OLD, HEAD, TOUCH, OLDER = "o" * 40, "h" * 40, "t" * 40, "x" * 40
 PATH = "skills/eng/tdd"
+
+
+class Root(unittest.TestCase):
+    def test_root_is_the_cwd_checkout_holding_the_manifest_else_the_scripts_own(self):
+        worktree = Path(tempfile.mkdtemp())
+        subprocess.run(["git", "init", "-q", str(worktree)], check=True)
+        (worktree / "sub").mkdir()
+        own = Path(upstream.__file__).resolve().parents[4]
+        self.assertEqual(upstream.find_root(worktree / "sub"), own)
+        (worktree / "upstream.json").write_text("{}")
+        self.assertEqual(upstream.find_root(worktree / "sub"), worktree.resolve())
+        self.assertEqual(upstream.find_root(tempfile.mkdtemp()), own)
 
 
 class FakeGh:
