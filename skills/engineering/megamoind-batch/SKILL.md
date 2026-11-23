@@ -74,7 +74,7 @@ Update the workspace from the target once (`but pull`), before any agent starts.
 
 ### 3. Run the chains
 
-Start the bottom ticket of each chain, up to 3 agents, with `base=` the default branch. When an agent's report is final, read it and start the next ticket of that chain with `base=` the top layer it lists, or the next waiting chain if a slot is free. A report with an open HITL question stops that chain until the user answers; the other chains keep running. Done when every ticket's report is final.
+Start the bottom ticket of each chain, up to 3 agents, with `base=` the default branch. When an agent's report is final, check its `Head:` against `git rev-parse <top layer>` and its `CI:` against one poll of `megamoind`'s `ci.py wait <pr> --timeout 0`; on a mismatch send the agent back to finish. Then read it and start the next ticket of that chain with `base=` the top layer it lists, or the next waiting chain if a slot is free. A report with an open HITL question stops that chain until the user answers; the other chains keep running. Done when every ticket's report is final.
 
 If a ticket turns out to need a change in a lower layer of its chain, the change belongs there. The ticket's agent stops and asks for it; leave it stopped until the change lands. Send the change to that layer's agent, which commits it on its own branch and runs its gates; GitButler restacks the branches above. Push the batch, then tell the waiting agent its base moved. No one has reviewed the drafts yet, so rewriting them is fine.
 

@@ -37,7 +37,7 @@ Start each with the Agent tool (`run_in_background: false`, model `opus`; the ve
 1. The tag line `megamoind-run: <run> role=<briefer|implementer|verifier>`, from step 0's `metrics.py start`.
 2. The brief's path, the ticket, the branch, `<base>`, this skill's folder and the metrics state file.
 3. What to follow: this file's "Gates", "Docs or skill changes" and "Sharing the workspace" sections and its own steps, read from `<skill-dir>/SKILL.md`, marking the start of each step it owns (see step 0). The implementer passes `tag=megamoind-run: <run> role=review-<lens>` to every `diff-review` it runs, directly or through `pair-review` or `craftsmanship`.
-4. Where its report goes: `<scratchpad>/<ticket>-brief.md`, `<scratchpad>/<ticket>-implement.md` or `<scratchpad>/<ticket>-verify.md`, rewritten after each piece of work, ending in `END OF REPORT`.
+4. Where its report goes: `<scratchpad>/<ticket>-brief.md`, `<scratchpad>/<ticket>-implement.md` or `<scratchpad>/<ticket>-verify.md`, rewritten after each piece of work, starting with `Head: <sha of its branch tip>` and ending in `END OF REPORT`. Ending its turn kills its background jobs (review rounds, test suites), so it waits for them inside the turn and writes `END OF REPORT` only after they finish. Accept a report only when its `Head:` matches `git rev-parse <branch>`.
 5. That a HITL question goes into the report and ends its turn instead of being asked. Relay it to the user, then send the answer back.
 
 Each report carries what step 9 needs: the implementer's commits, review passes (findings fixed, discarded and why), Later tidyings and failure-path checklist; the verifier's flow counts (verified, failed at least once, unverified) and its flows with pass or fail, each with its evidence files (paths and one-line sources, see [`EVIDENCE.md`](EVIDENCE.md)), and what went unverified and why.
@@ -210,7 +210,7 @@ Stop with HITL after 3 fix pushes that haven't turned CI green: the loop isn't c
 
 ### 9. Report
 
-When a caller passed a report path, write the report there before ending any turn, even with checks still pending (list them as open). Its first line is `STATUS: final` once every earlier step and the retro are done, else `STATUS: interim — <what is pending>`, and its last line is `END OF REPORT` either way. End a turn only once every action you announced has run.
+When a caller passed a report path, write the report there before ending any turn, even with checks still pending (list them as open). Its first line is `STATUS: final` once every earlier step and the retro are done, else `STATUS: interim — <what is pending>`, followed by `Head: <top layer sha>` and `CI: <ci.py wait's last state, or pending>`, and its last line is `END OF REPORT` either way. End a turn only once every action you announced has run.
 
 Close the implementer and the verifier. Run `python3 <skill-dir>/scripts/metrics.py collect <state> --flows <n> --failures <n> --unverified <n>`, with the verifier's flow counts (leave the three flags out when step 5 never ran), which appends the run to the metrics log and prints its time, tokens and peak context per agent and per step. Then call the Skill tool with `retro-with-docs` on this session; if it is not available, skip it and say so in the report. Then write the report from the agents' reports and your own steps:
 
