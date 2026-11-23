@@ -1,4 +1,7 @@
+import io
+import json
 import sys
+from contextlib import redirect_stderr
 import unittest
 from pathlib import Path
 
@@ -74,6 +77,56 @@ class Wait(unittest.TestCase):
         self.assertEqual(state, "green")
         with self.assertRaises(RuntimeError):
             ci.wait(1, [], set(), 1, 99, fetch=flaky([blip, blip, blip]), sleep=lambda s: None, now=lambda: 0)
+
+
+class BranchWait(unittest.TestCase):
+    def setUp(self):
+        self.real = (ci.gh, ci.wait)
+
+    def tearDown(self):
+        ci.gh, ci.wait = self.real
+
+    def stub_gh(self, responses):
+        self.calls = []
+
+        def gh(*args, cwd=None):
+            self.calls.append(args[1])
+            return next((0, json.dumps(body), "") for path, body in responses.items() if path in args[1])
+        ci.gh = gh
+
+    def test_maps_check_runs_and_commit_statuses_to_buckets(self):
+        runs = [{"name": "check", "status": "completed", "conclusion": "success", "html_url": "u1"},
+                {"name": "e2e", "status": "in_progress", "conclusion": None},
+                {"name": "deploy", "status": "completed", "conclusion": "skipped"},
+                {"name": "lint", "status": "completed", "conclusion": "timed_out"},
+                {"name": "old", "status": "completed", "conclusion": "cancelled"}]
+        statuses = [{"context": "Jenkins", "state": "pending", "target_url": "u2"},
+                    {"context": "scan", "state": "error"}]
+        self.stub_gh({"/check-runs": {"check_runs": runs}, "/status": {"statuses": statuses}})
+        buckets = {c["name"]: c["bucket"] for c in ci.fetch_commit_checks("abc")}
+        self.assertEqual(buckets, {"check": "pass", "e2e": "pending", "deploy": "skipping", "lint": "fail",
+                                   "old": "cancel", "Jenkins": "pending", "scan": "fail"})
+
+    def test_branch_waits_on_the_tip_resolved_once_at_start(self):
+        self.stub_gh({"commits/feature": {"sha": "abc123"}})
+        args = []
+        ci.wait = lambda target, req, skip, *rest, fetch=None: args.append((target, req, fetch)) or (
+            "red", {"red": [{"name": "check", "state": "failure"}], "pending": [], "missing": []})
+        self.assertEqual(ci.main(["wait", "--branch", "feature", "--required", "check"]), 1)
+        self.assertEqual(args, [("abc123", ["check"], ci.fetch_commit_checks)])
+
+    def test_sha_pins_the_commit_without_a_lookup(self):
+        self.stub_gh({})
+        args = []
+        ci.wait = lambda target, *rest, fetch=None: args.append(target) or (
+            "green", {"red": [], "pending": [], "missing": []})
+        self.assertEqual(ci.main(["wait", "--branch", "feature", "--sha", "def456"]), 0)
+        self.assertEqual((args, self.calls), (["def456"], []))
+
+    def test_wait_takes_exactly_one_of_pr_and_branch(self):
+        for argv in (["wait"], ["wait", "1", "--branch", "feature"]):
+            with self.assertRaises(SystemExit), redirect_stderr(io.StringIO()):
+                ci.main(argv)
 
 
 class Required(unittest.TestCase):

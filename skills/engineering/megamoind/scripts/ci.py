@@ -6,8 +6,10 @@ Usage:
       Prints the required check names from the branch rulesets and the classic branch
       protection, one per line. Nothing printed means neither declares any; exit 2 when a
       lookup fails.
-  ci.py wait <pr> [--required <name>]... [--skip <name>]... [--interval 30] [--timeout 3600]
-      Polls `gh pr checks` until nothing is pending and every --required check has reported.
+  ci.py wait (<pr> | --branch <b> [--sha <sha>]) [--required <name>]... [--skip <name>]... [--interval 30] [--timeout 3600]
+      Polls the PR's checks, or with --branch the check runs and statuses of the branch's remote
+      tip (resolved once at start, or --sha), until nothing is pending and every --required
+      check has reported.
       --skip leaves checks out of the wait (e.g. ready-only ones on a draft, pending retarget).
       Exit 0: all green. 1: some check red (named on stdout). 4: timeout (pending and
       missing named). 2: gh failed 3 polls in a row. A PR with no checks at all counts as
@@ -87,6 +89,37 @@ def fetch_checks(pr):
     raise RuntimeError(err.strip() or f"gh pr checks exited {code}")
 
 
+CHECK_RUN_BUCKETS = {"success": "pass", "skipped": "skipping", "neutral": "skipping", "cancelled": "cancel"}
+STATUS_BUCKETS = {"success": "pass", "pending": "pending", "failure": "fail", "error": "fail"}
+
+
+def gh_json(*args):
+    code, out, err = gh("api", *args)
+    if code != 0:
+        raise RuntimeError(err.strip() or f"gh api exited {code}")
+    return json.loads(out)
+
+
+def branch_tip(branch):
+    return gh_json(f"repos/{{owner}}/{{repo}}/commits/{branch}")["sha"]
+
+
+def fetch_commit_checks(sha):
+    runs = gh_json(f"repos/{{owner}}/{{repo}}/commits/{sha}/check-runs?per_page=100")["check_runs"]
+    statuses = gh_json(f"repos/{{owner}}/{{repo}}/commits/{sha}/status")["statuses"]
+    checks = []
+    for run in runs:
+        if run["status"] != "completed":
+            bucket, state = "pending", run["status"]
+        else:
+            bucket, state = CHECK_RUN_BUCKETS.get(run["conclusion"], "fail"), run["conclusion"]
+        checks.append({"name": run["name"], "bucket": bucket, "state": state, "link": run.get("html_url") or ""})
+    for status in statuses:
+        checks.append({"name": status["context"], "bucket": STATUS_BUCKETS.get(status["state"], "pending"),
+                       "state": status["state"], "link": status.get("target_url") or ""})
+    return checks
+
+
 def wait(pr, required_names, skip, interval, timeout, fetch=fetch_checks, sleep=time.sleep, now=time.monotonic,
          max_errors=3, grace=300):
     start = now()
@@ -114,18 +147,28 @@ def main(argv=None):
     req = sub.add_parser("required")
     req.add_argument("base")
     w = sub.add_parser("wait")
-    w.add_argument("pr")
+    w.add_argument("pr", nargs="?")
+    w.add_argument("--branch", help="wait on the branch's remote tip instead of a PR")
+    w.add_argument("--sha", help="with --branch: the commit to wait on")
     w.add_argument("--required", action="append", default=[], help="one check name; repeat the flag")
     w.add_argument("--skip", action="append", default=[], help="one check name; repeat the flag")
     w.add_argument("--interval", type=int, default=30)
     w.add_argument("--timeout", type=int, default=3600)
     args = parser.parse_args(argv)
+    if args.command == "wait" and (args.pr is None) == (args.branch is None):
+        parser.error("wait takes a PR number or --branch, not both")
 
     try:
         if args.command == "required":
             print("\n".join(required(args.base)))
             return 0
-        state, details = wait(args.pr, args.required, set(args.skip), args.interval, args.timeout)
+        if args.branch:
+            sha = args.sha or branch_tip(args.branch)
+            print(f"waiting on {args.branch} @ {sha}", file=sys.stderr)
+            state, details = wait(sha, args.required, set(args.skip), args.interval, args.timeout,
+                                  fetch=fetch_commit_checks)
+        else:
+            state, details = wait(args.pr, args.required, set(args.skip), args.interval, args.timeout)
     except RuntimeError as error:
         print(f"gh failed: {error}", file=sys.stderr)
         return 2
