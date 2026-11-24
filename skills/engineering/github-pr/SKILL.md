@@ -53,11 +53,7 @@ This PR resolves <ticket URL>
 - `## Merge risk` goes after How to revert, only with a `merge-risk` report the caller provides, pasted as given.
 - `## Evidence` goes last, only with evidence the caller or the user provides, each item under its one-line source (local data, injected in the browser…): an image or video as `![<what it shows>](./<file>)` (a video alone in its paragraph), a trace as a fenced code block with the file's contents, inside `<details><summary><flow></summary>` when it runs past 10 lines.
 
-## 3. Preview
-
-Show the title and description, plus the list of files to attach, and wait for explicit approval, since uploading publishes them. Apply an edit to the text and show it again, without re-reading git.
-
-## 4. Open
+## 3. Open
 
 Pass the description through a file; a shell-quoted body mangles backticks and newlines.
 
