@@ -7,7 +7,7 @@ My personal and engineering skills for coding agents.
 | Skill | What it does | Source |
 |---|---|---|
 | `comment-cleanup` | Prunes the comments a change added down to the non-obvious "why". | own |
-| `craftsmanship` | Kent Beck's Tidy First (where each tidying goes by area of impact), the four rules of simple design, and Test Desiderata (the trade-offs between test properties). Tidies a diff through `diff-review`'s cleanup lens. | own |
+| `craftsmanship` | Kent Beck's Tidy First (where each tidying goes by area of impact), the four rules of simple design, and Test Desiderata (the trade-offs between test properties). | own |
 | `debug-trace` | Temporary tagged debug points dumped to an isolated trace file, then removed. | own |
 | `diff-review` | One review round in a separate reviewer agent of any model, through a lens (bugs, security or cleanup), continued across the rounds of a loop, with findings backed by quoted code and checked against a spec when given. | own |
 | `gh-attach` | Attaches local images and videos to GitHub issues, PRs and comments with `gh --attach`. | own |

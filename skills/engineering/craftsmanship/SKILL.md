@@ -1,6 +1,6 @@
 ---
 name: craftsmanship
-description: "Kent Beck's Tidy First, simple design and Test Desiderata as working rules for tidying around a behaviour change and trading test properties. Use before or after a behaviour change, when choosing test seams, or to review, simplify or tidy a diff."
+description: "Kent Beck's Tidy First, simple design and Test Desiderata as working rules for tidying around a behaviour change and trading test properties. Use before or after a behaviour change, or when choosing test seams."
 ---
 
 # Craftsmanship
@@ -31,15 +31,6 @@ The **area of impact** is the set of files a tidying touches, compared with the 
 ## Simple design
 
 Four rules in priority order: passes the tests, reveals intention, no duplication, fewest elements. They decide which tidyings are worth making and which one wins when two pull against each other. Read them, with how each applies, in [`simple-design.md`](simple-design.md).
-
-## Tidy a diff
-
-Simplifies a change's code after the behaviour works, with a reviewer outside your context, since an author misses their own duplication.
-
-1. Call the Skill tool with `diff-review` with `lens=cleanup` over the change's range (with uncommitted work, `diff`), and `standards=` the absolute paths of `tidy-first.md` and `simple-design.md` in the folder this skill loaded from. One round.
-2. Place each finding: **Apply** when it keeps behaviour and touches only files the behaviour change needs; **post-PR** or **Later** by the area-of-impact table above; **Skip** when it would change behaviour or is wrong, with a one-line reason. Done when every finding has a place.
-3. Apply in `refactor:` commits apart from behaviour, one kind per commit when the batch is large, with the tests green after each. When no test covers the code a tidying touches, say so in the report.
-4. Report what was applied, moved to post-PR or Later, and skipped with why.
 
 ## Test Desiderata
 
