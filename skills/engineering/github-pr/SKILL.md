@@ -21,6 +21,11 @@ Title: `type(scope): summary`. The type is the dominant commit type (feat > fix 
 Description, in English, with `##` headings and below:
 
 ```markdown
+## TLDR Humano
+Si este bloque está vacío, tienes permiso para perseguirme con un palo afilado
+///
+If this block is empty, you are allowed to chase me with a sharp stick
+
 ## Problem
 
 This PR resolves <ticket URL>
@@ -40,6 +45,7 @@ This PR resolves <ticket URL>
 <"Revert this PR." when that undoes everything; otherwise the extra steps, in order: migrations to roll back, data already written, flags to flip, consumers to update first>
 ```
 
+- `## TLDR Humano` is the author's to fill by hand: copy it verbatim and never write a summary into it.
 - The ticket line appears only with a ticket link.
 - Add `## Next steps` for follow-ups or stacked PRs, and `## Related` for issue or PR references other than the ticket.
 - The reviewer has the diff, so the description carries the *why*, not a restated diff, file lists or code blocks (trace excerpts under `## Evidence` aside).
