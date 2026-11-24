@@ -1,6 +1,6 @@
 # Minimoi
 
-Megamoind cut down for a trivial change: the same brief, branch, PR and CI loop, run inline in this session with one review instead of a loop. `<skill-dir>` is megamoind's folder, the one holding this file; every section and step named below is in its `SKILL.md`.
+Megamoind cut down for a trivial change: the same brief, branch, PR and CI loop, run inline in this session with one review instead of a loop. `<skill-dir>` is megamoind's folder, the one holding this file; every step named below is megamoind's, in its `SKILL.md` or the role file that step points to.
 
 ## Eligibility
 
@@ -13,11 +13,11 @@ A change qualifies when **every** condition holds. Name which ones it meets when
 
 ## Flow
 
-You run every step yourself, with no briefer, implementer, finisher or verifier agent. megamoind's "When a skill is not available", "Gates", "Docs or skill changes" and "Sharing the workspace" apply as written. Each step starts with `python3 <skill-dir>/scripts/metrics.py mark <state> "<n> <name>"`, as in megamoind, with this flow's names: `0 brief`, `1 branch`, `2 implement`, `3 review`, `4 evidence`, `5 comments`, `6 pr`.
+You run every step yourself, with no briefer, implementer, finisher or verifier agent. megamoind's "When a skill is not available" and [`WORKSPACE.md`](WORKSPACE.md) apply as written. Each step starts with `python3 <skill-dir>/scripts/metrics.py mark <state> "<n> <name>"`, as in megamoind, with this flow's names: `0 brief`, `1 branch`, `2 implement`, `3 review`, `4 evidence`, `5 comments`, `6 pr`.
 
 ### 0. Brief (direct runs)
 
-megamoind's step 0, started with `metrics.py start <ticket> --dir <scratchpad> --skill minimoi`, on the ticket `minimoi` already fetched and found eligible: no second fetch and no "Minimoi" question. The plan names no tidyings and, for a bug, cites the confirmed cause instead of running `diagnosing-bugs`. Write the brief with the line `mode: minimoi`.
+megamoind's step 0, with the briefer's research and round from [`BRIEF.md`](BRIEF.md) done by you, started with `metrics.py start <ticket> --dir <scratchpad> --skill minimoi`, on the ticket `minimoi` already fetched and found eligible: no second fetch and no "Minimoi" question. The plan names no tidyings and, for a bug, cites the confirmed cause instead of running `diagnosing-bugs`. Write the brief with the line `mode: minimoi`.
 
 ### 1. Branch
 
@@ -42,7 +42,7 @@ When the change shows in the UI, one screenshot of the touched screen at the wid
 
 ### 5. Comment cleanup
 
-megamoind's step 6, run inline.
+[`FINISH.md`](FINISH.md)'s step 6, run inline.
 
 ### 6. PR, CI and report
 

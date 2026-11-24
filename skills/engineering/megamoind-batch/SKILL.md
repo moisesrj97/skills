@@ -70,7 +70,7 @@ Show it all in **one** round: the tickets the batch resolved to, the chains bott
 
 ### 2. Prepare
 
-Update the workspace from the target once (`but pull`), before any agent starts. When that changed a lockfile, **reinstall**: run the install-and-rebuild `megamoind`'s Gates names when its preflight reports `dev_doctor` (`yarn dev:doctor --flow <flow> --no-services`), else the package manager's install. A bare install leaves workspace package builds stale. Start the shared dev servers with the Bash tool's `run_in_background: true` and `timeout: 7200000` (the default limit stops them at 30 minutes, and a `nohup` one dies with its shell). Restart one on its exit notice, and `curl` each before starting an agent. Add to every brief that they are already running and that an agent finding one down tells you instead of starting its own.
+Update the workspace from the target once (`but pull`), before any agent starts. When that changed a lockfile, **reinstall**: run the install-and-rebuild that the Gates in `megamoind`'s `WORKSPACE.md` name when its preflight reports `dev_doctor` (`yarn dev:doctor --flow <flow> --no-services`), else the package manager's install. A bare install leaves workspace package builds stale. Start the shared dev servers with the Bash tool's `run_in_background: true` and `timeout: 7200000` (the default limit stops them at 30 minutes, and a `nohup` one dies with its shell). Restart one on its exit notice, and `curl` each before starting an agent. Add to every brief that they are already running and that an agent finding one down tells you instead of starting its own.
 
 ### 3. Run the chains
 
