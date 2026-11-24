@@ -15,14 +15,15 @@ You are the **author**. A **reviewer**, by default from another model family, re
 - **spec**: a file with what the change must do (a ticket, a brief), passed to `diff-review` every round.
 - **standards**: files of rules the change is held to, passed to `diff-review` every round.
 - **tag**: passed to `diff-review` every round.
+- **already-decided**: from a calling skill, the decisions made before the loop.
 
 State the resolved scope and reviewer in one line before starting.
 
 ## Round 0. Collect the already-decided list
 
-Before round 1, gather the decisions the user has already made about this change in the conversation: findings they declined, trade-offs they accepted, things explicitly out of scope ("no cap for now", "one FF shared", "fallback not needed").
+Before round 1, start from the caller's already-decided list, when one is given, and add the decisions the user made about this change in your conversation: findings they declined, trade-offs they accepted, things explicitly out of scope ("no cap for now", "one FF shared", "fallback not needed"). A caller that runs you in a fresh agent has no such conversation, so its list is the whole of it.
 
-The reviewer starts fresh in round 1 and rediscovers every accepted trade-off and reports it again. Without this list, round 1 is mostly noise and you spend it explaining yourself.
+Without this list, the fresh round-1 reviewer reports every accepted trade-off again.
 
 ## Each round
 
