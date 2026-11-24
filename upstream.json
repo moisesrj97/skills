@@ -1,7 +1,7 @@
 {
   "skills": {
     "codebase-design": {
-      "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "checked": "abeeaf95660ba9e8b7c753eb38f441ca707a8823",
       "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",
       "license": "MIT",
       "license_file": "licenses/mattpocock-skills",
@@ -10,7 +10,7 @@
       "repo": "mattpocock/skills"
     },
     "diagnosing-bugs": {
-      "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "checked": "abeeaf95660ba9e8b7c753eb38f441ca707a8823",
       "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",
       "license": "MIT",
       "license_file": "licenses/mattpocock-skills",
@@ -19,7 +19,7 @@
       "repo": "mattpocock/skills"
     },
     "domain-modeling": {
-      "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "checked": "abeeaf95660ba9e8b7c753eb38f441ca707a8823",
       "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",
       "license": "MIT",
       "license_file": "licenses/mattpocock-skills",
@@ -28,7 +28,7 @@
       "repo": "mattpocock/skills"
     },
     "grill-me": {
-      "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "checked": "abeeaf95660ba9e8b7c753eb38f441ca707a8823",
       "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",
       "license": "MIT",
       "license_file": "licenses/mattpocock-skills",
@@ -37,7 +37,7 @@
       "repo": "mattpocock/skills"
     },
     "grilling": {
-      "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "checked": "abeeaf95660ba9e8b7c753eb38f441ca707a8823",
       "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",
       "license": "MIT",
       "license_file": "licenses/mattpocock-skills",
@@ -46,7 +46,7 @@
       "repo": "mattpocock/skills"
     },
     "improve-codebase-architecture": {
-      "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "checked": "abeeaf95660ba9e8b7c753eb38f441ca707a8823",
       "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",
       "license": "MIT",
       "license_file": "licenses/mattpocock-skills",
@@ -55,7 +55,7 @@
       "repo": "mattpocock/skills"
     },
     "prototype": {
-      "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "checked": "abeeaf95660ba9e8b7c753eb38f441ca707a8823",
       "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",
       "license": "MIT",
       "license_file": "licenses/mattpocock-skills",
@@ -64,7 +64,7 @@
       "repo": "mattpocock/skills"
     },
     "setup-repo": {
-      "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "checked": "abeeaf95660ba9e8b7c753eb38f441ca707a8823",
       "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",
       "license": "MIT",
       "license_file": "licenses/mattpocock-skills",
@@ -82,7 +82,7 @@
       "repo": "overment/skills"
     },
     "tdd": {
-      "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "checked": "abeeaf95660ba9e8b7c753eb38f441ca707a8823",
       "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",
       "license": "MIT",
       "license_file": "licenses/mattpocock-skills",
@@ -91,7 +91,7 @@
       "repo": "mattpocock/skills"
     },
     "to-spec": {
-      "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "checked": "abeeaf95660ba9e8b7c753eb38f441ca707a8823",
       "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",
       "license": "MIT",
       "license_file": "licenses/mattpocock-skills",
@@ -100,7 +100,7 @@
       "repo": "mattpocock/skills"
     },
     "to-tickets": {
-      "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "checked": "abeeaf95660ba9e8b7c753eb38f441ca707a8823",
       "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",
       "license": "MIT",
       "license_file": "licenses/mattpocock-skills",
@@ -109,7 +109,7 @@
       "repo": "mattpocock/skills"
     },
     "triage": {
-      "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "checked": "abeeaf95660ba9e8b7c753eb38f441ca707a8823",
       "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",
       "license": "MIT",
       "license_file": "licenses/mattpocock-skills",
@@ -118,7 +118,7 @@
       "repo": "mattpocock/skills"
     },
     "unslop": {
-      "checked": "e1cc03121a0e71129a4fb730d7c5528a0a3e43c8",
+      "checked": "005d8f6e8ec057b738adcd08a08b30db0478402d",
       "imported": "6e359ce0aba9e927914d8a940510aa2ef66a8f23",
       "license": "MIT",
       "license_file": "licenses/cursor-plugins-pstack",
@@ -127,7 +127,7 @@
       "repo": "cursor/plugins"
     },
     "walkthrough": {
-      "checked": "4c394a5a6d99e15153fc8e2aa0e4d2e42fa54132",
+      "checked": "063c2c070cef8adadf5385b2e735638a2f8a3c52",
       "imported": "4c394a5a6d99e15153fc8e2aa0e4d2e42fa54132",
       "license": "MIT",
       "license_file": "licenses/noel-lopez-skills",
@@ -136,7 +136,7 @@
       "repo": "noel-lopez/skills"
     },
     "wayfinder": {
-      "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "checked": "abeeaf95660ba9e8b7c753eb38f441ca707a8823",
       "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",
       "license": "MIT",
       "license_file": "licenses/mattpocock-skills",
@@ -145,7 +145,7 @@
       "repo": "mattpocock/skills"
     },
     "writing-for-agents": {
-      "checked": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "checked": "abeeaf95660ba9e8b7c753eb38f441ca707a8823",
       "imported": "5863806dd4e15c63174bee4e7515a4256792ecfa",
       "license": "MIT",
       "license_file": "licenses/mattpocock-skills",
