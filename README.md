@@ -17,6 +17,7 @@ My personal and engineering skills for coding agents.
 | `megamoind-batch` | Takes a batch of tickets (a spec, a list, a label) to PRs, one async megamoind agent per ticket, stacked by dependency. | own |
 | `minimoi` | megamoind cut down for a trivial ticket: inline, one review round, no agents or tidy layers; refuses anything that doesn't qualify. Manual only. | own |
 | `merge-risk` | Traffic-light rating of how risky a PR is to merge, by what users would suffer if it fails, with the reasons. | own |
+| `pr-comment` | Reworks a review finding or remark into the short, plain comment a teammate would post on a PR. | own |
 | `pair-review` | Review → fix → re-review loop with a reviewer from another model family, through `diff-review`. | own |
 | `pr-review` | Reviews a teammate's PR with Opus, Sol and a security pass through `diff-review`, checks it against its ticket, verifies each finding against the wider code, the stack and the author's notes, and rates it with `merge-risk`. | own |
 | `retro-digest` | Groups the open retro findings across projects, applies the approved ones and records each outcome. Manual only. | own |
