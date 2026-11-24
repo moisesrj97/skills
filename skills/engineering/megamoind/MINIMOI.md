@@ -13,7 +13,7 @@ A change qualifies when **every** condition holds. Name which ones it meets when
 
 ## Flow
 
-You run every step yourself, with no briefer, implementer or verifier agent. megamoind's "When a skill is not available", "Gates", "Docs or skill changes" and "Sharing the workspace" apply as written. Each step starts with `python3 <skill-dir>/scripts/metrics.py mark <state> "<n> <name>"`, as in megamoind, with this flow's names: `0 brief`, `1 branch`, `2 implement`, `3 review`, `4 evidence`, `5 comments`, `6 pr`.
+You run every step yourself, with no briefer, implementer, finisher or verifier agent. megamoind's "When a skill is not available", "Gates", "Docs or skill changes" and "Sharing the workspace" apply as written. Each step starts with `python3 <skill-dir>/scripts/metrics.py mark <state> "<n> <name>"`, as in megamoind, with this flow's names: `0 brief`, `1 branch`, `2 implement`, `3 review`, `4 evidence`, `5 comments`, `6 pr`.
 
 ### 0. Brief (direct runs)
 
