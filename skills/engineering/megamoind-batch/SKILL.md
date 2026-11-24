@@ -102,4 +102,4 @@ One row per layer. Under it, one line per ticket: `<ticket> verified: <real-app 
 
 ### 6. Reviewers (optional)
 
-Ask once whether to add reviewers to the PRs, proposing names from CODEOWNERS or the recent history of the touched files. Run `gh pr edit <number> --add-reviewer …` only after the user's explicit yes.
+First remind the user to fill each PR's `## TLDR Humano` block before reviewers see it. Then ask once whether to add reviewers to the PRs, proposing names from CODEOWNERS or the recent history of the touched files. Run `gh pr edit <number> --add-reviewer …` only after the user's explicit yes.

@@ -225,4 +225,4 @@ Close the implementer and the verifier. Run `python3 <skill-dir>/scripts/metrics
 
 ### 10. Reviewers (optional, skipped with `stop-at=draft` or `stop-at=pushed`)
 
-Ask whether to add reviewers, proposing names from CODEOWNERS or the recent history of the touched files. Run `gh pr edit <number> --add-reviewer …` only after the user's explicit yes.
+First remind the user to fill the PR's `## TLDR Humano` block before reviewers see it. Then ask whether to add reviewers, proposing names from CODEOWNERS or the recent history of the touched files. Run `gh pr edit <number> --add-reviewer …` only after the user's explicit yes.
