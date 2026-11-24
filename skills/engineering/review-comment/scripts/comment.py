@@ -78,7 +78,7 @@ def reply_endpoint(ref, in_reply_to_id=None):
 def reply(url, body_file):
     ref = parse_url(url)
     if not Path(body_file).read_text().startswith(BYLINE):
-        raise ValueError(f"the body must open with the agent-byline callout ({BYLINE} …)")
+        raise ValueError(f"the body must open with the post-to-github byline callout ({BYLINE} …)")
     top = None
     if ref["kind"] == "inline":
         top = gh("api", f"repos/{ref['owner']}/{ref['repo']}/pulls/comments/{ref['id']}").get("in_reply_to_id")

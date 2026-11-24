@@ -1,9 +1,9 @@
 ---
-name: agent-byline
-description: Byline that marks a GitHub PR comment, review or reply as written by an agent on the user's behalf. Use before posting any of them, whether the user asked for the text or another skill posts it.
+name: post-to-github
+description: Writes and posts a GitHub PR comment, review or reply on the user's behalf, with the agent byline, a teammate's voice and the posting command. Use before posting any of them, whether the user asked for the text or another skill posts it.
 ---
 
-# Agent byline
+# Post to GitHub
 
 Every body you post to a pull request under the user's account opens with the byline, so the reader knows an agent wrote it: PR comments, review bodies, each inline review comment and each reply in a thread. GitHub shows each of these on its own, so each carries its own byline.
 
@@ -15,7 +15,7 @@ Every body you post to a pull request under the user's account opens with the by
 ```
 
 - `<model>`: the model you run on, named as your system prompt names it, with its family: `Claude Opus 5.5`, not `claude-opus-5-5` or `Claude`.
-- `<name>`: the `name` field of `~/.config/moisesrj97-skills/agent-byline.json`. When the file is missing, ask the user which name to sign with and write `{"name": "<name>"}` there.
+- `<name>`: the `name` field of `~/.config/moisesrj97-skills/post-to-github.json`. When the file is missing, ask the user which name to sign with and write `{"name": "<name>"}` there.
 
 Write the byline in the comment's language (`🤖 **Claude Opus 5.5 respondiendo en nombre de <name>**`). A fresh review, or an approval with no text, takes the language of the PR description; an approval with no text gets the byline as its whole body.
 

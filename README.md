@@ -6,7 +6,6 @@ My personal and engineering skills for coding agents.
 
 | Skill | What it does | Source |
 |---|---|---|
-| `agent-byline` | Marks the PR comments, reviews and replies an agent posts on your behalf. | own |
 | `comment-cleanup` | Prunes the comments a change added down to the non-obvious "why". | own |
 | `craftsmanship` | Kent Beck's Tidy First (where each tidying goes by area of impact), the four rules of simple design, and Test Desiderata (the trade-offs between test properties). Tidies a diff through `diff-review`'s cleanup lens. | own |
 | `debug-trace` | Temporary tagged debug points dumped to an isolated trace file, then removed. | own |
@@ -17,6 +16,7 @@ My personal and engineering skills for coding agents.
 | `megamoind-batch` | Takes a batch of tickets (a spec, a list, a label) to PRs, one async megamoind agent per ticket, stacked by dependency. | own |
 | `minimoi` | megamoind cut down for a trivial ticket: inline, one review round, no agents or tidy layers; refuses anything that doesn't qualify. Manual only. | own |
 | `merge-risk` | Traffic-light rating of how risky a PR is to merge, by what users would suffer if it fails, with the reasons. | own |
+| `post-to-github` | Writes and posts the PR comments, reviews and replies an agent sends on your behalf: byline, a teammate's voice, the posting command. | own |
 | `pair-review` | Review → fix → re-review loop with a reviewer from another model family, through `diff-review`. | own |
 | `pr-review` | Reviews a teammate's PR with Opus, Sol and a security pass through `diff-review`, checks it against its ticket, verifies each finding against the wider code, the stack and the author's notes, and rates it with `merge-risk`. | own |
 | `retro-digest` | Groups the open retro findings across projects, applies the approved ones and records each outcome. Manual only. | own |
