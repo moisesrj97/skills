@@ -48,9 +48,9 @@ Round 1, or a round with no handle, starts a fresh reviewer and records its **re
   python3 <skill-dir>/scripts/run_round.py --reviewer <model>:<effort> --prompt <prompt file> --round-file <round file> [--handle <handle>]
   ```
 
-  A `claude-*` model runs on `claude -p`, a `gpt-*` model on `codex exec`, both read-only, so the reviewer can't edit, commit or post whatever the prompt says. The script runs an unsealed round once more and prints `{"handle", ...}`: keep the handle. On exit 1 the round failed twice; return its log tail (on stderr) to the caller. A `gpt-*` reviewer that exits 1 or 5 (CLI not installed) means Codex can't run, and a `claude-*` one that exits 5 means Claude can't: rerun the round on the other family, the lens's default reviewer from **reviewer** for a `gpt-*` one and `gpt-6.1-sol` at the same effort for a `claude-*` one, and tell the caller the round ran on the fallback and why, so a same-family review is never reported as cross-family. Exit 6 means the prompt names the round file: fix the prompt (step 1, fourth bullet) and run again. Its log is `<round file>` with `.log`; read only its tail, since the whole log floods the context.
+  It runs the reviewer read-only (`claude -p` for `claude-*`, `codex exec` for `gpt-*`). On exit 0 it prints `{"handle", ...}`: keep the handle. Any other exit prints the reason and the tail of the round's log on stderr; read that tail, not the whole log. When the CLI can't run (exit 5, or exit 1 from a `gpt-*` reviewer), rerun the round on the other family, the lens's default reviewer from **reviewer** for a `gpt-*` one and `gpt-6.1-sol` at the same effort for a `claude-*` one, and tell the caller it ran on the fallback and why. Any other exit 1 goes back to the caller with that tail.
 
-When a continue fails (the T3 thread is gone, or the script exits 3), start a fresh reviewer for this round with the full prompt, and return its new handle.
+When a continue fails, start a fresh reviewer for this round with the full prompt, and return its new handle.
 
 Then wait for the round in the background, so its exit wakes you, with one call over every round file launched together:
 
