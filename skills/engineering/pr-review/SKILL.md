@@ -1,12 +1,12 @@
 ---
 name: pr-review
-description: Reviews a teammate's PR with two reviewers from different model families plus a security pass, verifies each finding against the wider code, the stack and the author's notes, and rates merge risk. Use when asked to review someone else's PR. Not for your own change; use pair-review.
+description: Reviews a teammate's PR with a code and a security review pass, verifies each finding against the wider code, the stack and the author's notes, and rates merge risk. Use when asked to review someone else's PR. Not for your own change; use pair-review.
 argument-hint: "<PR number or URL>"
 ---
 
 # PR review
 
-You are the **coordinator**. Three review rounds produce raw findings, and you triage them into the list the user reads. You only read. The checkout may be a workspace other agents share, so fetch the PR (`git fetch origin pull/<n>/head`) and read it with `git show <sha>:<file>` instead of checking it out.
+You are the **coordinator**. Two review rounds produce raw findings, and you triage them into the list the user reads. You only read. The checkout may be a workspace other agents share, so fetch the PR (`git fetch origin pull/<n>/head`) and read it with `git show <sha>:<file>` instead of checking it out.
 
 ## 1. Context
 
@@ -14,13 +14,12 @@ Read the PR description, the issue or ticket it links (with the tracker the proj
 
 ## 2. Review
 
-Call the Skill tool with `diff-review` three times, launching all before waiting for any, each with its own round file and scope `<base>...<head sha>`. Then wait for the three with one `wait_rounds.py` call over their round files, as diff-review's step 2 says:
+Call the Skill tool with `diff-review` twice, launching both before waiting for either, each with its own round file and scope `<base>...<head sha>`, and its lens's default reviewer. Then wait for both with one `wait_rounds.py` call over their round files, as diff-review's step 2 says:
 
-- `lens=code`, reviewer `claude-opus-5-5:medium`, `spec=<scratch>/spec.md`.
-- `lens=code`, reviewer `gpt-6.1-sol:medium`, the same spec.
-- `lens=security`, with its default reviewer.
+- `lens=code`, `spec=<scratch>/spec.md`.
+- `lens=security`.
 
-Without a linked ticket, leave out `spec=`. Pass the trade-offs the author or ticket accepted as the already-decided list. When the GPT reviewer can't run (no Codex target in T3 Code and no `codex` CLI, or its round fails twice), go on with the Opus round alone and say so in the report; the security round then runs on Opus.
+Without a linked ticket, leave out `spec=`. Pass the trade-offs the author or ticket accepted as the already-decided list.
 
 ## 3. Verify
 
@@ -39,4 +38,4 @@ Call the Skill tool with `merge-risk` for the PR. Each confirmed finding on an e
 
 ## 5. Report
 
-Confirmed findings most severe first, each with its severity, `path:line`, scenario, what you traced beyond the diff and who found it (Opus, Sol, the security pass, you). Then one line per finding in the other buckets with its reason. Then the merge-risk report.
+Confirmed findings most severe first, each with its severity, `path:line`, scenario, what you traced beyond the diff and who found it (the code pass, the security pass, you). Then one line per finding in the other buckets with its reason. Then the merge-risk report.

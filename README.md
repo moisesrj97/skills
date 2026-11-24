@@ -18,7 +18,7 @@ My personal and engineering skills for coding agents.
 | `merge-risk` | Traffic-light rating of how risky a PR is to merge, by what users would suffer if it fails, with the reasons. | own |
 | `post-to-github` | Writes and posts the PR comments, reviews and replies an agent sends on your behalf: byline, a teammate's voice, the posting command. | own |
 | `pair-review` | Review → fix → re-review loop with a reviewer from another model family, through `diff-review`. | own |
-| `pr-review` | Reviews a teammate's PR with Opus, Sol and a security pass through `diff-review`, checks it against its ticket, verifies each finding against the wider code, the stack and the author's notes, and rates it with `merge-risk`. | own |
+| `pr-review` | Reviews a teammate's PR with a code and a security pass through `diff-review`, checks it against its ticket, verifies each finding against the wider code, the stack and the author's notes, and rates it with `merge-risk`. | own |
 | `retro-digest` | Groups the open retro findings across projects, applies the approved ones and records each outcome. Manual only. | own |
 | `retro-sweep` | Daily sweep of the sessions with no retro: a cheap model triages them for friction, a stronger one runs `retro-with-docs` on those that had some. Manual only. | own |
 | `retro-with-docs` | Retro of an agent session: its friction, stoppers first, as open or skipped findings in `~/.skill-docs/retros/<project>/`. | own |
