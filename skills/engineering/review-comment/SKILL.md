@@ -1,53 +1,29 @@
 ---
 name: review-comment
-description: "Takes a GitHub PR review comment URL and either makes the fix, pushes it and replies with the commit, or explains why no change is needed. Use when the user hands over a review comment link to address."
+description: "Takes a GitHub PR review comment URL and either fixes it, pushes and replies with the commit, or briefs you on why no change is needed."
 disable-model-invocation: true
 ---
 
 # Review comment
 
-## Step 1: Fetch the comment and its code
+## 1. Fetch
 
-```bash
-python3 <skill-dir>/scripts/comment.py fetch <url>
-```
+`python3 <skill-dir>/scripts/comment.py fetch <url>` takes an inline review comment (`…#discussion_r<id>`) or a general PR comment (`…#issuecomment-<id>`) and prints the reviewer's body, the PR's base and head, and for an inline comment the code around the flagged line at the PR's head, read from GitHub since the checkout may hold another branch. For a general comment, read what the PR changed with `gh pr diff <pr> --repo <owner>/<repo>`.
 
-It takes an inline review comment (`…/pull/123#discussion_r789012`) or a general PR comment (`…/pull/123#issuecomment-789012`) and prints the reviewer's `body`, the PR's base, head and `head_sha`. An inline comment adds its `path`, `line` (flagged `outdated` when the code moved on), `diff_hunk`, and `context`: the file at the PR's head, 20 lines each side of the flagged one, read from GitHub because the local checkout may hold another branch.
+## 2. Judge on the merits
 
-## Step 2: Read the relevant code
+Decide from the code and its intent whether the change is needed. A reviewer asking is no reason to say yes, and extra work is no reason to say no. An `outdated` line, or a case the code handles elsewhere, may already answer the comment.
 
-For an inline comment, read the `context`, and further at the head when it isn't enough to see what the code does and why it is written that way. For a general comment with no file, read what the PR changed with `gh pr diff <pr> --repo <owner>/<repo>`.
+## 3a. Needed: fix it
 
-## Step 3: Evaluate the suggestion
-
-- **Is it already handled?** The concern may be addressed elsewhere, or the code may already handle the case the reviewer worries about.
-- **Style or substance?** A style disagreement that doesn't affect quality is a weaker reason to change.
-
-Judge from the code and its intent. A reviewer asking is no reason to say yes, and extra work is no reason to say no.
-
-## Step 4a: The change is needed, so make it
-
-1. Make the change on the PR's head branch. Under GitButler the branch must be applied (`but status`); otherwise check it out first (`gh pr checkout <number>`). Touch only what the comment is about.
-2. Run the project's lint, type-check and the tests covering the change, with the commands from its `CLAUDE.md` / `CLAUDE.local.md` or `package.json`. Fix anything red before going on.
-3. **Show the human the diff, the commit message and the reply you will post, and wait for one explicit approval** before committing. The commit message follows the project's convention, subject line only.
-4. Commit and push to the PR's head branch, before replying, so the hash in the reply is already on the remote. Under GitButler (`but status` works), run `but commit -b <branch> -m "<message>" <ids>` with the ids from `but diff`, then `but push <branch>`. A bare `but push` pushes every branch with unpushed commits, other agents' included. Otherwise `git add`, `git commit`, `git push`. Take the full hash of the pushed commit with `git rev-parse <branch>`; under GitButler `HEAD` is the workspace commit, which the reviewer can't open.
-5. Reply in **the reviewer's language**, opening with the byline from the `post-to-github` skill, then `Fixed in <full hash>` (`Arreglado en <full hash>` in Spanish) and no reasoning.
-   Write the body to a file and post it with `python3 <skill-dir>/scripts/comment.py reply <url> <body file>`. It refuses a body without the byline, replies in the thread of an inline comment (to its top comment, the only one GitHub takes replies on), and posts a new PR comment for a general one, since those have no threads. For a general comment, put a quoted excerpt of the original between the byline and `Fixed in <full hash>`.
+1. Make the change on the PR's head branch, touching only what the comment is about. Under GitButler the branch must be applied (`but status`); otherwise `gh pr checkout <number>`.
+2. Run the project's lint, type-check and the tests covering the change, until green.
+3. Show the user the diff, the commit message (the project's convention, subject line only) and the reply, and wait for one explicit approval, which covers the commit, the push and the reply.
+4. Commit and push before replying, so the hash in the reply exists on the remote. Under GitButler: `but commit -b <branch> -m "<message>" <ids>`, then `but push <branch>`, since a bare `but push` pushes other agents' branches too. Take the hash with `git rev-parse <branch>`; under GitButler `HEAD` is the workspace commit, which the reviewer can't open.
+5. Write the reply to a file in the reviewer's language: the `post-to-github` byline, then `Fixed in <full hash>` (`Arreglado en <full hash>`) and no reasoning. For a general comment, put a quoted excerpt of the original between the two. Post it with `python3 <skill-dir>/scripts/comment.py reply <url> <body file>`.
 
 Done when the reply with the pushed hash is posted.
 
-## Step 4b: The change is not needed, so brief the developer
+## 3b. Not needed: brief the user
 
-Post nothing. The developer replies in their own voice and with context you lack. Give them a brief:
-
-- What the reviewer was concerned about
-- Why the current code is correct, or why the change isn't warranted
-- A short reply they can post, in the reviewer's language
-
-Example structure:
-```
-The reviewer is concerned about [X]. The current code handles this because [Y].
-You could reply with something like:
-
-"[Suggested reply in reviewer's language]"
-```
+Post nothing: the user replies in their own voice, with context you lack. Tell them what the reviewer is concerned about, why the current code is right or the change isn't worth it, and a short reply they can post, in the reviewer's language.
