@@ -37,7 +37,7 @@ Start each with the Agent tool (`run_in_background: false`, model `opus`; the ve
 
 1. The tag line `megamoind-run: <run> role=<briefer|implementer|finisher|verifier>`, from step 0's `metrics.py start`.
 2. The brief's path, the ticket, the branch, `<base>`, this skill's folder and the metrics state file.
-3. What to follow: its role file in `<skill-dir>`, [`BRIEF.md`](BRIEF.md), [`IMPLEMENT.md`](IMPLEMENT.md), [`FINISH.md`](FINISH.md) or [`VERIFY.md`](VERIFY.md), which names what else it reads.
+3. This line, verbatim but for the role and the absolute path of the folder this skill loaded from: `You are the <role>. Read <skill-dir>/<ROLE>.md before anything else and follow it.`, where `<ROLE>.md` is [`BRIEF.md`](BRIEF.md), [`IMPLEMENT.md`](IMPLEMENT.md), [`FINISH.md`](FINISH.md) or [`VERIFY.md`](VERIFY.md). The role file names what else the agent reads.
 4. Where its report goes: `<scratchpad>/<ticket>-brief.md`, `<scratchpad>/<ticket>-implement.md`, `<scratchpad>/<ticket>-finish.md` or `<scratchpad>/<ticket>-verify.md`, rewritten after each piece of work, starting with `Head: <sha of its branch tip>` and ending in `END OF REPORT`. Ending its turn kills its background jobs (review rounds, test suites), so it waits for them inside the turn and writes `END OF REPORT` only after they finish. Accept a report only when its `Head:` matches `git rev-parse <branch>`.
 5. That a HITL question goes into the report and ends its turn instead of being asked. Relay it to the user, then send the answer back.
 
