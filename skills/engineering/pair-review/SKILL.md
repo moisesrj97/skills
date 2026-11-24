@@ -55,16 +55,8 @@ Done when every finding sits in one bucket. Report each round to the user briefl
 
 - **Done**: the reviewer writes `NO FINDINGS`, or what remains is only nits you'd decline anyway.
 - **HITL**: stop and ask (see triage).
-- **Not converging**: after 5 rounds, or when two consecutive rounds only produce findings about your previous round's fixes without the count falling, stop and tell the user.
+- **Not converging**: after 3 rounds, stop and tell the user.
 
 ## Recap
 
-Finish with:
-
-| Round | Findings | Outcome |
-|---|---|---|
-| 1 | n | fixed X (what), skipped Y (decided / why) |
-| … | | |
-| last | 0 | done |
-
-Then list the commits created or amended (hashes, pushed or not), the verification run (type-check, lint, tests, mutation checks), anything left pending (push, HITL questions), the out-of-scope follow-ups, and one or two lines on how the loop went, including what the reviewer caught that a single pass wouldn't and anything to brief better next time.
+Finish with one or two lines: the rounds run and what each fixed or skipped and why, the commits (hashes, pushed or not), the checks run, and what is left (HITL questions, out-of-scope follow-ups).
