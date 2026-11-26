@@ -13,7 +13,7 @@ A change qualifies when **every** condition holds. Name which ones it meets when
 
 ## Flow
 
-You run every step yourself, with no briefer, implementer, finisher or verifier agent. megamoind's "When a skill is not available" and [`WORKSPACE.md`](WORKSPACE.md) apply as written. Each step starts with `python3 <skill-dir>/scripts/metrics.py mark <state> "<n> <name>"`, as in megamoind, with this flow's names: `0 brief`, `1 branch`, `2 implement`, `3 review`, `4 evidence`, `5 comments`, `6 pr`.
+You run every step yourself, with no briefer, implementer, finisher, polisher or verifier agent. megamoind's "When a skill is not available" and [`WORKSPACE.md`](WORKSPACE.md) apply as written. Each step starts with `python3 <skill-dir>/scripts/metrics.py mark <state> "<n> <name>"`, as in megamoind, with this flow's names: `0 brief`, `1 branch`, `2 implement`, `3 review`, `4 evidence`, `5 comments`, `6 pr`.
 
 ### 0. Brief (direct runs)
 
@@ -38,7 +38,7 @@ Done when every finding is fixed or discarded and the gates are green.
 
 ### 4. Evidence
 
-When the change shows in the UI, one screenshot of the touched screen at the width it matters most, following [`EVIDENCE.md`](EVIDENCE.md). It is what step 6 hands `github-pr` as megamoind step 7's "step 5's evidence", attached to the PR through `gh-attach`. Without UI, the run's tests and the review stand in for megamoind's step 5.
+When the change shows in the UI, one screenshot of the touched screen at the width it matters most, following [`EVIDENCE.md`](EVIDENCE.md), then tear down what you started for it as [`VERIFY.md`](VERIFY.md)'s "Teardown" says. It is what step 6 hands `github-pr` as megamoind step 7's "step 5's evidence", attached to the PR through `gh-attach`. Without UI, the run's tests and the review stand in for megamoind's step 5.
 
 ### 5. Comment cleanup
 

@@ -104,6 +104,26 @@ class Collect(unittest.TestCase):
         ])
         self.assertEqual(self.collect()["phases"][0]["human_seconds"], 40)
 
+    def test_file_reads_are_counted_apart_from_other_tool_output(self):
+        write_jsonl(self.projects / "repo/main.jsonl", [
+            user(1, result_for="t0", result=TAG + " role=main"),
+            assistant(10, "m1", 0, 0, 1, tool=("cat", "Bash", {"command": "cd /repo && cat src/a.ts"})),
+            user(11, result_for="cat", result="x" * 100),
+            assistant(12, "m2", 0, 0, 1, tool=("test", "Bash", {"command": "heavy -- yarn test"})),
+            user(13, result_for="test", result="y" * 50),
+            assistant(14, "m3", 0, 0, 1, tool=("read", "Read", {"file_path": "/repo/b.ts"})),
+            user(15, result_for="read", result="z" * 30),
+            assistant(16, "m4", 0, 0, 1, tool=("show", "Bash", {"command": "git show master:src/c.ts | sed -n '1,40p'"})),
+            user(17, result_for="show", result="w" * 20),
+        ])
+        main = self.collect()["agents"][0]
+        self.assertEqual((main["read_chars"], main["result_chars"]), (150, 200))
+
+    def test_finds_the_main_session_transcript(self):
+        write_jsonl(self.projects / "repo/child.jsonl", [user(1, text=TAG + " role=retro")])
+        write_jsonl(self.projects / "repo/main.jsonl", [user(1, result_for="t0", result=TAG + " role=main")])
+        self.assertEqual(metrics.main_session(self.state, self.projects), self.projects / "repo/main.jsonl")
+
     def test_a_streamed_message_counts_its_usage_once(self):
         write_jsonl(self.projects / "repo/main.jsonl", [
             user(1, result_for="t0", result=TAG + " role=main"),
@@ -320,6 +340,20 @@ class Report(unittest.TestCase):
         text = metrics.report(self.log, None, self.seen, min_runs=1)
         self.assertIn("claude-opus-5-5: 2 runs, cache read median 5.0M, failures found median 2, unverified median 0", text)
         self.assertIn("claude-sonnet-5-5: 1 runs, cache read median 3.0M, failures found median 1, unverified median 0", text)
+
+    def test_compares_each_role_by_model(self):
+        def run(name, model, read, write, out):
+            r = self.run_with(10)
+            r["run"] = name
+            r["agents"].append({**r["agents"][0], "role": "finisher", "models": [model], "cache_read": read, "cache_write": write,
+                                "output": out, "turns": 40, "peak_context": 150_000, "read_chars": 30, "result_chars": 100})
+            return r
+        runs = [run("a", "claude-opus-5-5", 10_000_000, 0, 0), run("b", "claude-opus-5-5", 20_000_000, 0, 0),
+                run("c", "claude-sonnet-5-5", 5_000_000, 400_000, 100_000)]
+        self.log.write_text("".join(json.dumps(r) + "\n" for r in runs))
+        text = metrics.report(self.log, None, self.seen, min_runs=1)
+        self.assertIn("finisher       claude-opus-5-5      2 runs  cost 1.5M  cache read 15.0M  turns 40  peak 150k  reads 30%", text)
+        self.assertIn("finisher       claude-sonnet-5-5    1 runs  cost 1.5M  cache read 5.0M  turns 40  peak 150k  reads 30%", text)
 
     def test_an_empty_log_says_nothing_whatever_the_threshold(self):
         self.log.write_text("")

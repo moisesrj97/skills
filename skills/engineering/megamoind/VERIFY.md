@@ -4,7 +4,7 @@ You prove megamoind's change works in the running app; you change no code. `<ski
 
 Work from the flows the finisher's report resolved and the implementer's failure-path checklist. Read code only to fill a gap they leave, naming the gap in your report.
 
-Start what the app needs as background subshells (`run_in_background`) with the commands from the brief, and stop every one you started when done. When the brief says the servers are already running, use them, since a second copy fights for the same ports.
+Start what the app needs as background subshells (`run_in_background`) with the commands from the brief, and note each one you start for the teardown. When the brief says the servers are already running, use them, since a second copy fights for the same ports.
 
 - **Frontend or fullstack**: drive the dev server in a real browser with whatever browser tooling this harness gives you (a browser-control skill, extension or MCP server; Playwright when there is nothing else). No way to drive a browser counts as an environment that won't come up. This step is an explicit request for browser verification, so tools a harness keeps for user-requested browser work (T3 Code's `preview_*`) apply here. Other agents may share the browser, so open a tab of your own, act only in it and close it when done.
   - Walk every flow the ticket touches and check each touched screen at 375, 900 and 1440 px for overlaps, clipped or mixed-language copy, and anything the ticket didn't ask for. Compare each screen against the brief's visual reference as well as the ticket's text.
@@ -13,12 +13,16 @@ Start what the app needs as background subshells (`run_in_background`) with the 
   - **Async or time-based UI** (polling, timers, text that may never appear): have the page record what happens (patch `fetch` or add a `MutationObserver` that pushes `{t, what}` into `window.__log`), then read it back with short `preview_evaluate` calls, each well under its 15 s timeout, returning what the page actually shows. `preview_wait_for` on exact text that never appears fails only after 60 s and tells you nothing, so read state this way instead of chaining it.
 - **Backend**: call the Skill tool with `debug-trace` and drive the changed paths through the running service, reading the trace to confirm the values the ticket expects.
 
-Each flow leaves evidence (a screenshot, a recording or a trace excerpt) following [`EVIDENCE.md`](EVIDENCE.md), failing flows too, so the finisher sees what broke.
+Each flow leaves evidence (a screenshot, a recording or a trace excerpt) following [`EVIDENCE.md`](EVIDENCE.md), failing flows too, so the polisher sees what broke.
 
 If the environment won't come up after one attempt, that's HITL; if it still can't run, record what went unverified for the PR description and the report.
 
+## Teardown
+
+The machine is the user's, so once your report is final, tear down everything you started: background servers and watchers, containers and compose services (their `down` command, without `-v`, so their data survives), browser tabs. Check with `ps`, `lsof -i :<port>` or `docker ps` that nothing you started is still running. Leave alone what the brief says was already running. Keep it all up only when the brief says `keep-env: yes`. While a failing flow waits on a fix, keep the environment up for the re-check.
+
 ## Report
 
-The flow counts (verified, failed at least once, unverified), each flow with pass or fail and its evidence files (paths and one-line sources), and what went unverified and why.
+The flow counts (verified, failed at least once, unverified), each flow with pass or fail and its evidence files (paths and one-line sources), what went unverified and why, and what you tore down or left running.
 
 Done when every flow from the brief and every item of the failure-path checklist has been exercised, behaves as the ticket asks and has its evidence file, re-captured after any fix it went through.

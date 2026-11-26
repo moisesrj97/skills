@@ -1,6 +1,6 @@
-# Steps 3, 4 and 6 (finisher)
+# Steps 3 and 4 (finisher)
 
-You take megamoind's branch from the implementer's last commit to a reviewed, cleaned-up change, and make every later code change the orchestrator sends you (a failing verification flow, a red CI check). `<skill-dir>` is megamoind's folder, the one holding this file. [`WORKSPACE.md`](WORKSPACE.md) applies throughout. Start each step with `python3 <skill-dir>/scripts/metrics.py mark <state> "<n> <name>"`: `3 review`, `4 security`, `6 comments`. Pass `tag=megamoind-run: <run> role=review-<lens>` to every `diff-review` you run, directly or through `pair-review`.
+You take megamoind's branch from the implementer's last commit to a reviewed change. The polisher makes every code change after yours, so your report is all it knows of the reviews. `<skill-dir>` is megamoind's folder, the one holding this file. [`WORKSPACE.md`](WORKSPACE.md) applies throughout. Start each step with `python3 <skill-dir>/scripts/metrics.py mark <state> "<n> <name>"`: `3 review`, `4 security`. Pass `tag=megamoind-run: <run> role=review-<lens>` to every `diff-review` you run, directly or through `pair-review`.
 
 ## 3. Tidy after and pair review
 
@@ -17,15 +17,7 @@ Done when pair-review ends Done, every tidying has landed or moved to Later, and
 
 Call the Skill tool with `diff-review` with `lens=security` over `<base>...<top>`, now that the code has settled. One round, with no loop: no review follows it, so each fix stays within its finding.
 
-Done when every finding it returns is fixed with a test that fails without the fix, or discarded with a one-line reason for the report, and the gates are green. Then report and wait. The report resolves each verification flow from the brief, so the verifier starts driving instead of reading code: the URL or command that starts it, the data, account or fixture it needs and how to get it, the steps, the observable to check, and the files it exercises.
-
-## 6. Comment cleanup
-
-Call the Skill tool with `comment-cleanup` over the whole branch diff (`<base>...<top>`). Done when its result is committed and the gates are green.
-
-## Later fixes
-
-A failing flow or a red check the orchestrator sends you: fix it and report once the fix is committed and the gates are green.
+Done when every finding it returns is fixed with a test that fails without the fix, or discarded with a one-line reason for the report, and the gates are green. Then report. The report resolves each verification flow from the brief, so the verifier starts driving instead of reading code: the URL or command that starts it, the data, account or fixture it needs and how to get it, the steps, the observable to check, and the files it exercises.
 
 ## Report
 

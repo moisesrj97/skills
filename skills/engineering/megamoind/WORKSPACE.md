@@ -1,6 +1,6 @@
 # Workspace rules
 
-Megamoind's rules for every agent that touches the branch: the orchestrator, the implementer, the finisher and the verifier. `<skill-dir>` is megamoind's folder, the one holding this file; steps named below are megamoind's.
+Megamoind's rules for every agent that touches the branch: the orchestrator, the implementer, the finisher, the polisher and the verifier. `<skill-dir>` is megamoind's folder, the one holding this file; steps named below are megamoind's.
 
 ## Gates
 

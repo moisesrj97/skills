@@ -7,6 +7,11 @@ Two passes, with structure and behaviour always in separate commits:
 1. **Tidy first**: the plan's first tidyings, as the PR's first `refactor:` commit or on the pre-PR branch, following `craftsmanship`. With plain git and a pre-PR, create the ticket's branch once its commits are in (`git switch -c <name> <name>-tidy-first`), since a branch created earlier stays on the old commit.
 2. **Behaviour**: call the Skill tool with `tdd` and build the ticket at the seams the brief agreed, reusing what the brief found. For a bug, the diagnosis loop from step 0 is the first red test; once it is green, run `diagnosing-bugs` phase 6 (its instrumentation and throwaway harnesses removed, the original reproduction rerun) before committing.
 
+Everything you read stays in your context and is re-read on every later turn, so read narrow and in batches:
+
+- **Ranges**: locate with `rg -n`, then read the lines you need (`sed -n '<a>,<b>p' <file>`, a function or a test block with a few lines around it). Read a whole file only when you will rewrite most of it.
+- **Batches**: send the reads and searches that don't depend on each other as parallel tool calls in one turn, e.g. the file you will change, its test and the helper the brief names to reuse.
+
 Run type-check and the single test files you are touching as you go, and the gates once at the end. Commit locally at each working checkpoint.
 
 When the brief rules out tests, write a **failure-path checklist** to the scratchpad: for every async call or batch, its partial failure, total failure and empty result, plus the id types that cross a `String()`/`Number()` conversion. Each item is handled in code or marked accepted.

@@ -12,9 +12,14 @@ Usage:
       Finds every Claude transcript and Codex session carrying the tag, measures each one and
       the main agent's phases, and appends the run as one line to the log, with step 5's
       outcome when given.
+  metrics.py session <state file>
+      Prints the path of the run's main transcript (the one tagged role=main).
   metrics.py report [--log <file>] [--baseline <file>] [--min-runs N] [--skill <name>]
       Summarises the skill's runs (default megamoind) logged since the last report; prints
       nothing and exits 3 while there are fewer than N. A run logged without a skill is megamoind.
+
+Cost is in input-token equivalents at API price ratios (cache read 0.1, cache write 1.25,
+output 5), the same for every model, so it compares turns and context, not prices.
 """
 import argparse
 import json
@@ -34,6 +39,8 @@ TAG = re.compile(r"megamoind-run: ([\w.-]+)(?: role=([\w-]+))?")
 NOTICES = ("Delegated task node", "Another Claude session sent", "<task-notification", "Update on pull request")
 TOKENS = ("cache_read", "cache_write", "input", "output")
 DEFAULT_SKILL = "megamoind"
+COST = {"cache_read": 0.1, "cache_write": 1.25, "input": 1, "output": 5}
+FILE_READ = re.compile(r"(^|[;&|(]\s*)(cat|sed -n|head|tail|nl|less|git show)\b")
 PHASES = {
     "megamoind": ["0 brief", "1 branch", "2 implement", "3 review", "4 security", "5 verify", "6 comments", "7 pr",
                   "8 ci", "9 report", "10 reviewers"],
@@ -82,6 +89,21 @@ def token_sums(turns):
     return {k: sum(x[k] for x in turns) for k in TOKENS}
 
 
+def cost(tokens):
+    return sum(tokens.get(k, 0) * w for k, w in COST.items())
+
+
+def result_size(block):
+    content = block.get("content")
+    if isinstance(content, list):
+        return sum(len(c.get("text", "")) for c in content if isinstance(c, dict))
+    return len(content or "")
+
+
+def reads_a_file(tool):
+    return tool.get("name") == "Read" or (tool.get("name") == "Bash" and bool(FILE_READ.search((tool.get("input") or {}).get("command", ""))))
+
+
 def peak_context(turns):
     return max((x["cache_read"] + x["cache_write"] + x["input"] for x in turns), default=0)
 
@@ -99,13 +121,16 @@ def claude_agent(path, run):
         return None
     role = match.group(2) or "child"
     records = records[start:]
-    turns, models, seen, human, asking = [], set(), set(), [], {}
+    turns, models, seen, human, asking, reading = [], set(), set(), [], {}, set()
+    read_chars = result_chars = 0
     for prev, rec in zip([None] + records, records):
         t = parse_time(rec["timestamp"])
         if rec["type"] == "assistant":
             for b in blocks(rec):
                 if b.get("type") == "tool_use" and b.get("name") == "AskUserQuestion":
                     asking[b["id"]] = t
+                if b.get("type") == "tool_use" and reads_a_file(b):
+                    reading.add(b["id"])
             msg = rec["message"]
             if msg.get("id") in seen:
                 continue
@@ -116,6 +141,10 @@ def claude_agent(path, run):
                           "input": u.get("input_tokens", 0), "output": u.get("output_tokens", 0)})
         elif prev is not None:
             results = [b for b in blocks(rec) if b.get("type") == "tool_result"]
+            for b in results:
+                result_chars += result_size(b)
+                if b.get("tool_use_id") in reading:
+                    read_chars += result_size(b)
             answered = [asking[b["tool_use_id"]] for b in results if b.get("tool_use_id") in asking]
             if answered:
                 human.append((min(answered), t))
@@ -123,7 +152,7 @@ def claude_agent(path, run):
                 human.append((parse_time(prev["timestamp"]), t))
     first, last = parse_time(records[0]["timestamp"]), parse_time(records[-1]["timestamp"])
     agent = {"role": role, "kind": "claude", "models": sorted(models), "file": str(path), "seconds": round(last - first),
-             "turns": len(turns), "peak_context": peak_context(turns), **token_sums(turns),
+             "turns": len(turns), "peak_context": peak_context(turns), **token_sums(turns), "read_chars": read_chars, "result_chars": result_chars,
              "by_model": {m: token_sums([x for x in turns if x["model"] == m]) for m in sorted(models)}}
     return agent, turns, human
 
@@ -152,6 +181,16 @@ def codex_agent(path, run):
     return {"role": role, "kind": "codex", "models": sorted(models), "file": str(path),
             "seconds": round(max(times) - min(times)) if times else 0, "turns": len(turns), "peak_context": peak_context(turns), **tokens,
             "by_model": {", ".join(sorted(models)) or "?": tokens}}, turns
+
+
+def main_session(state_file, projects=PROJECTS):
+    state = json.loads(Path(state_file).read_text())
+    since = parse_time(state["marks"][0]["t"]) - 60
+    for path in tagged_files(Path(projects), state["run"], since):
+        found = claude_agent(path, state["run"])
+        if found and found[0]["role"] == "main":
+            return path
+    return None
 
 
 def phases_of(marks, end, turns, human):
@@ -203,11 +242,36 @@ def summarise(runs):
         "main peak context (k)": per_run(lambda a: a["peak_context"], main, 1000),
         "main cache read (M)": per_run(lambda a: a["cache_read"], main, 1e6),
         "main output (k)": per_run(lambda a: a["output"], main, 1000),
+        "claude cost, all agents (M)": per_run(cost, claude, 1e6),
         "claude cache read, all agents (M)": per_run(lambda a: a["cache_read"], claude, 1e6),
         "claude output, all agents (k)": per_run(lambda a: a["output"], claude, 1000),
         "codex input, all reviewers (M)": per_run(lambda a: a["cache_read"] + a["input"], codex, 1e6),
     }
     return {k: quantiles(v) for k, v in rows.items()}
+
+
+def by_role(runs):
+    groups = {}
+    for r in runs:
+        mine = {}
+        for a in r["agents"]:
+            if a["kind"] == "claude" and a["role"] != "main":
+                model = ", ".join(m for m in a["models"] if m != "<synthetic>")
+                mine.setdefault((a["role"], model), []).append(a)
+        for key, agents in mine.items():
+            groups.setdefault(key, []).append(agents)
+
+    def median(per_run, value):
+        return statistics.median(sum(value(a) for a in agents) for agents in per_run)
+
+    lines = ["  per role and model (median per run; reads = share of tool output that is file reads):"] if groups else []
+    for (role, model), per_run in sorted(groups.items()):
+        results = sum(a.get("result_chars", 0) for agents in per_run for a in agents)
+        reads = f"{100 * sum(a.get('read_chars', 0) for agents in per_run for a in agents) / results:.0f}%" if results else "n/a"
+        lines.append(f"    {role:14} {model:20} {len(per_run)} runs  cost {median(per_run, cost) / 1e6:.1f}M  "
+                     f"cache read {median(per_run, lambda a: a['cache_read']) / 1e6:.1f}M  turns {median(per_run, lambda a: a['turns']):.0f}  "
+                     f"peak {median(per_run, lambda a: a['peak_context']) / 1000:.0f}k  reads {reads}")
+    return lines
 
 
 def report(log=LOG, baseline=BASELINE, seen=SEEN, min_runs=10, skill=DEFAULT_SKILL):
@@ -230,6 +294,7 @@ def report(log=LOG, baseline=BASELINE, seen=SEEN, min_runs=10, skill=DEFAULT_SKI
     lines.append("  share of run time per phase (median %):")
     for name, shares in sorted(phase_share.items()):
         lines.append(f"    {name}: {statistics.median(shares):.0f}")
+    lines += by_role(runs)
     by_model = {}
     for r in runs:
         verifiers = [a for a in r["agents"] if a["role"] == "verifier"]
@@ -264,6 +329,7 @@ def main(argv):
     c.add_argument("--flows", type=int)
     c.add_argument("--failures", type=int)
     c.add_argument("--unverified", type=int)
+    sub.add_parser("session").add_argument("state")
     r = sub.add_parser("report")
     r.add_argument("--log", default=LOG)
     r.add_argument("--baseline", default=BASELINE)
@@ -297,9 +363,15 @@ def main(argv):
             f.write(json.dumps(run) + "\n")
         for a in run["agents"]:
             print(f"{a['role']:14} {a['kind']:6} {a['seconds'] / 60:5.1f} min  peak {a['peak_context'] / 1000:4.0f}k  "
-                  f"cache read {a['cache_read'] / 1e6:5.1f}M  output {a['output'] / 1000:5.0f}k")
+                  f"cost {cost(a) / 1e6:5.1f}M  cache read {a['cache_read'] / 1e6:5.1f}M  output {a['output'] / 1000:5.0f}k")
         for p in run["phases"]:
             print(f"  {p['phase']:12} {working_seconds(p) / 60:5.1f} min  cache read {p['cache_read'] / 1e6:5.1f}M")
+    elif args.cmd == "session":
+        path = main_session(args.state)
+        if path is None:
+            print("no transcript tagged role=main for this run", file=sys.stderr)
+            return 1
+        print(path)
     else:
         text = report(args.log, args.baseline, min_runs=args.min_runs, skill=args.skill)
         if text is None:
