@@ -7,12 +7,16 @@ Usage:
       size_kb, condensed (its timeline, written to <dir>) and triage: "friction" for one an
       earlier run triaged whose retro is still missing (listed first, however old), null for
       a new one from the last --days (oldest first).
-  sweep.py record --from <file.json>        {"<session path>": {"verdict": "clean" | "friction", "why": "…"}}
-      Adds the verdicts to the ledger, ~/.skill-docs/retro-sweep.json.
+  sweep.py record --from <file.json>        {"<session path>": {"verdict": "clean" | "friction", "severity": 1-3, "why": "…"}}
+      Adds the verdicts to the ledger, ~/.skill-docs/retro-sweep.json. Friction needs a severity.
+  sweep.py pick [--k 10]
+      Prints the K friction sessions still without a retro, most severe first, oldest first within
+      a severity, each with session, cwd and why. A severity-1 session left out is marked skipped
+      and never picked again; a more severe one waits for the next run.
 
 A session is left out while it is still active (written to within --idle-hours), when it ran
 outside a real checkout (a temp folder: evals, benches), when it is a sweep itself, when a
-retro already names it, and when the ledger already has it as clean.
+retro already names it, and when the ledger already has it as clean or skipped.
 """
 import argparse
 import datetime
@@ -74,7 +78,7 @@ def candidates(out, days=3, idle_hours=2, projects=PROJECTS, retros=RETROS, ledg
     for path in Path(projects).glob("*/*.jsonl"):
         age = now - path.stat().st_mtime
         verdict = known.get(str(path), {}).get("verdict")
-        if age < idle_hours * 3600 or path.stem in reviewed or verdict == "clean":
+        if age < idle_hours * 3600 or path.stem in reviewed or verdict in ("clean", "skipped"):
             continue
         if verdict != "friction" and age > days * 86400:
             continue
@@ -96,15 +100,39 @@ def candidates(out, days=3, idle_hours=2, projects=PROJECTS, retros=RETROS, ledg
     return chosen
 
 
+def save_ledger(data, ledger=LEDGER):
+    Path(ledger).parent.mkdir(parents=True, exist_ok=True)
+    Path(ledger).write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
+
+
 def record(verdicts, ledger=LEDGER):
     data = load_ledger(ledger)
     today = datetime.date.today().isoformat()
     for session, found in verdicts.items():
         if found.get("verdict") not in ("clean", "friction"):
             raise ValueError(f"{session}: verdict {found.get('verdict')!r} is not clean or friction")
+        if found["verdict"] == "friction" and found.get("severity") not in (1, 2, 3):
+            raise ValueError(f"{session}: friction needs a severity of 1, 2 or 3, got {found.get('severity')!r}")
+    for session, found in verdicts.items():
         data[session] = {"verdict": found["verdict"], "why": found.get("why", ""), "date": today}
-    Path(ledger).parent.mkdir(parents=True, exist_ok=True)
-    Path(ledger).write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
+        if found["verdict"] == "friction":
+            data[session]["severity"] = found["severity"]
+    save_ledger(data, ledger)
+
+
+def pick(k, retros=RETROS, ledger=LEDGER):
+    data = load_ledger(ledger)
+    reviewed = retro_sessions(retros)
+    # Entries from before severities existed count as 2: flagged, but no stopper on record.
+    waiting = sorted(((-v.get("severity", 2), Path(s).stat().st_mtime, s) for s, v in data.items()
+                      if v["verdict"] == "friction" and Path(s).stem not in reviewed and Path(s).exists()))
+    chosen, left = waiting[:k], waiting[k:]
+    for minus_severity, _, session in left:
+        if -minus_severity == 1:
+            data[session]["verdict"] = "skipped"
+    if any(-m == 1 for m, _, _ in left):
+        save_ledger(data, ledger)
+    return [{"session": s, "cwd": head(s)[0], "why": data[s]["why"]} for _, _, s in chosen]
 
 
 def main(argv=None):
@@ -114,11 +142,16 @@ def main(argv=None):
     c.add_argument("--out", required=True)
     c.add_argument("--days", type=float, default=3)
     c.add_argument("--idle-hours", type=float, default=2)
+    p = sub.add_parser("pick")
+    p.add_argument("--k", type=int, default=10)
     r = sub.add_parser("record")
     r.add_argument("--from", dest="from_file", required=True)
     args = parser.parse_args(argv)
     if args.command == "candidates":
         print(json.dumps(candidates(args.out, args.days, args.idle_hours), indent=2, ensure_ascii=False))
+        return 0
+    if args.command == "pick":
+        print(json.dumps(pick(args.k), indent=2, ensure_ascii=False))
         return 0
     try:
         record(json.loads(Path(args.from_file).read_text()))

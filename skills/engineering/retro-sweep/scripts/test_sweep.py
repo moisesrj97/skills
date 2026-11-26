@@ -57,10 +57,36 @@ class Candidates(unittest.TestCase):
         newer, older = self.session("newer", 5), self.session("older", 30)
         pending = self.session("pending", 24 * 10)
         clean = self.session("clean", 20)
-        sweep.record({pending: {"verdict": "friction", "why": "retried"}, clean: {"verdict": "clean"}}, self.ledger)
+        sweep.record({pending: {"verdict": "friction", "severity": 2, "why": "retried"}, clean: {"verdict": "clean"}}, self.ledger)
         found = self.run_candidates()
         self.assertEqual([(c["session"], c["triage"]) for c in found],
                          [(pending, "friction"), (older, None), (newer, None)])
+
+    def test_pick_takes_the_k_most_severe_and_drops_the_minor_ones_left_over(self):
+        blocker = self.session("blocker", 5)
+        old_high, new_high = self.session("old_high", 40), self.session("new_high", 10)
+        minor = self.session("minor", 30)
+        sweep.record({blocker: {"verdict": "friction", "severity": 3, "why": "stopped"},
+                      new_high: {"verdict": "friction", "severity": 2, "why": "retries"},
+                      old_high: {"verdict": "friction", "severity": 2, "why": "retries"},
+                      minor: {"verdict": "friction", "severity": 1, "why": "long search"}}, self.ledger)
+        picked = sweep.pick(2, retros=self.retros, ledger=self.ledger)
+        self.assertEqual([(p["session"], p["cwd"], p["why"]) for p in picked],
+                         [(blocker, "/code/shop", "stopped"), (old_high, "/code/shop", "retries")])
+        ledger = sweep.load_ledger(self.ledger)
+        self.assertEqual((ledger[new_high]["verdict"], ledger[minor]["verdict"]), ("friction", "skipped"))
+        self.assertNotIn(minor, [c["session"] for c in self.run_candidates()])
+
+    def test_a_minor_session_that_fits_gets_its_retro(self):
+        minor = self.session("minor", 30)
+        sweep.record({minor: {"verdict": "friction", "severity": 1, "why": "long search"}}, self.ledger)
+        self.assertEqual([p["session"] for p in sweep.pick(10, retros=self.retros, ledger=self.ledger)], [minor])
+
+    def test_record_refuses_friction_without_a_severity(self):
+        for severity in (None, 0, 4):
+            with self.assertRaises(ValueError):
+                sweep.record({"a.jsonl": {"verdict": "friction", "severity": severity}}, self.ledger)
+        self.assertFalse(self.ledger.exists())
 
     def test_record_refuses_an_unknown_verdict_and_writes_nothing(self):
         with self.assertRaises(ValueError):
